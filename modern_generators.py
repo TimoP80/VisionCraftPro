@@ -48,39 +48,23 @@ class ModernGeneratorManager:
             "features": ["text-to-image", "fine-tuned-models", "texture-generation"],
             "models": {
                 "phoenix-1-0": {
-                    "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",
-                    "name": "Phoenix 1.0",
-                    "description": "Universal model for all types of images",
+                    "id": None,
+                    "name": "Leonardo Phoenix (Default)",
+                    "description": "Default Leonardo model with SD 1.5",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
                 },
                 "phoenix-0-9": {
-                    "id": "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
-                    "name": "Phoenix 0.9",
-                    "description": "Previous version of Phoenix model",
+                    "id": None,
+                    "name": "Leonardo Legacy",
+                    "description": "Legacy Leonardo model",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
                 },
-                "diffusion-xl": {
-                    "id": "b24e16ff-06e3-450b-92b8-8e8901d3dab8",
-                    "name": "Diffusion XL",
-                    "description": "High-quality SDXL-based model for professional images",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "features": ["enhanced-detail", "better-composition", "improved-texture"]
-                },
-                "diffusion-xl-lightning": {
-                    "id": "448df82c-8872-4e4f-9d5a-351c8cf09548",
-                    "name": "Diffusion XL Lightning",
-                    "description": "Fast SDXL generation with 4-8 steps",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "features": ["ultra-fast", "reduced-steps", "good-quality"]
-                },
                 "universal": {
-                    "id": "6bef9f4b-29cb-40c7-bdf-32b51c1f80d8",
+                    "id": None,
                     "name": "Universal",
-                    "description": "General purpose model",
+                    "description": "Universal model for all image types",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
                 }
@@ -88,14 +72,10 @@ class ModernGeneratorManager:
             "preset_styles": [
                 {"id": "CREATIVE", "name": "Creative", "description": "Balanced creative output"},
                 {"id": "DYNAMIC", "name": "Dynamic", "description": "More dynamic and dramatic"},
-                {"id": "ARTISTIC", "name": "Artistic", "description": "Enhanced artistic style"},
-                {"id": "PHOTOGRAPHIC", "name": "Photographic", "description": "Photorealistic output"},
                 {"id": "CINEMATIC", "name": "Cinematic", "description": "Movie-like quality"},
                 {"id": "FANTASY_ART", "name": "Fantasy Art", "description": "Fantasy themed"},
-                {"id": "STEAMPUNK", "name": "Steampunk", "description": "Victorian sci-fi"},
                 {"id": "ANIME", "name": "Anime", "description": "Anime style"},
-                {"id": "COMIC_BOOK", "name": "Comic Book", "description": "Comic book style"},
-                {"id": "3D_RENDER", "name": "3D Render", "description": "3D rendered look"}
+                {"id": "COMIC_BOOK", "name": "Comic Book", "description": "Comic book style"}
             ],
             "quality_levels": [
                 {"id": "standard", "name": "Standard", "description": "Good quality, faster generation"},
@@ -337,7 +317,6 @@ class ModernGeneratorManager:
         # Build generation payload according to official docs - without webhook
         generation_payload = {
             "prompt": prompt,
-            "modelId": model_info["id"],
             "width": width,
             "height": height,
             "num_images": 1,
@@ -346,6 +325,13 @@ class ModernGeneratorManager:
             "contrast": kwargs.get("contrast", 3.5),  # Valid values: 3, 3.5, 4
             "negative_prompt": kwargs.get("negative_prompt", "")
         }
+        
+        # Only add modelId if it's not None (let Leonardo choose default model)
+        if model_info["id"] is not None:
+            generation_payload["modelId"] = model_info["id"]
+            print(f"[SEARCH] Using specific model ID: {model_info['id']}")
+        else:
+            print(f"[SEARCH] Using Leonardo default model (no modelId specified)")
         
         # Only add optional parameters if they might be causing issues
         if kwargs.get("guidance_scale", 7.5) != 7.5:
