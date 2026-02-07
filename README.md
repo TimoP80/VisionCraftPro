@@ -38,7 +38,7 @@ A powerful desktop application for AI-powered image generation featuring both lo
 ### **Minimum Requirements**
 - **GPU**: NVIDIA GPU with at least 8GB VRAM (GTX 1070, RTX 3060, 3070, 4060, etc.)
 - **CUDA**: CUDA 11.8 or higher
-- **Python**: 3.8 or higher
+- **Python**: 3.9 or higher
 - **RAM**: 16GB or more recommended
 - **Storage**: 10GB free disk space for models and generated images
 
