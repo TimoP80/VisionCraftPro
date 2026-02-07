@@ -1,4 +1,6 @@
-# Changelog
+# VisionCraft Pro - Changelog
+
+**Author:** Timo Pitkänen (tpitkane@gmail.com)
 
 All notable changes to VisionCraft Pro will be documented in this file.
 

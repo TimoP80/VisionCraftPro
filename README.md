@@ -1,5 +1,7 @@
 # VisionCraft Pro - Professional AI Image Generator
 
+**Author:** Timo Pitkänen (tpitkane@gmail.com)
+
 A powerful desktop application for AI-powered image generation featuring both local Stable Diffusion and cloud-based Leonardo.ai integration. Optimized for GPUs with 8GB VRAM and designed for professional use.
 
 ## 🎨 Features
