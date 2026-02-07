@@ -336,7 +336,7 @@ async def get_cuda_status():
     cuda_results = generator.cuda_checker.check_cuda_availability()
     return cuda_results
 
-@app.post("/api/install-gpu-torch")
+@app.post("/install-gpu-torch")
 async def install_gpu_torch():
     """Install GPU-enabled PyTorch"""
     if not hasattr(generator, 'cuda_checker'):
@@ -344,6 +344,15 @@ async def install_gpu_torch():
     
     success = generator.cuda_checker.install_gpu_pytorch()
     return {"success": success, "message": "GPU PyTorch installation completed. Please restart the application."}
+
+@app.post("/refresh-generators")
+async def refresh_generators():
+    """Refresh modern generators list"""
+    try:
+        generator.modern_manager._setup_leonardo_ai()
+        return {"success": True, "message": "Generators refreshed successfully"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # Initialize image generator
 generator = ImageGenerator()
