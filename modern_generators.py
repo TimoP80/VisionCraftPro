@@ -61,6 +61,22 @@ class ModernGeneratorManager:
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
                 },
+                "diffusion-xl": {
+                    "id": "b24e16ff-06e3-450b-92b8-8e8901d3dab8",
+                    "name": "Diffusion XL",
+                    "description": "High-quality SDXL-based model for professional images",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["enhanced-detail", "better-composition", "improved-texture"]
+                },
+                "diffusion-xl-lightning": {
+                    "id": "448df82c-8872-4e4f-9d5a-351c8cf09548",
+                    "name": "Diffusion XL Lightning",
+                    "description": "Fast SDXL generation with 4-8 steps",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["ultra-fast", "reduced-steps", "good-quality"]
+                },
                 "universal": {
                     "id": "6bef9f4b-29cb-40c7-bdf-32b51c1f80d8",
                     "name": "Universal",
