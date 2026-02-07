@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionCraft Pro - Professional AI Image Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for enhanced visuals */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            z-index: -1;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+        
+        /* Glass morphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Gradient buttons */
+        .gradient-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .gradient-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Card animations */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Input enhancements */
+        .enhanced-input {
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid rgba(75, 85, 99, 0.5);
+            transition: all 0.2s ease;
+        }
+        
+        .enhanced-input:focus {
+            background: rgba(55, 65, 81, 0.8);
+            border-color: rgba(147, 51, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+        }
+        
+        .enhanced-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Select dropdown styling */
+        .enhanced-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .enhanced-select option {
+            background: #374151;
+            color: #ffffff;
+        }
+        
+        /* Loading animation */
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #9333ea;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Ensure all inputs have proper contrast */
+        input[type="text"], 
+        input[type="number"], 
+        textarea, 
+        select {
+            background: rgba(55, 65, 81, 0.5) !important;
+            border: 1px solid rgba(75, 85, 99, 0.5) !important;
+            color: #ffffff !important;
+        }
+        
+        input[type="text"]:focus, 
+        input[type="number"]:focus, 
+        textarea:focus, 
+        select:focus {
+            background: rgba(55, 65, 81, 0.8) !important;
+            border-color: rgba(147, 51, 234, 0.5) !important;
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1) !important;
+        }
+        
+        input[type="text"]::placeholder, 
+        input[type="number"]::placeholder, 
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        select option {
+            background: #374151 !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="mb-4">
+                <img src="/static/logo.png" alt="VisionCraft Pro Logo" class="h-48 w-auto max-w-full mx-auto drop-shadow-lg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'; console.error('Logo failed to load');">
+                <div class="text-4xl mb-2" style="display: none;">🎨</div>
+            </div>
+            <h1 class="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                VisionCraft Pro
+            </h1>
+            <p class="text-xl text-gray-200">Professional AI-Powered Image Generation</p>
+        </header>
+
+        <!-- System Status -->
+        <div class="glass rounded-xl p-6 mb-8 card-hover">
+            <h2 class="text-2xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                🚀 System Status
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg p-4 border border-green-400/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-green-300 font-medium">Device</span>
+                        <span class="status-online w-3 h-3 rounded-full"></span>
+                    </div>
+                    <p id="device" class="text-lg font-semibold text-white">Loading...</p>
+                </div>
+                <div class="bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg p-4 border border-blue-400/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-blue-300 font-medium">VRAM Usage</span>
+                        <span class="status-gpu w-3 h-3 rounded-full"></span>
+                    </div>
+                    <p id="vram-used" class="text-lg font-semibold text-white">Loading...</p>
+                </div>
+                <div class="bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg p-4 border border-purple-400/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-purple-300 font-medium">GPU</span>
+                        <span class="w-3 h-3 rounded-full bg-purple-400"></span>
+                    </div>
+                    <p id="gpu-name" class="text-lg font-semibold text-white">Detecting...</p>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-400/20">
+                <p id="gpu-compatibility" class="text-sm"></p>
+            </div>
+        </div>
+
+        <!-- Generation Form -->
+        <div class="glass rounded-xl p-6 mb-8 card-hover">
+            <h2 class="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                ✨ Generate Image
+            </h2>
+            
+            <!-- Quality Tips -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                <p class="text-sm text-blue-200">
+                    <strong>💡 Quality Tips:</strong> Use 25-30 steps for best quality. Add "photorealistic, highly detailed, 8k" to prompts for sharper images.
+                </p>
+            </div>
+            
+            <form id="generation-form">
+                <!-- Model Selection -->
+                <div class="mb-6">
+                    <label for="model" class="block text-sm font-medium mb-2 text-purple-300">🎨 Model</label>
+                    <select 
+                        id="model" 
+                        name="model" 
+                        class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none"
+                    >
+                        <option value="stable-diffusion-1.5">Stable Diffusion 1.5</option>
+                    </select>
+                    <div id="model-info" class="mt-2 text-xs text-gray-400"></div>
+                </div>
+
+                <!-- Leonardo.ai Specific Controls -->
+                <div id="leonardo-controls" class="hidden mb-6 space-y-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                        <h3 class="text-sm font-semibold mb-3 text-blue-300">🚀 Leonardo.ai Controls</h3>
+                        
+                        <!-- API Key Status -->
+                        <div id="api-key-status" class="mb-4 p-3 bg-gray-700/50 rounded border border-gray-600">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-purple-300">🔑 API Key Status</span>
+                                <button 
+                                    id="set-api-key-btn"
+                                    class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs font-medium transition-all duration-200"
+                                >
+                                    Set API Key
+                                </button>
+                            </div>
+                            <div id="api-key-display" class="text-xs text-gray-400 mt-2">
+                                No API key set
+                            </div>
+                        </div>
+                        
+                        <!-- Model Selection -->
+                        <div>
+                            <label for="leonardo-model" class="block text-sm font-medium mb-2 text-purple-300">🎭 Model</label>
+                            <select id="leonardo-model" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="phoenix-1-0">Phoenix 1.0 (Universal)</option>
+                                <option value="phoenix-0-9">Phoenix 0.9 (Previous Version)</option>
+                                <option value="universal">Universal (General Purpose)</option>
+                            </select>
+                        </div>
+
+                        <!-- Aspect Ratio -->
+                        <div>
+                            <label for="leonardo-aspect" class="block text-sm font-medium mb-2 text-purple-300">📐 Aspect Ratio</label>
+                            <select id="leonardo-aspect" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="1:1">Square (1024x1024)</option>
+                                <option value="16:9">Widescreen (1344x768)</option>
+                                <option value="9:16">Portrait (768x1344)</option>
+                                <option value="4:3">Standard (1024x768)</option>
+                                <option value="3:4">Vertical (768x1024)</option>
+                                <option value="2:3">Tall (832x1216)</option>
+                                <option value="3:2">Wide (1216x832)</option>
+                            </select>
+                        </div>
+
+                        <!-- Preset Style -->
+                        <div>
+                            <label for="leonardo-style" class="block text-sm font-medium mb-2 text-purple-300">🎨 Style</label>
+                            <select id="leonardo-style" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="CREATIVE">Creative</option>
+                                <option value="DYNAMIC">Dynamic</option>
+                                <option value="ARTISTIC">Artistic</option>
+                                <option value="PHOTOGRAPHIC">Photographic</option>
+                                <option value="CINEMATIC">Cinematic</option>
+                                <option value="FANTASY_ART">Fantasy Art</option>
+                                <option value="STEAMPUNK">Steampunk</option>
+                                <option value="ANIME">Anime</option>
+                                <option value="COMIC_BOOK">Comic Book</option>
+                                <option value="3D_RENDER">3D Render</option>
+                            </select>
+                        </div>
+
+                        <!-- Quality Level -->
+                        <div>
+                            <label for="leonardo-quality" class="block text-sm font-medium mb-2 text-purple-300">⭐ Quality</label>
+                            <select id="leonardo-quality" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="standard">Standard (Fast)</option>
+                                <option value="high">High (Balanced)</option>
+                                <option value="ultra">Ultra (Best Quality)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="prompt" class="text-sm font-medium text-purple-300">💭 Prompt *</label>
+                        <button 
+                            type="button"
+                            id="enhance-prompt-btn"
+                            class="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1"
+                        >
+                            <span>✨</span>
+                            <span>Enhance with AI</span>
+                        </button>
+                    </div>
+                    <textarea 
+                        id="prompt" 
+                        name="prompt" 
+                        rows="3" 
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="A beautiful landscape with mountains and a lake..."
+                        required
+                    ></textarea>
+                    
+                    <!-- Advanced Enhancement Panel -->
+                    <div id="enhanced-prompt-panel" class="hidden mt-4 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-400/30">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold text-purple-300">✨ AI Prompt Enhancement</h3>
+                            <button id="close-enhancement-panel" class="text-gray-400 hover:text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Style Selection -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-purple-300 mb-2">🎨 Enhancement Style</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="photorealistic">
+                                    📸 Photorealistic
+                                </button>
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="artistic">
+                                    🎨 Artistic
+                                </button>
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="cinematic">
+                                    🎬 Cinematic
+                                </button>
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="anime">
+                                    🌸 Anime
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Detail Level -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-purple-300 mb-2">⚡ Detail Level</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button class="detail-level-btn px-3 py-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg text-xs font-medium transition-colors border border-blue-400/30" data-level="low">
+                                    Low
+                                </button>
+                                <button class="detail-level-btn px-3 py-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg text-xs font-medium transition-colors border border-blue-400/30 selected" data-level="medium">
+                                    Medium
+                                </button>
+                                <button class="detail-level-btn px-3 py-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg text-xs font-medium transition-colors border border-blue-400/30" data-level="high">
+                                    High
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced Results -->
+                        <div id="enhanced-results" class="space-y-3">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="negative_prompt" class="block text-sm font-medium mb-2 text-purple-300">🚫 Negative Prompt</label>
+                        <textarea 
+                            id="negative_prompt" 
+                            name="negative_prompt" 
+                            rows="2" 
+                            class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            placeholder="blurry, low quality, distorted..."
+                        ></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="steps" class="block text-sm font-medium mb-2 text-purple-300">⚡ Steps</label>
+                            <input 
+                                type="number" 
+                                id="steps" 
+                                name="num_inference_steps" 
+                                min="1" 
+                                max="50" 
+                                value="25"
+                                class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            >
+                        </div>
+                        <div>
+                            <label for="guidance" class="block text-sm font-medium mb-2 text-purple-300">🎯 Guidance</label>
+                            <input 
+                                type="number" 
+                                id="guidance" 
+                                name="guidance_scale" 
+                                min="0" 
+                                max="20" 
+                                step="0.5"
+                                value="7.5"
+                                class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label for="width" class="block text-sm font-medium mb-2 text-purple-300">📐 Width</label>
+                        <select id="width" name="width" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024">1024px</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="height" class="block text-sm font-medium mb-2 text-purple-300">📐 Height</label>
+                        <select id="height" name="height" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024">1024px</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="seed" class="block text-sm font-medium mb-2 text-purple-300">🎲 Seed</label>
+                        <input 
+                            type="number" 
+                            id="seed" 
+                            name="seed" 
+                            value="-1"
+                            class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            placeholder="-1 for random"
+                        >
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="generate-btn"
+                    class="w-full gradient-btn text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-200 flex items-center justify-center gap-2"
+                >
+                    <span>🎨 Generate Image</span>
+                </button>
+            </form>
+
+            <!-- Loading State -->
+            <div id="loading" class="hidden mt-6">
+                <div class="flex items-center justify-center gap-4">
+                    <div class="loading-spinner"></div>
+                    <span class="text-lg">Generating masterpiece...</span>
+                </div>
+                <div class="mt-4">
+                    <div class="bg-gray-700 rounded-full h-2">
+                        <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result -->
+            <div id="result" class="hidden mt-6">
+                <div class="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg p-4 border border-green-400/30">
+                    <h3 class="text-lg font-semibold mb-2 text-green-300">✅ Generation Complete!</h3>
+                    <p class="text-sm text-gray-300 mb-4">
+                        Time: <span id="generation-time">0</span>s | 
+                        VRAM: <span id="generation-vram">0</span>GB
+                    </p>
+                    <img id="generated-image" class="w-full rounded-lg shadow-lg" alt="Generated image">
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <button 
+                        id="download-btn"
+                        class="gradient-btn text-white font-bold py-2 px-6 rounded-lg transition duration-200 flex items-center gap-2"
+                    >
+                        <span>💾 Download Image</span>
+                    </button>
+                    <button 
+                        id="new-generation-btn"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200"
+                    >
+                        🔄 Generate Another
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery Section -->
+        <div class="glass rounded-xl p-6 card-hover">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                    🖼️ Image Gallery
+                </h2>
+                <div class="flex gap-3">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="🔍 Search prompts..."
+                        class="px-4 py-2 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none w-64"
+                    >
+                    <button 
+                        id="search-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <span>🔍</span>
+                        <span>Search</span>
+                    </button>
+                    <button 
+                        id="refresh-gallery-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <span>🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Gallery Stats -->
+            <div id="gallery-stats" class="mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-400/30">
+                <div class="flex items-center justify-center gap-6 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span>📸</span>
+                        <span class="text-purple-300">Images:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>💾</span>
+                        <span class="text-purple-300">Storage:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>⚡</span>
+                        <span class="text-purple-300">Avg Time:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>🎨</span>
+                        <span class="text-purple-300">Models:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gallery Grid -->
+            <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Gallery items will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content rounded-xl max-w-5xl max-h-full overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="modal-title" class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                        🎨 Image Details
+                    </h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <img id="modal-image" class="w-full rounded-lg mb-6 shadow-2xl" src="" alt="">
+                <div id="modal-details" class="text-sm text-gray-300 space-y-4">
+                    <!-- Details will be populated here -->
+                </div>
+                <div class="mt-6 flex gap-4">
+                    <button id="download-btn" class="gradient-btn text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>💾</span>
+                        <span>Download</span>
+                    </button>
+                    <button id="delete-btn" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>🗑️</span>
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        // Load gallery
+        async function loadGallery() {
+            try {
+                const response = await fetch(`${API_BASE}/gallery`);
+                const data = await response.json();
+                gallery = data.images;
+                
+                // Update stats
+                updateGalleryStats(data.stats);
+                
+                // Render gallery
+                renderGallery();
+                
+            } catch (error) {
+                console.error('Failed to load gallery:', error);
+                document.getElementById('gallery-stats').innerHTML = '❌ Failed to load gallery';
+            }
+        }
+
+        // Update gallery stats
+        function updateGalleryStats(stats) {
+            const statsElement = document.getElementById('gallery-stats');
+            statsElement.innerHTML = `
+                📸 ${stats.total_images} images | 
+                💾 ${stats.total_size_mb}MB | 
+                ⚡ ${stats.avg_generation_time}s avg | 
+                🎨 ${stats.models_used.length} models
+            `;
+        }
+
+        // Render gallery
+        function renderGallery(imagesToRender = gallery) {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            imagesToRender.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl overflow-hidden cursor-pointer hover:from-gray-700/50 hover:to-gray-800/50 transition-all duration-300 border border-gray-700/50';
+                div.onclick = () => openImageModal(item.id);
+                
+                div.innerHTML = `
+                    <div class="relative">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzM3NDE1MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4=" class="w-full h-48 object-cover" alt="${item.prompt}">
+                        <div class="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-500/80 to-pink-500/80 rounded-full text-xs font-medium">
+                            ${item.model}
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm text-gray-200 truncate font-medium">${item.prompt}</p>
+                        <div class="flex justify-between items-center mt-2">
+                            <p class="text-xs text-gray-400">${new Date(item.timestamp).toLocaleDateString()}</p>
+                            <p class="text-xs text-green-400 font-medium">${item.generation_time.toFixed(1)}s</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Load image thumbnail
+                loadGalleryImage(item.id, div.querySelector('img'));
+                
+                grid.appendChild(div);
+            });
+        }
+
+        // Load gallery image
+        async function loadGalleryImage(imageId, imgElement) {
+            try {
+                const response = await fetch(`${API_BASE}/gallery/${imageId}`);
+                const data = await response.json();
+                imgElement.src = `data:image/png;base64,${data.image}`;
+            } catch (error) {
+                console.error('Failed to load image:', error);
+                imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzM3NDE1MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+RmFpbGVkIHRvIGxvYWQ8L3RleHQ+PC9zdmc+';
+            }
+        }
+
+        // Open image modal
+        async function openImageModal(imageId) {
+            try {
+                const response = await fetch(`${API_BASE}/gallery/${imageId}`);
+                const data = await response.json();
+                
+                const modal = document.getElementById('image-modal');
+                const modalImage = document.getElementById('modal-image');
+                const modalDetails = document.getElementById('modal-details');
+                
+                modalImage.src = `data:image/png;base64,${data.image}`;
+                
+                const metadata = data.metadata;
+                modalDetails.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <strong>Prompt:</strong><br>${metadata.prompt}
+                        </div>
+                        <div>
+                            <strong>Model:</strong> ${metadata.model}<br>
+                            <strong>Steps:</strong> ${metadata.steps}<br>
+                            <strong>Guidance:</strong> ${metadata.guidance}
+                        </div>
+                        <div>
+                            <strong>Resolution:</strong> ${metadata.resolution[0]}x${metadata.resolution[1]}<br>
+                            <strong>Generation Time:</strong> ${metadata.generation_time.toFixed(2)}s
+                        </div>
+                        <div>
+                            <strong>VRAM Used:</strong> ${metadata.vram_used.toFixed(2)}GB<br>
+                            <strong>Date:</strong> ${new Date(metadata.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                
+                // Store current image ID for download/delete
+                modal.dataset.imageId = imageId;
+                
+                modal.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Failed to open image:', error);
+                alert('Failed to load image details');
+            }
+        }
+
+        // Close modal
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('image-modal').classList.add('hidden');
+        });
+
+        // Download image
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const modal = document.getElementById('image-modal');
+            const imageId = modal.dataset.imageId;
+            const modalImage = document.getElementById('modal-image');
+            
+            const link = document.createElement('a');
+            link.download = `generated_image_${imageId}.png`;
+            link.href = modalImage.src;
+            link.click();
+        });
+
+        // Delete image
+        document.getElementById('delete-btn').addEventListener('click', async () => {
+            const modal = document.getElementById('image-modal');
+            const imageId = modal.dataset.imageId;
+            
+            if (confirm('Are you sure you want to delete this image?')) {
+                try {
+                    await fetch(`${API_BASE}/gallery/${imageId}`, { method: 'DELETE' });
+                    modal.classList.add('hidden');
+                    loadGallery(); // Refresh gallery
+                } catch (error) {
+                    console.error('Failed to delete image:', error);
+                    alert('Failed to delete image');
+                }
+            }
+        });
+
+        // Search gallery
+        document.getElementById('search-btn').addEventListener('click', async () => {
+            const query = document.getElementById('search-input').value;
+            try {
+                const response = await fetch(`${API_BASE}/gallery/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                renderGallery(data.images);
+            } catch (error) {
+                console.error('Search failed:', error);
+            }
+        });
+
+        // Refresh gallery
+        document.getElementById('refresh-gallery-btn').addEventListener('click', loadGallery);
+
+        // Search on Enter key
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('search-btn').click();
+            }
+        });
+
+        // Advanced Prompt Enhancement functionality
+        let currentEnhancementStyle = "photorealistic";
+        let currentDetailLevel = "medium";
+        let allEnhancements = {};
+        
+        document.getElementById('enhance-prompt-btn').addEventListener('click', async (e) => {
+            e.preventDefault(); // Prevent form submission
+            e.stopPropagation(); // Stop event bubbling
+            
+            const promptTextarea = document.getElementById('prompt');
+            const originalPrompt = promptTextarea.value.trim();
+            
+            if (!originalPrompt) {
+                alert('Please enter a prompt first!');
+                return;
+            }
+            
+            // Show enhancement panel
+            document.getElementById('enhanced-prompt-panel').classList.remove('hidden');
+            
+            // Perform enhancement
+            await performEnhancement(originalPrompt);
+        });
+        
+        // Style selection
+        document.querySelectorAll('.enhance-style-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Prevent form submission
+                e.stopPropagation(); // Stop event bubbling
+                
+                // Update selection
+                document.querySelectorAll('.enhance-style-btn').forEach(b => b.classList.remove('bg-purple-500/60', 'border-purple-400'));
+                btn.classList.add('bg-purple-500/60', 'border-purple-400');
+                
+                currentEnhancementStyle = btn.dataset.style;
+                
+                // Re-enhance with new style
+                const originalPrompt = document.getElementById('prompt').value.trim();
+                if (originalPrompt) {
+                    performEnhancement(originalPrompt);
+                }
+            });
+        });
+        
+        // Detail level selection
+        document.querySelectorAll('.detail-level-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Prevent form submission
+                e.stopPropagation(); // Stop event bubbling
+                
+                // Update selection
+                document.querySelectorAll('.detail-level-btn').forEach(b => b.classList.remove('bg-blue-500/60', 'border-blue-400'));
+                btn.classList.add('bg-blue-500/60', 'border-blue-400');
+                
+                currentDetailLevel = btn.dataset.level;
+                
+                // Re-enhance with new detail level
+                const originalPrompt = document.getElementById('prompt').value.trim();
+                if (originalPrompt) {
+                    performEnhancement(originalPrompt);
+                }
+            });
+        });
+        
+        // Close enhancement panel
+        document.getElementById('close-enhancement-panel').addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent form submission
+            e.stopPropagation(); // Stop event bubbling
+            document.getElementById('enhanced-prompt-panel').classList.add('hidden');
+        });
+        
+        // Perform enhancement
+        async function performEnhancement(prompt) {
+            const resultsDiv = document.getElementById('enhanced-results');
+            
+            // Show loading
+            resultsDiv.innerHTML = '<div class="text-center py-4"><div class="loading-spinner mx-auto"></div><p class="text-sm text-gray-300 mt-2">Enhancing prompt...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/enhance-prompt`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        prompt: prompt,
+                        style: currentEnhancementStyle,
+                        detail_level: currentDetailLevel
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to enhance prompt');
+                }
+                
+                const data = await response.json();
+                allEnhancements = data.all_enhancements;
+                
+                // Display all enhancement options
+                displayEnhancementResults(data);
+                
+            } catch (error) {
+                console.error('Prompt enhancement failed:', error);
+                resultsDiv.innerHTML = '<p class="text-red-400 text-sm">Failed to enhance prompt. Please try again.</p>';
+            }
+        }
+        
+        // Display enhancement results
+        function displayEnhancementResults(data) {
+            const resultsDiv = document.getElementById('enhanced-results');
+            
+            let html = `
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-purple-300 mb-2">🎯 Primary Enhancement (${data.style})</h4>
+                    <div class="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg border border-green-400/30">
+                        <p class="text-sm text-white mb-2">${data.enhanced_prompt}</p>
+                        <button class="use-enhanced-btn px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-xs font-medium transition-colors" data-prompt="${data.enhanced_prompt}">
+                            ✅ Use This Enhancement
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-purple-300 mb-2">🎨 All Style Options</h4>
+                    <div class="space-y-2">
+            `;
+            
+            for (const [style, enhanced] of Object.entries(data.all_enhancements)) {
+                const isSelected = style === data.style;
+                const bgClass = isSelected ? 'from-purple-500/30 to-pink-500/30' : 'from-gray-500/20 to-gray-600/20';
+                const borderClass = isSelected ? 'border-purple-400/50' : 'border-gray-600/30';
+                
+                html += `
+                    <div class="p-2 bg-gradient-to-r ${bgClass} rounded-lg border ${borderClass}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium text-purple-300 capitalize">${style}</span>
+                            ${isSelected ? '<span class="text-xs text-green-400">✅ Selected</span>' : ''}
+                        </div>
+                        <p class="text-xs text-white mb-2 line-clamp-2">${enhanced}</p>
+                        <button class="use-style-btn px-2 py-1 bg-purple-500 hover:bg-purple-600 rounded text-xs font-medium transition-colors" data-style="${style}" data-prompt="${enhanced}">
+                            Use ${style.charAt(0).toUpperCase() + style.slice(1)}
+                        </button>
+                    </div>
+                `;
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+            
+            // Add event listeners for the buttons
+            resultsDiv.querySelectorAll('.use-enhanced-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent form submission
+                    e.stopPropagation(); // Stop event bubbling
+                    document.getElementById('prompt').value = btn.dataset.prompt;
+                    document.getElementById('enhanced-prompt-panel').classList.add('hidden');
+                });
+            });
+            
+            resultsDiv.querySelectorAll('.use-style-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent form submission
+                    e.stopPropagation(); // Stop event bubbling
+                    document.getElementById('prompt').value = btn.dataset.prompt;
+                    document.getElementById('enhanced-prompt-panel').classList.add('hidden');
+                });
+            });
+        }
+
+        // Load available models
+        async function loadModels() {
+            try {
+                console.log('🔍 Loading models...');
+                const response = await fetch(`${API_BASE}/models`);
+                const data = await response.json();
+                
+                console.log('🔍 Models response:', data);
+                
+                // Store both local and modern models
+                availableModels = data.local_models || {};
+                modernGenerators = data.modern_generators || {};
+                
+                console.log('🔍 Available models:', availableModels);
+                console.log('🔍 Modern generators:', modernGenerators);
+                
+                // Update model dropdown with both types
+                updateModelDropdown();
+                
+                // Update model info when selection changes
+                document.getElementById('model').addEventListener('change', updateModelInfo);
+                updateModelInfo();
+                
+            } catch (error) {
+                console.error('Failed to load models:', error);
+                // Add fallback options
+                availableModels = {
+                    'stable-diffusion-1.5': {
+                        name: 'Stable Diffusion 1.5',
+                        quality: 'Good',
+                        vram_required: '4GB',
+                        speed: 'Medium',
+                        resolution: '512x512',
+                        description: 'Standard Stable Diffusion model',
+                        experimental: false
+                    }
+                };
+                modernGenerators = {
+                    'leonardo-api': {
+                        name: 'Leonardo.ai API',
+                        cost: 'Paid',
+                        speed: 'Fast',
+                        max_resolution: [1024, 1024],
+                        description: 'Professional game asset generator with model selection',
+                        type: 'api'
+                    }
+                };
+                updateModelDropdown();
+                updateModelInfo();
+            }
+        }
+        
+        // Update model dropdown with both local and modern generators
+        function updateModelDropdown() {
+            const modelSelect = document.getElementById('model');
+            console.log('🔍 Updating model dropdown...');
+            console.log('🔍 Model select element:', modelSelect);
+            
+            modelSelect.innerHTML = '';
+            
+            // Add local models section
+            if (Object.keys(availableModels).length > 0) {
+                console.log('🔍 Adding local models:', Object.keys(availableModels));
+                const localGroup = document.createElement('optgroup');
+                localGroup.label = '🏠 Local Models (Stable Diffusion)';
+                
+                for (const [key, model] of Object.entries(availableModels)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${model.name} - ${model.quality} (${model.vram_required})`;
+                    if (model.experimental) {
+                        option.textContent += ' [Experimental]';
+                    }
+                    localGroup.appendChild(option);
+                    console.log(`🔍 Added local model option: ${key} -> ${option.textContent}`);
+                }
+                
+                modelSelect.appendChild(localGroup);
+            }
+            
+            // Add modern generators section
+            if (Object.keys(modernGenerators).length > 0) {
+                console.log('🔍 Adding modern generators:', Object.keys(modernGenerators));
+                const modernGroup = document.createElement('optgroup');
+                modernGroup.label = '🚀 Modern Generators (API)';
+                
+                for (const [key, generator] of Object.entries(modernGenerators)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${generator.name} - ${generator.cost} (${generator.speed})`;
+                    modernGroup.appendChild(option);
+                    console.log(`🔍 Added modern generator option: ${key} -> ${option.textContent}`);
+                }
+                
+                modelSelect.appendChild(modernGroup);
+            }
+            
+            // Add a default option if no models are available
+            if (modelSelect.options.length === 0) {
+                console.log('🔍 No models available, adding default option');
+                const defaultOption = document.createElement('option');
+                defaultOption.value = 'stable-diffusion-1.5';
+                defaultOption.textContent = 'Stable Diffusion 1.5 (Default)';
+                modelSelect.appendChild(defaultOption);
+            }
+            
+            console.log('🔍 Final model dropdown options:', modelSelect.options.length);
+            for (let i = 0; i < modelSelect.options.length; i++) {
+                console.log(`🔍 Option ${i}: ${modelSelect.options[i].value} -> ${modelSelect.options[i].textContent}`);
+            }
+        }
+
+        // Update model information
+        function updateModelInfo() {
+            const modelSelect = document.getElementById('model');
+            const selectedModel = modelSelect.value;
+            const modelInfo = document.getElementById('model-info');
+            const leonardoControls = document.getElementById('leonardo-controls');
+            
+            // Check if it's a local model
+            if (availableModels[selectedModel]) {
+                const model = availableModels[selectedModel];
+                modelInfo.innerHTML = `
+                    <div class="text-xs space-y-1">
+                        <p>💾 VRAM: ${model.vram_required}</p>
+                        <p>⚡ Speed: ${model.speed}</p>
+                        <p>📏 Resolution: ${model.resolution}</p>
+                        <p>📝 ${model.description}</p>
+                        ${model.experimental ? '<p class="text-yellow-400">⚠️ Experimental model</p>' : ''}
+                    </div>
+                `;
+                leonardoControls.classList.add('hidden');
+            }
+            // Check if it's a modern generator
+            else if (modernGenerators[selectedModel]) {
+                const generator = modernGenerators[selectedModel];
+                
+                // Show Leonardo controls if it's Leonardo.ai
+                if (selectedModel === 'leonardo-api') {
+                    leonardoControls.classList.remove('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: API Generator</p>
+                            <p class="text-blue-400">✅ Advanced controls available</p>
+                        </div>
+                    `;
+                    // Update API key status when Leonardo.ai is selected
+                    updateApiKeyStatus();
+                } else {
+                    leonardoControls.classList.add('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: API Generator</p>
+                        </div>
+                    `;
+                }
+            }
+            else {
+                modelInfo.innerHTML = '<p class="text-xs text-gray-400">Select a model to see details</p>';
+                leonardoControls.classList.add('hidden');
+            }
+        }
+        
+        // Show API key dialog
+        function showApiKeyDialog(generatorName) {
+            const generator = modernGenerators[generatorName];
+            const apiKey = prompt(`Enter API key for ${generator.name}:`);
+            
+            if (apiKey) {
+                fetch(`${API_BASE}/set-api-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        generator_name: generatorName,
+                        api_key: apiKey
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    updateModelInfo(); // Refresh the model info to show API key status
+                    updateApiKeyStatus();
+                })
+                .catch(error => {
+                    console.error('Failed to set API key:', error);
+                    alert('Failed to set API key');
+                });
+            }
+        }
+
+        // Update API key status display
+        function updateApiKeyStatus() {
+            const apiKeyDisplay = document.getElementById('api-key-display');
+            const setApiKeyBtn = document.getElementById('set-api-key-btn');
+            const selectedModel = document.getElementById('model').value;
+            
+            if (selectedModel === 'leonardo-api' && modernGenerators[selectedModel]) {
+                // Check if API key is set by calling the backend
+                fetch(`${API_BASE}/modern-generators`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const hasApiKey = data.api_keys_set && data.api_keys_set.includes('leonardo-api');
+                        if (hasApiKey) {
+                            apiKeyDisplay.textContent = '✅ API key configured';
+                            apiKeyDisplay.className = 'text-xs text-green-400';
+                            setApiKeyBtn.textContent = 'Update API Key';
+                            setApiKeyBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                            setApiKeyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                        } else {
+                            apiKeyDisplay.textContent = '❌ No API key set';
+                            apiKeyDisplay.className = 'text-xs text-red-400';
+                            setApiKeyBtn.textContent = 'Set API Key';
+                            setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                            setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to check API key status:', error);
+                        apiKeyDisplay.textContent = '❌ Could not check status';
+                        apiKeyDisplay.className = 'text-xs text-red-400';
+                    });
+            } else {
+                apiKeyDisplay.textContent = 'Select Leonardo.ai to see API key status';
+                apiKeyDisplay.className = 'text-xs text-gray-400';
+                setApiKeyBtn.textContent = 'Set API Key';
+                setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            }
+        }
+        
+        // Add event listener for API key button
+        document.getElementById('set-api-key-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showApiKeyDialog('leonardo-api');
+        });
+
+        // Update status
+        async function updateStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const status = await response.json();
+                
+                document.getElementById('device').textContent = status.device;
+                
+                // Show detailed VRAM usage that matches Task Manager
+                const vramText = `${status.vram_reserved.toFixed(2)}GB / ${status.vram_total.toFixed(2)}GB (${status.vram_used_percent.toFixed(1)}%)`;
+                document.getElementById('vram-used').textContent = vramText;
+                
+                document.getElementById('gpu-name').textContent = status.gpu_name;
+                
+                // Update compatibility message
+                const compatElement = document.getElementById('gpu-compatibility');
+                const isCompatible = status.vram_total >= 7.5; // Simple compatibility check
+                if (isCompatible) {
+                    compatElement.innerHTML = `✅ ${status.gpu_name} detected - VRAM: ${status.vram_total.toFixed(1)}GB - Perfect for AI generation!`;
+                    compatElement.className = 'text-sm text-green-400';
+                } else {
+                    compatElement.innerHTML = `⚠️ ${status.gpu_name} detected - VRAM: ${status.vram_total.toFixed(1)}GB - May be insufficient`;
+                    compatElement.className = 'text-sm text-yellow-400';
+                }
+                
+                // Update optimal settings hints
+                if (status.optimal_settings) {
+                    const stepsInput = document.getElementById('steps');
+                    const guidanceInput = document.getElementById('guidance');
+                    
+                    if (stepsInput && !stepsInput.dataset.defaulted) {
+                        stepsInput.value = status.optimal_settings.default_steps;
+                        stepsInput.max = status.optimal_settings.max_steps;
+                        stepsInput.dataset.defaulted = 'true';
+                    }
+                    
+                    if (guidanceInput && !guidanceInput.dataset.defaulted) {
+                        guidanceInput.value = status.optimal_settings.default_guidance;
+                        guidanceInput.dataset.defaulted = 'true';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to update status:', error);
+                document.getElementById('device').textContent = 'Loading...';
+                document.getElementById('vram-used').textContent = 'Checking...';
+                document.getElementById('gpu-name').textContent = 'Detecting...';
+                document.getElementById('gpu-compatibility').innerHTML = '🔄 Connecting to server...';
+                document.getElementById('gpu-compatibility').className = 'text-sm text-blue-400';
+            }
+        }
+
+        // Generate image
+        document.getElementById('generation-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const selectedModel = formData.get('model');
+            
+            // Debug: Log what we're getting from the form
+            console.log('🔍 Form data debug:');
+            console.log('- selectedModel:', selectedModel);
+            console.log('- all form entries:', Array.from(formData.entries()));
+            
+            // Debug: Check Leonardo controls visibility
+            const leonardoControls = document.getElementById('leonardo-controls');
+            console.log('- Leonardo controls visible:', !leonardoControls.classList.contains('hidden'));
+            
+            // Validate model selection
+            if (!selectedModel || selectedModel === 'None' || selectedModel === '') {
+                alert('Please select a model before generating.');
+                return;
+            }
+            
+            // Base data for all models
+            let data = {
+                prompt: formData.get('prompt'),
+                negative_prompt: formData.get('negative_prompt'),
+                num_inference_steps: parseInt(formData.get('num_inference_steps')),
+                guidance_scale: parseFloat(formData.get('guidance_scale')),
+                width: parseInt(formData.get('width')),
+                height: parseInt(formData.get('height')),
+                seed: parseInt(formData.get('seed')),
+                model: selectedModel
+            };
+            
+            // Add Leonardo.ai specific parameters if selected
+            if (selectedModel === 'leonardo-api') {
+                // Get values directly from the select elements
+                const leonardoModel = document.getElementById('leonardo-model')?.value;
+                const leonardoAspect = document.getElementById('leonardo-aspect')?.value;
+                const leonardoStyle = document.getElementById('leonardo-style')?.value;
+                const leonardoQuality = document.getElementById('leonardo-quality')?.value;
+                
+                console.log('🔍 Leonardo control values:', {
+                    leonardoModel,
+                    leonardoAspect,
+                    leonardoStyle,
+                    leonardoQuality
+                });
+                
+                // Keep the generator as 'leonardo-api' and pass the specific model as a parameter
+                data.model = selectedModel; // Keep 'leonardo-api' as the generator
+                data.leonardo_model = leonardoModel || 'phoenix-1-0'; // Pass specific model
+                data.aspect_ratio = leonardoAspect || '1:1';
+                data.preset_style = leonardoStyle || 'CREATIVE';
+                data.quality = leonardoQuality || 'standard';
+                
+                // Update width/height based on aspect ratio
+                const aspectRatios = {
+                    '1:1': [1024, 1024],
+                    '16:9': [1344, 768],
+                    '9:16': [768, 1344],
+                    '4:3': [1024, 768],
+                    '3:4': [768, 1024],
+                    '2:3': [832, 1216],
+                    '3:2': [1216, 832]
+                };
+                
+                const ratio = data.aspect_ratio;
+                if (aspectRatios[ratio]) {
+                    [data.width, data.height] = aspectRatios[ratio];
+                }
+                
+                console.log('🎨 Leonardo.ai generation with parameters:', data);
+            } else {
+                console.log('🏠 Local model generation with parameters:', data);
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('generate-btn').disabled = true;
+            
+            const startTime = Date.now();
+            
+            // Update generation time
+            const timeInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('generation-time').textContent = `Time: ${elapsed.toFixed(1)}s`;
+            }, 100);
+
+            try {
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                // Display result
+                document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                document.getElementById('generation-time').textContent = `${result.generation_time.toFixed(2)}s`;
+                document.getElementById('generation-vram').textContent = `${result.vram_used.toFixed(2)} GB`;
+                
+                // Show result, hide loading
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('result').classList.remove('hidden');
+                
+                // Reload gallery to show the new image
+                loadGallery();
+                
+            } catch (error) {
+                console.error('Generation failed:', error);
+                alert('Generation failed: ' + error.message);
+                document.getElementById('loading').classList.add('hidden');
+            } finally {
+                clearInterval(timeInterval);
+                document.getElementById('generate-btn').disabled = false;
+                updateStatus();
+            }
+        });
+
+        // Download image
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const img = document.getElementById('generated-image');
+            const link = document.createElement('a');
+            link.download = `generated-image-${Date.now()}.png`;
+            link.href = img.src;
+            link.click();
+        });
+
+        // Initialize
+        updateStatus();
+        setInterval(updateStatus, 5000); // Update status every 5 seconds
+        loadModels(); // Load available models
+        loadGallery(); // Load gallery on startup
+    </script>
+</body>
+</html>
