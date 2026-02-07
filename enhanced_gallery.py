@@ -28,9 +28,6 @@ class EnhancedImageGallery:
         self.images_dir.mkdir(exist_ok=True)
         self.thumbnails_dir.mkdir(exist_ok=True)
         
-        # Initialize database
-        self._init_database()
-        
         # Predefined categories and tags
         self.categories = {
             "portrait": "Portrait Photography",
@@ -56,6 +53,9 @@ class EnhancedImageGallery:
             "setting": ["indoor", "outdoor", "urban", "nature", "space", "underwater", "fantasy-world"],
             "technical": ["sdxl", "sd15", "leonardo-ai", "turbo", "high-resolution", "low-resolution"]
         }
+        
+        # Initialize database
+        self._init_database()
     
     def _init_database(self):
         """Initialize SQLite database for gallery metadata"""
