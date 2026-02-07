@@ -1,7 +1,8 @@
-# VisionCraftPro Installer Guide
+# VisionCraft Pro - Windows Installer
 
-## Overview
-This installer package provides a complete Windows installation solution for VisionCraftPro, an AI-powered image generation application.
+**Author:** Timo Pitkänen (tpitkane@gmail.com)
+
+This document provides comprehensive information about the VisionCraft Pro Windows installer, including its features, requirements, build process, and troubleshooting guide. generation application.
 
 ## Files Created
 - `installer.nsi` - NSIS installer script

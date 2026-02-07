@@ -1,6 +1,8 @@
 # VisionCraft Pro - User Guide
 
-Complete user guide for VisionCraft Pro desktop application. Learn how to generate stunning AI images with both local Stable Diffusion and Leonardo.ai cloud integration.
+**Author:** Timo Pitkänen (tpitkane@gmail.com)
+
+Welcome to VisionCraft Pro - your professional AI image generation suite! This comprehensive guide will help you get the most out of your image generation experience with both local Stable Diffusion and Leonardo.ai cloud integration.
 
 ## Table of Contents
 

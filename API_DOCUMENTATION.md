@@ -1,6 +1,8 @@
 # VisionCraft Pro - API Documentation
 
-Complete API reference for VisionCraft Pro's backend services and endpoints.
+**Author:** Timo Pitkänen (tpitkane@gmail.com)
+
+This document provides comprehensive API documentation for VisionCraft Pro, covering both the FastAPI backend endpoints and the Leonardo.ai integration.
 
 ## Table of Contents
 
