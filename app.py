@@ -24,6 +24,7 @@ from advanced_models import AdvancedModelManager
 from image_gallery import ImageGallery
 from prompt_enhancer import PromptEnhancer
 from modern_generators import ModernGeneratorManager
+from cuda_checker import CudaChecker
 
 class GenerationRequest(BaseModel):
     prompt: str
@@ -50,6 +51,17 @@ class ImageGenerator:
     """Main image generation class with both local and modern generators"""
     
     def __init__(self):
+        # Check CUDA and GPU PyTorch availability first
+        print("[CUDA] Checking CUDA and GPU PyTorch availability...")
+        self.cuda_checker = CudaChecker()
+        cuda_results = self.cuda_checker.check_cuda_availability()
+        
+        if cuda_results['cuda_available'] and not cuda_results['gpu_torch_available']:
+            print("[CUDA] CUDA detected but GPU PyTorch not available")
+            print("[CUDA] Attempting to install GPU PyTorch...")
+            self.cuda_checker.install_gpu_pytorch()
+            print("[CUDA] Please restart the application after GPU PyTorch installation")
+        
         self.model_manager = AdvancedModelManager()
         self.modern_manager = ModernGeneratorManager()
         self.gallery = ImageGallery()
@@ -57,6 +69,13 @@ class ImageGenerator:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.current_generator_type = "local"  # "local" or "modern"
         self.current_model = None
+        
+        # Print CUDA status
+        if torch.cuda.is_available():
+            print(f"[CUDA] Using GPU: {torch.cuda.get_device_name(0)}")
+            print(f"[CUDA] CUDA Version: {torch.version.cuda}")
+        else:
+            print("[CUDA] Using CPU (CUDA not available or GPU PyTorch not installed)")
         
     def load_model(self, model_key: str = "stable-diffusion-1.5"):
         """Load a specific model or modern generator"""
@@ -307,6 +326,24 @@ async def read_index():
 @app.get("/api")
 async def api_root():
     return {"message": "VisionCraft Pro API", "status": "running"}
+
+@app.get("/api/cuda-status")
+async def get_cuda_status():
+    """Get CUDA and GPU PyTorch status"""
+    if not hasattr(generator, 'cuda_checker'):
+        return {"error": "CUDA checker not initialized"}
+    
+    cuda_results = generator.cuda_checker.check_cuda_availability()
+    return cuda_results
+
+@app.post("/api/install-gpu-torch")
+async def install_gpu_torch():
+    """Install GPU-enabled PyTorch"""
+    if not hasattr(generator, 'cuda_checker'):
+        return {"error": "CUDA checker not initialized"}
+    
+    success = generator.cuda_checker.install_gpu_pytorch()
+    return {"success": success, "message": "GPU PyTorch installation completed. Please restart the application."}
 
 # Initialize image generator
 generator = ImageGenerator()
