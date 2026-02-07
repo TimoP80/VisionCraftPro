@@ -10,6 +10,7 @@ from PIL import Image
 import warnings
 from typing import Dict, Any, Optional
 from gtx1070_optimizations import GTX1070Optimizer
+from sdxl_models import SDXLOptimizedPipeline, SDXLTurboPipeline, SDXLModelManager, SDXLPromptPresets
 
 class AdvancedModelManager:
     """Manages multiple AI models with GTX 1070 optimizations"""
@@ -31,6 +32,30 @@ class AdvancedModelManager:
                 "speed": "Fastest",
                 "compatible": True,
                 "experimental": False
+            },
+            "sdxl-base": {
+                "name": "Stable Diffusion XL 1.0",
+                "model_id": "stabilityai/stable-diffusion-xl-base-1.0",
+                "description": "High-quality 1024x1024 generation with advanced composition",
+                "vram_required": "6-8GB",
+                "resolution": "1024x1024",
+                "quality": "Excellent",
+                "speed": "Medium",
+                "compatible": True,
+                "experimental": False,
+                "sdxl_optimized": True
+            },
+            "sdxl-turbo": {
+                "name": "SDXL Turbo",
+                "model_id": "stabilityai/sdxl-turbo",
+                "description": "Ultra-fast generation (1-4 steps) with XL quality",
+                "vram_required": "6-8GB",
+                "resolution": "512x512 (fast) / 1024x1024 (quality)",
+                "quality": "Good",
+                "speed": "Fastest (1-4 steps)",
+                "compatible": True,
+                "experimental": False,
+                "sdxl_optimized": True
             },
             "dreamshaper": {
                 "name": "DreamShaper",
@@ -73,17 +98,6 @@ class AdvancedModelManager:
                 "resolution": "512x512",
                 "quality": "Excellent",
                 "speed": "Medium",
-                "compatible": True,
-                "experimental": True
-            },
-            "sd-xl-turbo": {
-                "name": "SD XL Turbo",
-                "model_id": "stabilityai/sdxl-turbo",
-                "description": "Fast generation with XL quality, 1-step generation",
-                "vram_required": "6-8GB",
-                "resolution": "512x512",
-                "quality": "Good",
-                "speed": "Fastest (1-step)",
                 "compatible": True,
                 "experimental": True
             },
@@ -130,8 +144,26 @@ class AdvancedModelManager:
                 self.unload_current_model()
             
             # Load new model
-            if "xl" in model_key.lower() or "sdxl" in model_key.lower():
-                # Handle SDXL models
+            if model_info.get("sdxl_optimized"):
+                # Use the new SDXL optimized pipelines
+                if "turbo" in model_key.lower():
+                    pipe = SDXLTurboPipeline()
+                else:
+                    pipe = SDXLOptimizedPipeline(model_info["model_id"])
+                
+                # Load the model with optimizations
+                success = pipe.load_model()
+                if not success:
+                    raise Exception("Failed to load SDXL model")
+                
+                # Store the pipeline directly (already optimized)
+                self.models[model_key] = pipe
+                self.current_model = model_key
+                
+                print(f"✅ {model_info['name']} loaded successfully!")
+                return True
+            elif "xl" in model_key.lower() or "sdxl" in model_key.lower():
+                # Handle other SDXL models with legacy method
                 pipe = self._load_sdxl_model(model_info["model_id"])
             else:
                 # Handle SD 1.5 models
@@ -293,6 +325,26 @@ class AdvancedModelManager:
         model = self.models[self.current_model]
         model_info = self.available_models[self.current_model]
         
+        # Handle new SDXL optimized pipelines
+        if model_info.get("sdxl_optimized"):
+            print(f"🎨 Generating with {model_info['name']} (optimized)...")
+            
+            # Apply SDXL presets if requested
+            preset_name = kwargs.get("sdxl_preset")
+            if preset_name:
+                preset_result = SDXLPromptPresets.apply_preset(prompt, preset_name)
+                prompt = preset_result["prompt"]
+                kwargs["negative_prompt"] = preset_result.get("negative_prompt", "")
+                print(f"🎭 Applied SDXL preset: {preset_name}")
+            
+            # Generate with optimized pipeline
+            result = model.generate(prompt, **kwargs)
+            if result:
+                return result
+            else:
+                raise Exception("SDXL generation failed")
+        
+        # Legacy model handling
         # Adjust parameters based on model type
         if "turbo" in self.current_model.lower():
             # SDXL Turbo uses 1-4 steps and 0.0 guidance for best results
@@ -486,9 +538,45 @@ class AdvancedModelManager:
         """Get recommendations for different use cases"""
         return {
             "beginners": "stable-diffusion-1.5 - Most stable and reliable",
-            "speed": "sd-xl-turbo - Fastest generation (1-step)",
-            "quality": "realistic-vision - Best photorealistic results",
+            "speed": "sdxl-turbo - Fastest generation (1-4 steps with XL quality)",
+            "quality": "sdxl-base - Best 1024x1024 high-quality generation",
+            "photorealistic": "sdxl-base with photorealistic preset - Professional photography quality",
             "artistic": "dreamshaper - Great for creative and fantasy images",
             "anime": "deliberate - High-quality anime and artistic style",
             "balanced": "lcsd - Good quality with very fast generation"
         }
+    
+    def get_sdxl_presets(self) -> Dict[str, Dict[str, str]]:
+        """Get available SDXL presets"""
+        return SDXLPromptPresets.get_presets()
+    
+    def apply_sdxl_preset(self, prompt: str, preset_name: str) -> Dict[str, str]:
+        """Apply SDXL preset to prompt"""
+        return SDXLPromptPresets.apply_preset(prompt, preset_name)
+    
+    def get_memory_info(self) -> Dict[str, Any]:
+        """Get memory usage information for current model"""
+        if not self.current_model:
+            return {"error": "No model loaded"}
+        
+        model = self.models[self.current_model]
+        model_info = self.available_models[self.current_model]
+        
+        if model_info.get("sdxl_optimized"):
+            return model.get_memory_info()
+        else:
+            # Legacy model memory info
+            info = {
+                "current_model": self.current_model,
+                "device": self.device,
+                "model_loaded": self.current_model in self.models
+            }
+            
+            if torch.cuda.is_available():
+                info.update({
+                    "cuda_allocated": f"{torch.cuda.memory_allocated() / 1024**3:.2f} GB",
+                    "cuda_reserved": f"{torch.cuda.memory_reserved() / 1024**3:.2f} GB",
+                    "cuda_max_allocated": f"{torch.cuda.max_memory_allocated() / 1024**3:.2f} GB"
+                })
+            
+            return info
