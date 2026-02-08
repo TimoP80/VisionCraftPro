@@ -239,7 +239,7 @@
                         <div>
                             <label for="leonardo-model" class="block text-sm font-medium mb-2 text-purple-300">🎭 Model</label>
                             <select id="leonardo-model" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
-                                <option value="phoenix-1-0">Leonardo Phoenix (Default)</option>
+                                <option value="phoenix-1-0">Leonardo Phoenix (LEONARDO Style)</option>
                                 <option value="phoenix-0-9">Leonardo Legacy</option>
                                 <option value="universal">Universal (General Purpose)</option>
                             </select>
@@ -263,12 +263,14 @@
                         <div>
                             <label for="leonardo-style" class="block text-sm font-medium mb-2 text-purple-300">🎨 Style</label>
                             <select id="leonardo-style" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="LEONARDO" selected>Leonardo (Best Quality)</option>
                                 <option value="CREATIVE">Creative</option>
                                 <option value="DYNAMIC">Dynamic</option>
                                 <option value="CINEMATIC">Cinematic</option>
                                 <option value="FANTASY_ART">Fantasy Art</option>
                                 <option value="ANIME">Anime</option>
                                 <option value="COMIC_BOOK">Comic Book</option>
+                                <option value="ILLUSTRATION">Illustration</option>
                             </select>
                         </div>
 
@@ -1283,7 +1285,7 @@
                 data.model = selectedModel; // Keep 'leonardo-api' as the generator
                 data.leonardo_model = leonardoModel || 'phoenix-1-0'; // Pass specific model
                 data.aspect_ratio = leonardoAspect || '1:1';
-                data.preset_style = leonardoStyle || 'CREATIVE';
+                data.preset_style = leonardoStyle || 'LEONARDO';  // Default to LEONARDO for best quality
                 data.quality = leonardoQuality || 'high';  // Default to high quality instead of standard
                 
                 // Update width/height based on aspect ratio

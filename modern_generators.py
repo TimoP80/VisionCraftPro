@@ -49,8 +49,8 @@ class ModernGeneratorManager:
             "models": {
                 "phoenix-1-0": {
                     "id": None,
-                    "name": "Leonardo Phoenix (Default)",
-                    "description": "Default Leonardo model with SD 1.5",
+                    "name": "Leonardo Phoenix (LEONARDO Style)",
+                    "description": "Leonardo's optimized preset style with SD 1.5",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
                 },
@@ -421,13 +421,14 @@ class ModernGeneratorManager:
         }
         
         # Add preset style if specified and valid
-        preset_style = kwargs.get("preset_style", "CREATIVE")
-        valid_styles = ["CREATIVE", "DYNAMIC", "CINEMATIC", "FANTASY_ART", "ANIME", "COMIC_BOOK"]
+        preset_style = kwargs.get("preset_style", "LEONARDO")  # Default to LEONARDO for best quality
+        valid_styles = ["LEONARDO", "CREATIVE", "DYNAMIC", "CINEMATIC", "FANTASY_ART", "ANIME", "COMIC_BOOK", "ILLUSTRATION"]
         if preset_style in valid_styles:
             generation_payload["presetStyle"] = preset_style
-            print(f"[STYLE] Applying preset style: {preset_style}")
+            print(f"[STYLE] Applying Leonardo preset style: {preset_style}")
         else:
-            print(f"[STYLE] Invalid style {preset_style}, using default")
+            print(f"[STYLE] Invalid style {preset_style}, using LEONARDO default")
+            generation_payload["presetStyle"] = "LEONARDO"
         
         # Only add modelId if it's not None (let Leonardo choose default model)
         if model_info["id"] is not None:
