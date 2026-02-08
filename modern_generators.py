@@ -255,26 +255,90 @@ class ModernGeneratorManager:
             raise
     
     def _enhance_prompt_for_leonardo(self, prompt: str) -> str:
-        """Enhance prompt for better Leonardo.ai quality"""
-        # Add comprehensive quality terms if not already present
-        quality_terms = ["high quality", "detailed", "photorealistic", "8k", "professional", "sharp", "well-defined"]
+        """Enhance prompt for maximum quality with SD 1.5"""
+        
+        # Base quality terms that work well with SD 1.5
+        quality_base = [
+            "high quality", "highly detailed", "sharp focus", "well-defined",
+            "professional", "masterpiece", "best quality", "8k resolution"
+        ]
+        
+        # Style-specific enhancements
+        style_enhancements = {
+            "photorealistic": [
+                "photorealistic", "realistic", "lifelike", "professional photography",
+                "DSLR", "shot on Sony A7R IV", "85mm lens", "f/1.4", "sharp details",
+                "natural lighting", "studio lighting", "cinematic lighting"
+            ],
+            "portrait": [
+                "photorealistic portrait", "detailed face", "realistic skin texture",
+                "professional photography", "studio lighting", "soft lighting",
+                "sharp eyes", "detailed hair", "natural expression", "high resolution"
+            ],
+            "cinematic": [
+                "cinematic shot", "film still", "movie quality", "epic composition",
+                "dramatic lighting", "cinematic color grading", "film grain",
+                "anamorphic lens", "widescreen", "professional cinematography"
+            ],
+            "artistic": [
+                "digital art", "concept art", "detailed illustration", "trending on artstation",
+                "masterpiece", "award-winning", "highly detailed", "professional art",
+                "sharp details", "vibrant colors", "perfect composition"
+            ],
+            "anime": [
+                "high quality anime", "detailed anime art", "masterpiece", "best quality",
+                "trending on pixiv", "sharp details", "vibrant colors", "professional anime art",
+                "clean lines", "detailed background", "perfect anatomy"
+            ]
+        }
+        
+        # Determine content type and apply appropriate enhancements
         prompt_lower = prompt.lower()
         
-        # Check if quality terms are already present
-        has_quality = any(term in prompt_lower for term in quality_terms)
+        # Detect content type
+        if "portrait" in prompt_lower or "woman" in prompt_lower or "man" in prompt_lower or "person" in prompt_lower:
+            content_type = "portrait"
+        elif "cinematic" in prompt_lower or "movie" in prompt_lower or "film" in prompt_lower:
+            content_type = "cinematic"
+        elif "anime" in prompt_lower or "manga" in prompt_lower:
+            content_type = "anime"
+        elif "art" in prompt_lower or "painting" in prompt_lower or "illustration" in prompt_lower:
+            content_type = "artistic"
+        else:
+            content_type = "photorealistic"
         
-        if not has_quality:
-            # Add appropriate quality terms based on prompt content
-            if "woman" in prompt_lower or "person" in prompt_lower or "man" in prompt_lower or "portrait" in prompt_lower:
-                prompt += ", photorealistic, high quality, detailed, sharp focus, well-defined, 8k resolution, professional photography, cinematic lighting"
-            elif "landscape" in prompt_lower or "nature" in prompt_lower:
-                prompt += ", highly detailed, beautiful landscape, professional photography, 8k, sharp, vibrant colors, well-defined"
-            elif "anime" in prompt_lower or "manga" in prompt_lower:
-                prompt += ", high quality anime, detailed, vibrant colors, professional art, sharp, well-defined"
-            else:
-                prompt += ", high quality, detailed, professional, sharp, well-defined, photorealistic"
+        # Build enhanced prompt
+        enhanced_parts = [prompt]
         
-        return prompt
+        # Add style-specific enhancements
+        if content_type in style_enhancements:
+            enhanced_parts.extend(style_enhancements[content_type])
+        
+        # Add base quality terms
+        enhanced_parts.extend(quality_base)
+        
+        # Add technical photography terms for realism
+        if content_type in ["photorealistic", "portrait", "cinematic"]:
+            enhanced_parts.extend([
+                "RAW photo", "no compression", "uncompressed", "high resolution",
+                "professional grade", "commercial photography"
+            ])
+        
+        return ", ".join(enhanced_parts)
+    
+    def _get_optimized_negative_prompt(self, original_negative: str = "") -> str:
+        """Create comprehensive negative prompt for SD 1.5"""
+        base_negative = (
+            "blurry, low quality, worst quality, low resolution, pixelated, "
+            "jpeg artifacts, compression artifacts, noisy, grainy, distorted, "
+            "deformed, disfigured, bad anatomy, bad proportions, extra limbs, "
+            "missing limbs, fused fingers, too many fingers, watermark, signature, "
+            "text, username, error, mutated, mutation, ugly, disgusting"
+        )
+        
+        if original_negative:
+            return f"{original_negative}, {base_negative}"
+        return base_negative
     
     async def generate_with_leonardo(self, prompt: str, **kwargs) -> Image.Image:
         """Generate image using Leonardo.ai API"""
@@ -342,18 +406,18 @@ class ModernGeneratorManager:
         width, height = resolution
         print(f"[SEARCH] Resolution: {width}x{height}")
         
-        # Build generation payload with premium quality settings
+        # Build generation payload with optimized SD 1.5 settings
         generation_payload = {
             "prompt": enhanced_prompt,  # Use enhanced prompt
             "width": width,
             "height": height,
             "num_images": 1,
-            "alchemy": False,  # Disable alchemy for default model compatibility
-            "ultra": False,    # Disable ultra for default model compatibility
-            "contrast": kwargs.get("contrast", 3.5),  # Use standard contrast
-            "negative_prompt": kwargs.get("negative_prompt", ""),
-            "num_inference_steps": kwargs.get("num_inference_steps", 25),  # Good step count
-            "guidance_scale": kwargs.get("guidance_scale", 7.5)   # Standard guidance
+            "alchemy": False,  # Not supported by SD 1.5
+            "ultra": False,    # Not supported by SD 1.5
+            "contrast": 3.5,   # Standard contrast for SD 1.5
+            "negative_prompt": self._get_optimized_negative_prompt(kwargs.get("negative_prompt", "")),
+            "num_inference_steps": kwargs.get("num_inference_steps", 30),  # More steps for better quality
+            "guidance_scale": kwargs.get("guidance_scale", 8.0)   # Higher guidance for better prompt adherence
         }
         
         # Add preset style if specified and valid
@@ -372,10 +436,9 @@ class ModernGeneratorManager:
         else:
             print(f"[SEARCH] Using Leonardo default model (no modelId specified)")
         
-        print(f"[QUALITY] Quality settings: ultra={generation_payload['ultra']}, alchemy={generation_payload['alchemy']}")
-        print(f"[QUALITY] Steps: {generation_payload['num_inference_steps']}, Guidance: {generation_payload['guidance_scale']}")
-        print(f"[QUALITY] Contrast: {generation_payload['contrast']}")
-        print(f"[QUALITY] Note: Using enhanced prompt and preset styles for quality instead of ultra/alchemy")
+        print(f"[QUALITY] SD 1.5 Optimized Settings: steps={generation_payload['num_inference_steps']}, guidance={generation_payload['guidance_scale']}")
+        print(f"[QUALITY] Enhanced prompt with {len(enhanced_prompt.split(','))} quality terms")
+        print(f"[QUALITY] Comprehensive negative prompt for maximum quality")
         
         print(f"[SEARCH] Final payload: {json.dumps(generation_payload, indent=2)}")
         
