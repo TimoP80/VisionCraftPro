@@ -1,6 +1,6 @@
 """
 Modern Commercial Image Generators
-Support for Nano Banana Pro, Seedream, and other API-based generators
+Support for Nano Banana Pro, Seedream, Leonardo.ai, and ElevenLabs API-based generators
 """
 
 import requests
@@ -13,6 +13,9 @@ import json
 import os
 import time
 import asyncio
+
+# Import ElevenLabs generator
+from elevenlabs_generator import ElevenLabsGeneratorManager
 
 class ModernGeneratorManager:
     """Manages modern commercial image generators"""
@@ -32,7 +35,132 @@ class ModernGeneratorManager:
         # Initialize available generators
         self.available_generators = {}
         self._setup_leonardo_ai()
+        self._setup_elevenlabs()
         print(f"Initialized {len(self.available_generators)} generator(s)")
+        
+        # Initialize ElevenLabs manager
+        self.elevenlabs_manager = ElevenLabsGeneratorManager()
+    
+    def _setup_elevenlabs(self):
+        """Setup ElevenLabs generator configuration"""
+        self.available_generators["elevenlabs-api"] = {
+            "name": "ElevenLabs API",
+            "type": "api",
+            "description": "Advanced AI image generation with multiple models",
+            "api_endpoint": "https://api.elevenlabs.io/v1/text2image",
+            "max_resolution": (1024, 1024),
+            "quality": "Professional",
+            "speed": "Fast",
+            "cost": "Paid",
+            "features": ["text-to-image", "multiple-models", "high-resolution", "sdxl"],
+            "models": {
+                "realistic-vision-v6": {
+                    "id": "realistic-vision-v6",
+                    "name": "Realistic Vision v6",
+                    "description": "Photorealistic model with high detail",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["photorealistic", "high-detail", "professional"]
+                },
+                "dreamshaper-v8": {
+                    "id": "dreamshaper-v8",
+                    "name": "DreamShaper v8",
+                    "description": "Artistic model with creative capabilities",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["artistic", "creative", "detailed"]
+                },
+                "absolutereality-v1.8.6": {
+                    "id": "absolutereality-v1.8.6",
+                    "name": "Absolute Reality v1.8.6",
+                    "description": "Hyperrealistic model with extreme detail",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["hyperrealistic", "extreme-detail", "professional"]
+                },
+                "amazing-realism-v5.2": {
+                    "id": "amazing-realism-v5.2",
+                    "name": "Amazing Realism v5.2",
+                    "description": "Realistic model with artistic flair",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["realistic", "artistic", "detailed"]
+                },
+                "cinematic-v1": {
+                    "id": "cinematic-v1",
+                    "name": "Cinematic v1",
+                    "description": "Cinematic and movie-like image generation",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["cinematic", "film-like", "dramatic"]
+                },
+                "fantasy-art-v6": {
+                    "id": "fantasy-art-v6",
+                    "name": "Fantasy Art v6",
+                    "description": "Fantasy and artistic model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["fantasy", "artistic", "creative"]
+                },
+                "anime-v3": {
+                    "id": "anime-v3",
+                    "name": "Anime v3",
+                    "description": "Anime and manga-style generation",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["anime", "manga", "cartoon"]
+                },
+                "3d-animation-v2.1": {
+                    "id": "3d-animation-v2.1",
+                    "name": "3D Animation v2.1",
+                    "description": "3D and animation-style generation",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["3d", "animation", "cartoon"]
+                },
+                "sdxl-lightning-v1": {
+                    "id": "sdxl-lightning-v1",
+                    "name": "SDXL Lightning v1",
+                    "description": "Fast SDXL generation with 4-8 steps",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["sdxl", "fast", "lightning"]
+                },
+                "sdxl-turbo-v1": {
+                    "id": "sdxl-turbo-v1",
+                    "name": "SDXL Turbo v1",
+                    "description": "Optimized SDXL for fast generation",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "features": ["sdxl", "turbo", "optimized"]
+                }
+            },
+            "quality_levels": [
+                {"id": "standard", "name": "Standard", "description": "Good quality, faster generation"},
+                {"id": "high", "name": "High", "description": "Better quality, moderate time"},
+                {"id": "ultra", "name": "Ultra", "description": "Best quality, longer time"}
+            ],
+            "aspect_ratios": [
+                {"id": "1:1", "name": "Square", "resolution": (1024, 1024)},
+                {"id": "16:9", "name": "Widescreen", "resolution": (1344, 768)},
+                {"id": "9:16", "name": "Portrait", "resolution": (768, 1344)},
+                {"id": "4:3", "name": "Standard", "resolution": (1024, 768)},
+                {"id": "3:4", "name": "Vertical", "resolution": (768, 1024)},
+                {"id": "2:3", "name": "Tall", "resolution": (832, 1216)},
+                {"id": "3:2", "name": "Wide", "resolution": (1216, 832)}
+            ],
+            "style_presets": [
+                {"id": "photorealistic", "name": "Photorealistic", "description": "Realistic and detailed"},
+                {"id": "artistic", "name": "Artistic", "description": "Creative and stylized"},
+                {"id": "cinematic", "name": "Cinematic", "description": "Film-like and dramatic"},
+                {"id": "fantasy", "name": "Fantasy", "description": "Imaginative and magical"},
+                {"id": "anime", "name": "Anime", "description": "Anime and manga style"},
+                {"id": "3d", "name": "3D", "description": "3D rendered look"},
+                {"id": "oil", "name": "Oil Painting", "description": "Traditional oil painting style"},
+                {"id": "watercolor", "name": "Watercolor", "description": "Watercolor painting style"},
+                {"id": "sketch", "name": "Sketch", "description": "Pencil sketch style"}
+            ]
+        }
     
     def _setup_leonardo_ai(self):
         """Setup Leonardo.ai generator configuration"""
@@ -674,6 +802,8 @@ class ModernGeneratorManager:
         try:
             if generator_name == "leonardo-api":
                 return await self.generate_with_leonardo(prompt, **kwargs)
+            elif generator_name == "elevenlabs-api":
+                return await self.generate_with_elevenlabs(prompt, **kwargs)
             elif generator_name == "nano-banana-pro":
                 return await self.generate_with_nano_banana(prompt, **kwargs)
             elif generator_name == "seedream":
@@ -815,6 +945,131 @@ class ModernGeneratorManager:
         
         return base_settings
     
+    async def generate_with_elevenlabs(self, prompt: str, **kwargs) -> Image.Image:
+        """Generate image using ElevenLabs API"""
+        print(f"[ELEVENLABS] ElevenLabs generation with {prompt[:100]}...")
+        
+        # Check API key
+        if 'elevenlabs-api' not in self.api_keys:
+            raise ValueError("ElevenLabs API key not set. Please set your API key first.")
+        
+        api_key = self.api_keys['elevenlabs-api']
+        
+        # Validate API key format
+        if not isinstance(api_key, str) or len(api_key) > 1000 or len(api_key) < 10:
+            raise ValueError("ElevenLabs API key appears to be corrupted or invalid. Please check your API key configuration.")
+        
+        print(f"API key found: {'*' * 10}{api_key[-4:]}")
+        
+        # Get model information
+        generator_info = self.available_generators['elevenlabs-api']
+        models = generator_info['models']
+        
+        # Get model selection
+        model_key = kwargs.get('model', 'realistic-vision-v6')
+        if model_key not in models:
+            raise ValueError(f"Model {model_key} not available for ElevenLabs. Available models: {list(models.keys())}")
+        
+        model_info = models[model_key]
+        print(f"[MODEL] Using ElevenLabs model: {model_info['name']}")
+        
+        # Get resolution from aspect ratio
+        aspect_ratios = {ar["id"]: ar for ar in generator_info["aspect_ratios"]}
+        aspect_ratio = kwargs.get("aspect_ratio", "1:1")
+        if aspect_ratio not in aspect_ratios:
+            aspect_ratio = "1:1"  # Default fallback
+        
+        resolution = aspect_ratios[aspect_ratio]["resolution"]
+        width, height = resolution
+        print(f"[RESOLUTION] {width}x{height} (aspect ratio: {aspect_ratio})")
+        
+        # Build generation payload
+        generation_payload = {
+            "prompt": prompt,
+            "model": model_key,
+            "width": width,
+            "height": height,
+            "num_images": 1,
+            "negative_prompt": kwargs.get("negative_prompt", ""),
+            "seed": kwargs.get("seed", -1) if kwargs.get("seed", -1) != -1 else None,
+            "guidance_scale": kwargs.get("guidance_scale", 7.0),
+            "num_inference_steps": kwargs.get("num_inference_steps", 30),
+            "style": kwargs.get("style", "photorealistic"),
+            "scheduler": kwargs.get("scheduler", "KLMS"),
+            "output_format": "png"
+        }
+        
+        # Add quality settings
+        quality = kwargs.get("quality", "high")
+        if quality == "ultra":
+            generation_payload["num_inference_steps"] = 50
+            generation_payload["guidance_scale"] = 8.0
+        elif quality == "standard":
+            generation_payload["num_inference_steps"] = 20
+            generation_payload["guidance_scale"] = 6.0
+        
+        print(f"[QUALITY] Quality: {quality}")
+        print(f"[QUALITY] Steps: {generation_payload['num_inference_steps']}, Guidance: {generation_payload['guidance_scale']}")
+        print(f"[QUALITY] Style: {generation_payload['style']}")
+        print(f"[QUALITY] Scheduler: {generation_payload['scheduler']}")
+        
+        headers = {
+            "accept": "application/json",
+            "X-API-Key": api_key,
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            print(f"[SEND] Sending POST request to ElevenLabs API...")
+            
+            # Start generation
+            response = requests.post(
+                generator_info["api_endpoint"],
+                headers=headers,
+                json=generation_payload,
+                timeout=120  # Longer timeout for ElevenLabs
+            )
+            
+            print(f"[OK] Response received: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                # Check if it's a synchronous generation (immediate result)
+                if "images" in result:
+                    # Synchronous generation
+                    images = result["images"]
+                    if images and len(images) > 0:
+                        image_data = images[0]
+                        
+                        # Convert base64 to PIL Image
+                        if "url" in image_data:
+                            # Download the image from URL
+                            img_response = requests.get(image_data["url"], timeout=30)
+                            img_response.raise_for_status()
+                            image = Image.open(io.BytesIO(img_response.content))
+                        elif "image_base64" in image_data:
+                            # Decode base64 image
+                            image_bytes = base64.b64decode(image_data["image_base64"])
+                            image = Image.open(io.BytesIO(image_bytes))
+                        else:
+                            raise ValueError("Unknown image format in response")
+                        
+                        print(f"[OK] ElevenLabs generation completed successfully!")
+                        return image
+                    else:
+                        raise ValueError("No image in response")
+                else:
+                    raise ValueError("Unknown response format")
+            else:
+                print(f"[ERROR] HTTP Error: {response.status_code}")
+                print(f"[ERROR] Response: {response.text}")
+                raise requests.exceptions.HTTPError(f"ElevenLabs API error: {response.status_code}")
+                
+        except Exception as e:
+            print(f"[ERROR] ElevenLabs generation failed: {e}")
+            raise
+    
     def get_generator_recommendations(self) -> Dict[str, str]:
         """Get recommendations for different use cases"""
         return {
@@ -822,5 +1077,7 @@ class ModernGeneratorManager:
             "quality": "dall-e-3 - Best overall quality and natural language understanding",
             "professional": "seedream - Professional-grade results with style control",
             "artistic": "leonardo-api - Great for artistic and creative styles",
+            "photorealistic": "elevenlabs-api - Best for photorealistic and hyperrealistic images",
+            "fast_sdxl": "elevenlabs-api - SDXL Lightning and Turbo models for fast generation",
             "balance": "nano-banana-pro - Best balance of speed and quality"
         }

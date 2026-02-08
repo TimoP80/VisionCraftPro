@@ -286,6 +286,83 @@
                     </div>
                 </div>
 
+                <!-- ElevenLabs Specific Controls -->
+                <div id="elevenlabs-controls" class="hidden mb-6 space-y-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                        <h3 class="text-sm font-semibold mb-3 text-green-300">🎨 ElevenLabs Controls</h3>
+                        
+                        <!-- Model Selection -->
+                        <div>
+                            <label for="elevenlabs-model" class="block text-sm font-medium mb-2 text-green-300">🎭 Model</label>
+                            <select id="elevenlabs-model" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="realistic-vision-v6" selected>Realistic Vision v6 (Photorealistic)</option>
+                                <option value="absolutereality-v1.8.6">Absolute Reality v1.8.6 (Hyperrealistic)</option>
+                                <option value="amazing-realism-v5.2">Amazing Realism v5.2 (Artistic)</option>
+                                <option value="cinematic-v1">Cinematic v1 (Film-like)</option>
+                                <option value="dreamshaper-v8">DreamShaper v8 (Creative)</option>
+                                <option value="fantasy-art-v6">Fantasy Art v6 (Fantasy)</option>
+                                <option value="anime-v3">Anime v3 (Anime Style)</option>
+                                <option value="3d-animation-v2.1">3D Animation v2.1 (3D)</option>
+                                <option value="sdxl-lightning-v1">SDXL Lightning v1 (Fast)</option>
+                                <option value="sdxl-turbo-v1">SDXL Turbo v1 (Optimized)</option>
+                            </select>
+                        </div>
+
+                        <!-- Aspect Ratio -->
+                        <div>
+                            <label for="elevenlabs-aspect" class="block text-sm font-medium mb-2 text-green-300">📐 Aspect Ratio</label>
+                            <select id="elevenlabs-aspect" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="1:1">Square (1024x1024)</option>
+                                <option value="16:9">Widescreen (1344x768)</option>
+                                <option value="9:16">Portrait (768x1344)</option>
+                                <option value="4:3">Standard (1024x768)</option>
+                                <option value="3:4">Vertical (768x1024)</option>
+                                <option value="2:3">Tall (832x1216)</option>
+                                <option value="3:2">Wide (1216x832)</option>
+                            </select>
+                        </div>
+
+                        <!-- Style Preset -->
+                        <div>
+                            <label for="elevenlabs-style" class="block text-sm font-medium mb-2 text-green-300">🎨 Style Preset</label>
+                            <select id="elevenlabs-style" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="photorealistic" selected>Photorealistic</option>
+                                <option value="artistic">Artistic</option>
+                                <option value="cinematic">Cinematic</option>
+                                <option value="fantasy">Fantasy</option>
+                                <option value="anime">Anime</option>
+                                <option value="3d">3D</option>
+                                <option value="oil">Oil Painting</option>
+                                <option value="watercolor">Watercolor</option>
+                                <option value="sketch">Sketch</option>
+                            </select>
+                        </div>
+
+                        <!-- Quality Level -->
+                        <div>
+                            <label for="elevenlabs-quality" class="block text-sm font-medium mb-2 text-green-300">⭐ Quality</label>
+                            <select id="elevenlabs-quality" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="high" selected>High (Balanced)</option>
+                                <option value="ultra">Ultra (Best Quality)</option>
+                                <option value="standard">Standard (Fast)</option>
+                            </select>
+                        </div>
+
+                        <!-- Scheduler -->
+                        <div>
+                            <label for="elevenlabs-scheduler" class="block text-sm font-medium mb-2 text-green-300">⚙️ Scheduler</label>
+                            <select id="elevenlabs-scheduler" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="KLMS" selected>KLMS (Recommended)</option>
+                                <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+                                <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+                                <option value="Euler a">Euler a</option>
+                                <option value="Euler">Euler</option>
+                                <option value="DDIM">DDIM</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <label for="prompt" class="text-sm font-medium text-purple-300">💭 Prompt *</label>
@@ -971,6 +1048,14 @@
                         max_resolution: [1024, 1024],
                         description: 'Professional game asset generator with model selection',
                         type: 'api'
+                    },
+                    'elevenlabs-api': {
+                        name: 'ElevenLabs API',
+                        cost: 'Paid',
+                        speed: 'Fast',
+                        max_resolution: [1024, 1024],
+                        description: 'Advanced AI image generation with multiple SDXL models',
+                        type: 'api'
                     }
                 };
                 updateModelDropdown();
@@ -1044,6 +1129,7 @@
             const selectedModel = modelSelect.value;
             const modelInfo = document.getElementById('model-info');
             const leonardoControls = document.getElementById('leonardo-controls');
+            const elevenlabsControls = document.getElementById('elevenlabs-controls');
             
             // Check if it's a local model
             if (availableModels[selectedModel]) {
@@ -1058,6 +1144,7 @@
                     </div>
                 `;
                 leonardoControls.classList.add('hidden');
+                elevenlabsControls.classList.add('hidden');
             }
             // Check if it's a modern generator
             else if (modernGenerators[selectedModel]) {
@@ -1066,6 +1153,7 @@
                 // Show Leonardo controls if it's Leonardo.ai
                 if (selectedModel === 'leonardo-api') {
                     leonardoControls.classList.remove('hidden');
+                    elevenlabsControls.classList.add('hidden');
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>
@@ -1078,8 +1166,26 @@
                     `;
                     // Update API key status when Leonardo.ai is selected
                     updateApiKeyStatus();
+                }
+                // Show ElevenLabs controls if it's ElevenLabs
+                else if (selectedModel === 'elevenlabs-api') {
+                    elevenlabsControls.classList.remove('hidden');
+                    leonardoControls.classList.add('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: API Generator</p>
+                            <p class="text-green-400">✅ Multiple SDXL models available</p>
+                        </div>
+                    `;
+                    // Update API key status when ElevenLabs is selected
+                    updateApiKeyStatus();
                 } else {
                     leonardoControls.classList.add('hidden');
+                    elevenlabsControls.classList.add('hidden');
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>
@@ -1094,6 +1200,7 @@
             else {
                 modelInfo.innerHTML = '<p class="text-xs text-gray-400">Select a model to see details</p>';
                 leonardoControls.classList.add('hidden');
+                elevenlabsControls.classList.add('hidden');
             }
         }
         
@@ -1305,6 +1412,49 @@
                 }
                 
                 console.log('🎨 Leonardo.ai generation with parameters:', data);
+            }
+            // Add ElevenLabs specific parameters if selected
+            else if (selectedModel === 'elevenlabs-api') {
+                // Get values directly from the select elements
+                const elevenlabsModel = document.getElementById('elevenlabs-model')?.value;
+                const elevenlabsAspect = document.getElementById('elevenlabs-aspect')?.value;
+                const elevenlabsStyle = document.getElementById('elevenlabs-style')?.value;
+                const elevenlabsQuality = document.getElementById('elevenlabs-quality')?.value;
+                const elevenlabsScheduler = document.getElementById('elevenlabs-scheduler')?.value;
+                
+                console.log('🔍 ElevenLabs control values:', {
+                    elevenlabsModel,
+                    elevenlabsAspect,
+                    elevenlabsStyle,
+                    elevenlabsQuality,
+                    elevenlabsScheduler
+                });
+                
+                // Keep the generator as 'elevenlabs-api' and pass the specific model as a parameter
+                data.model = selectedModel; // Keep 'elevenlabs-api' as the generator
+                data.model = elevenlabsModel || 'realistic-vision-v6'; // Pass specific model
+                data.aspect_ratio = elevenlabsAspect || '1:1';
+                data.style = elevenlabsStyle || 'photorealistic';
+                data.quality = elevenlabsQuality || 'high';
+                data.scheduler = elevenlabsScheduler || 'KLMS';
+                
+                // Update width/height based on aspect ratio
+                const aspectRatios = {
+                    '1:1': [1024, 1024],
+                    '16:9': [1344, 768],
+                    '9:16': [768, 1344],
+                    '4:3': [1024, 768],
+                    '3:4': [768, 1024],
+                    '2:3': [832, 1216],
+                    '3:2': [1216, 832]
+                };
+                
+                const ratio = data.aspect_ratio;
+                if (aspectRatios[ratio]) {
+                    [data.width, data.height] = aspectRatios[ratio];
+                }
+                
+                console.log('🎨 ElevenLabs generation with parameters:', data);
             } else {
                 console.log('🏠 Local model generation with parameters:', data);
             }
