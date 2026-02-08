@@ -388,12 +388,41 @@ async def generate_image(request: GenerationRequest):
     """Generate image from text prompt"""
     start_time = time.time()
     
-    if generator.current_generator_type == "modern":
-        # Use modern generator
-        return await generator._generate_with_modern_async(request, start_time)
-    else:
-        # Use local model
-        return generator._generate_with_local(request, start_time)
+    try:
+        # Validate input
+        if not request.prompt or request.prompt.strip() == "":
+            raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+        
+        if not request.model:
+            raise HTTPException(status_code=400, detail="Model must be specified")
+        
+        print(f"[GENERATE] Starting generation with model: {request.model}")
+        print(f"[GENERATE] Prompt: {request.prompt[:100]}...")
+        
+        # Load the requested model if not already loaded
+        if not generator.model_loaded or generator.current_model != request.model:
+            print(f"[GENERATE] Loading model: {request.model}")
+            if not generator.load_model(request.model):
+                raise HTTPException(status_code=400, detail=f"Failed to load model: {request.model}")
+        
+        if generator.current_generator_type == "modern":
+            # Use modern generator
+            print(f"[GENERATE] Using modern generator: {generator.current_model}")
+            return await generator._generate_with_modern_async(request, start_time)
+        else:
+            # Use local model
+            print(f"[GENERATE] Using local generator: {generator.current_model}")
+            return generator._generate_with_local(request, start_time)
+            
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Catch any other exceptions and return a proper error response
+        print(f"[ERROR] Generation failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 @app.post("/enhance-prompt")
 async def enhance_prompt(request: dict):

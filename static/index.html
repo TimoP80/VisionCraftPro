@@ -1245,6 +1245,13 @@
                 return;
             }
             
+            // Validate prompt
+            const prompt = formData.get('prompt');
+            if (!prompt || prompt.trim() === '') {
+                alert('Please enter a prompt before generating.');
+                return;
+            }
+            
             // Base data for all models
             let data = {
                 prompt: formData.get('prompt'),
@@ -1323,7 +1330,22 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('HTTP error:', response.status, errorText);
+                    
+                    // Try to parse as JSON for more detailed error
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.detail || errorMessage;
+                    } catch (e) {
+                        // If not JSON, use the raw text
+                        if (errorText) {
+                            errorMessage = `Server error: ${errorText}`;
+                        }
+                    }
+                    
+                    throw new Error(errorMessage);
                 }
 
                 const result = await response.json();
@@ -1342,7 +1364,20 @@
                 
             } catch (error) {
                 console.error('Generation failed:', error);
-                alert('Generation failed: ' + error.message);
+                
+                // Show user-friendly error message
+                let errorMessage = error.message;
+                
+                // Provide helpful suggestions based on common errors
+                if (errorMessage.includes('Failed to load model')) {
+                    errorMessage += '\n\nSuggestions:\n- Try selecting a different model\n- Check if the model is properly configured\n- Restart the application if needed';
+                } else if (errorMessage.includes('API key')) {
+                    errorMessage += '\n\nSuggestions:\n- Check your API key configuration\n- Ensure the API key is valid and has credits';
+                } else if (errorMessage.includes('CUDA') || errorMessage.includes('VRAM')) {
+                    errorMessage += '\n\nSuggestions:\n- Try using a smaller image size\n- Close other applications using GPU memory\n- Try using CPU-only mode if available';
+                }
+                
+                alert('Generation failed: ' + errorMessage);
                 document.getElementById('loading').classList.add('hidden');
             } finally {
                 clearInterval(timeInterval);
