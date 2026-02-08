@@ -49,24 +49,27 @@ class ModernGeneratorManager:
             "models": {
                 "phoenix-1-0": {
                     "id": None,
-                    "name": "Leonardo Phoenix (LEONARDO Style)",
-                    "description": "Leonardo's optimized preset style with SD 1.5",
+                    "name": "Leonardo Phoenix Enhanced",
+                    "description": "Optimized SD 1.5 with LEONARDO preset (best available with current plan)",
                     "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "note": "Requires higher-tier subscription for true Phoenix models"
                 },
                 "phoenix-0-9": {
                     "id": None,
-                    "name": "Leonardo Legacy",
-                    "description": "Legacy Leonardo model",
+                    "name": "Leonardo Legacy Enhanced",
+                    "description": "Enhanced SD 1.5 with optimizations",
                     "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "note": "Legacy model with enhanced prompt engineering"
                 },
                 "universal": {
                     "id": None,
-                    "name": "Universal",
-                    "description": "Universal model for all image types",
+                    "name": "Universal Enhanced",
+                    "description": "Universal model with advanced prompt optimization",
                     "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"]
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "note": "Optimized for all content types"
                 }
             },
             "preset_styles": [
