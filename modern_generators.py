@@ -254,6 +254,28 @@ class ModernGeneratorManager:
             print(f"[ERROR] DALL-E 3 generation failed: {e}")
             raise
     
+    def _enhance_prompt_for_leonardo(self, prompt: str) -> str:
+        """Enhance prompt for better Leonardo.ai quality"""
+        # Add quality terms if not already present
+        quality_terms = ["high quality", "detailed", "photorealistic", "8k", "professional"]
+        prompt_lower = prompt.lower()
+        
+        # Check if quality terms are already present
+        has_quality = any(term in prompt_lower for term in quality_terms)
+        
+        if not has_quality:
+            # Add appropriate quality terms based on prompt content
+            if "woman" in prompt_lower or "person" in prompt_lower or "man" in prompt_lower:
+                prompt += ", photorealistic, high quality, detailed, 8k resolution, professional photography"
+            elif "landscape" in prompt_lower or "nature" in prompt_lower:
+                prompt += ", highly detailed, beautiful landscape, professional photography, 8k"
+            elif "anime" in prompt_lower or "manga" in prompt_lower:
+                prompt += ", high quality anime, detailed, vibrant colors, professional art"
+            else:
+                prompt += ", high quality, detailed, professional"
+        
+        return prompt
+    
     async def generate_with_leonardo(self, prompt: str, **kwargs) -> Image.Image:
         """Generate image using Leonardo.ai API"""
         print(f"[ART] Leonardo.ai generation with {prompt[:100]}...")
@@ -273,6 +295,12 @@ class ModernGeneratorManager:
             raise ValueError("Leonardo.ai API key appears to be corrupted with system output. Please reset your API key.")
         
         print(f"API key found: {'*' * 10}{api_key[-4:]}")
+        
+        # Enhance prompt for better quality
+        enhanced_prompt = self._enhance_prompt_for_leonardo(prompt)
+        print(f"[PROMPT] Enhanced: {enhanced_prompt[:100]}...")
+        
+        # ... rest of the function continues ...
         
         headers = {
             "accept": "application/json",
@@ -314,17 +342,28 @@ class ModernGeneratorManager:
         width, height = resolution
         print(f"[SEARCH] Resolution: {width}x{height}")
         
-        # Build generation payload according to official docs - without webhook
+        # Build generation payload with premium quality settings
         generation_payload = {
-            "prompt": prompt,
+            "prompt": enhanced_prompt,  # Use enhanced prompt
             "width": width,
             "height": height,
             "num_images": 1,
-            "alchemy": False,
-            "ultra": kwargs.get("quality", "standard") == "ultra",
-            "contrast": kwargs.get("contrast", 3.5),  # Valid values: 3, 3.5, 4
-            "negative_prompt": kwargs.get("negative_prompt", "")
+            "alchemy": kwargs.get("quality", "high") == "ultra",  # Enable alchemy for ultra quality
+            "ultra": kwargs.get("quality", "high") == "ultra",     # Enable ultra for best quality
+            "contrast": kwargs.get("contrast", 4.0),              # Higher contrast for better quality
+            "negative_prompt": kwargs.get("negative_prompt", ""),
+            "num_inference_steps": kwargs.get("num_inference_steps", 30),  # More steps for better quality
+            "guidance_scale": kwargs.get("guidance_scale", 8.0)   # Higher guidance for better prompt adherence
         }
+        
+        # Add preset style if specified and valid
+        preset_style = kwargs.get("preset_style", "CREATIVE")
+        valid_styles = ["CREATIVE", "DYNAMIC", "CINEMATIC", "FANTASY_ART", "ANIME", "COMIC_BOOK"]
+        if preset_style in valid_styles:
+            generation_payload["presetStyle"] = preset_style
+            print(f"[STYLE] Applying preset style: {preset_style}")
+        else:
+            print(f"[STYLE] Invalid style {preset_style}, using default")
         
         # Only add modelId if it's not None (let Leonardo choose default model)
         if model_info["id"] is not None:
@@ -333,16 +372,9 @@ class ModernGeneratorManager:
         else:
             print(f"[SEARCH] Using Leonardo default model (no modelId specified)")
         
-        # Only add optional parameters if they might be causing issues
-        if kwargs.get("guidance_scale", 7.5) != 7.5:
-            generation_payload["guidance_scale"] = kwargs.get("guidance_scale")
-        if kwargs.get("num_inference_steps", 15) != 15:
-            generation_payload["num_inference_steps"] = kwargs.get("num_inference_steps")
-        
-        # Note: preset_style is not being used in the payload for now
-        # Leonardo.ai requires specific styleUUIDs which need to be fetched from their API
-        preset_style = kwargs.get("preset_style", "CREATIVE")
-        print(f"[STYLE] Preset style selected: {preset_style} (not applied to payload)")
+        print(f"[QUALITY] Quality settings: ultra={generation_payload['ultra']}, alchemy={generation_payload['alchemy']}")
+        print(f"[QUALITY] Steps: {generation_payload['num_inference_steps']}, Guidance: {generation_payload['guidance_scale']}")
+        print(f"[QUALITY] Contrast: {generation_payload['contrast']}")
         
         print(f"[SEARCH] Final payload: {json.dumps(generation_payload, indent=2)}")
         
