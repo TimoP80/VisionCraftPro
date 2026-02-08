@@ -158,3 +158,16 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# API Keys and Secrets
+api_keys.json
+*.key
+*.pem
+*.p12
+.secrets
+.env.local
+.env.production
+
+# Test outputs
+test_*.png
+hf_test_*.png
