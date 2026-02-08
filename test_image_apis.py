@@ -37,7 +37,7 @@ def test_replicate_api():
         "Content-Type": "application/json"
     }
     
-    # Test with FLUX.1-schnell (fast, affordable)
+    # Test with FLUX.1-schnell (correct version)
     payload = {
         "version": "5599ed30703defd1d160a25a63326b5c3687e7eda6d971825cb8ec9185570756",
         "input": {
@@ -193,7 +193,7 @@ def test_huggingface_api():
     try:
         print("🧪 Testing Stable Diffusion XL...")
         response = requests.post(
-            "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+            "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
             headers=headers,
             json=payload,
             timeout=60
