@@ -256,8 +256,8 @@ class ModernGeneratorManager:
     
     def _enhance_prompt_for_leonardo(self, prompt: str) -> str:
         """Enhance prompt for better Leonardo.ai quality"""
-        # Add quality terms if not already present
-        quality_terms = ["high quality", "detailed", "photorealistic", "8k", "professional"]
+        # Add comprehensive quality terms if not already present
+        quality_terms = ["high quality", "detailed", "photorealistic", "8k", "professional", "sharp", "well-defined"]
         prompt_lower = prompt.lower()
         
         # Check if quality terms are already present
@@ -265,14 +265,14 @@ class ModernGeneratorManager:
         
         if not has_quality:
             # Add appropriate quality terms based on prompt content
-            if "woman" in prompt_lower or "person" in prompt_lower or "man" in prompt_lower:
-                prompt += ", photorealistic, high quality, detailed, 8k resolution, professional photography"
+            if "woman" in prompt_lower or "person" in prompt_lower or "man" in prompt_lower or "portrait" in prompt_lower:
+                prompt += ", photorealistic, high quality, detailed, sharp focus, well-defined, 8k resolution, professional photography, cinematic lighting"
             elif "landscape" in prompt_lower or "nature" in prompt_lower:
-                prompt += ", highly detailed, beautiful landscape, professional photography, 8k"
+                prompt += ", highly detailed, beautiful landscape, professional photography, 8k, sharp, vibrant colors, well-defined"
             elif "anime" in prompt_lower or "manga" in prompt_lower:
-                prompt += ", high quality anime, detailed, vibrant colors, professional art"
+                prompt += ", high quality anime, detailed, vibrant colors, professional art, sharp, well-defined"
             else:
-                prompt += ", high quality, detailed, professional"
+                prompt += ", high quality, detailed, professional, sharp, well-defined, photorealistic"
         
         return prompt
     
@@ -348,12 +348,12 @@ class ModernGeneratorManager:
             "width": width,
             "height": height,
             "num_images": 1,
-            "alchemy": kwargs.get("quality", "high") == "ultra",  # Enable alchemy for ultra quality
-            "ultra": kwargs.get("quality", "high") == "ultra",     # Enable ultra for best quality
-            "contrast": kwargs.get("contrast", 4.0),              # Higher contrast for better quality
+            "alchemy": False,  # Disable alchemy for default model compatibility
+            "ultra": False,    # Disable ultra for default model compatibility
+            "contrast": kwargs.get("contrast", 3.5),  # Use standard contrast
             "negative_prompt": kwargs.get("negative_prompt", ""),
-            "num_inference_steps": kwargs.get("num_inference_steps", 30),  # More steps for better quality
-            "guidance_scale": kwargs.get("guidance_scale", 8.0)   # Higher guidance for better prompt adherence
+            "num_inference_steps": kwargs.get("num_inference_steps", 25),  # Good step count
+            "guidance_scale": kwargs.get("guidance_scale", 7.5)   # Standard guidance
         }
         
         # Add preset style if specified and valid
@@ -375,6 +375,7 @@ class ModernGeneratorManager:
         print(f"[QUALITY] Quality settings: ultra={generation_payload['ultra']}, alchemy={generation_payload['alchemy']}")
         print(f"[QUALITY] Steps: {generation_payload['num_inference_steps']}, Guidance: {generation_payload['guidance_scale']}")
         print(f"[QUALITY] Contrast: {generation_payload['contrast']}")
+        print(f"[QUALITY] Note: Using enhanced prompt and preset styles for quality instead of ultra/alchemy")
         
         print(f"[SEARCH] Final payload: {json.dumps(generation_payload, indent=2)}")
         
