@@ -1,0 +1,2715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionCraft Pro - Professional AI Image Generator</title>
+    <meta name="description" content="Professional AI image generator with multiple models including Leonardo.ai, Replicate, and free options">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Local CSS for production -->
+    <link rel="stylesheet" href="/static/styles.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🆓 Puter.js - FREE Premium Image Generation -->
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        /* Custom styles for enhanced visuals */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            z-index: -1;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+        
+        /* Glass morphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Gradient buttons */
+        .gradient-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .gradient-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Card animations */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Input enhancements */
+        .enhanced-input {
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid rgba(75, 85, 99, 0.5);
+            transition: all 0.2s ease;
+        }
+        
+        .enhanced-input:focus {
+            background: rgba(55, 65, 81, 0.8);
+            border-color: rgba(147, 51, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+        }
+        
+        .enhanced-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Select dropdown styling */
+        .enhanced-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .enhanced-select option {
+            background: #374151;
+            color: #ffffff;
+        }
+        
+        /* Loading animation */
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #9333ea;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Ensure all inputs have proper contrast */
+        input[type="text"], 
+        input[type="number"], 
+        textarea, 
+        select {
+            background: rgba(55, 65, 81, 0.5) !important;
+            border: 1px solid rgba(75, 85, 99, 0.5) !important;
+            color: #ffffff !important;
+        }
+        
+        input[type="text"]:focus, 
+        input[type="number"]:focus, 
+        textarea:focus, 
+        select:focus {
+            background: rgba(55, 65, 81, 0.8) !important;
+            border-color: rgba(147, 51, 234, 0.5) !important;
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1) !important;
+        }
+        
+        input[type="text"]::placeholder, 
+        input[type="number"]::placeholder, 
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        select option {
+            background: #374151 !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="mb-4">
+                <img src="/static/logo.png" alt="VisionCraft Pro Logo" class="h-48 w-auto max-w-full mx-auto drop-shadow-lg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'; console.error('Logo failed to load');">
+                <div class="text-4xl mb-2" style="display: none;">🎨</div>
+            </div>
+            <h1 class="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                VisionCraft Pro
+            </h1>
+            <p class="text-xl text-gray-200">Professional AI-Powered Image Generation</p>
+        </header>
+
+        <!-- System Status -->
+        <div class="glass rounded-xl p-6 mb-8 card-hover">
+            <h2 class="text-2xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                🚀 System Status
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg p-4 border border-green-400/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-green-300 font-medium">Device</span>
+                        <span class="status-online w-3 h-3 rounded-full"></span>
+                    </div>
+                    <p id="device" class="text-lg font-semibold text-white">Loading...</p>
+                </div>
+                <div class="bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg p-4 border border-blue-400/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-blue-300 font-medium">VRAM Usage</span>
+                        <span class="status-gpu w-3 h-3 rounded-full"></span>
+                    </div>
+                    <p id="vram-used" class="text-lg font-semibold text-white">Loading...</p>
+                </div>
+                <div class="bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg p-4 border border-purple-400/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-purple-300 font-medium">GPU</span>
+                        <span class="w-3 h-3 rounded-full bg-purple-400"></span>
+                    </div>
+                    <p id="gpu-name" class="text-lg font-semibold text-white">Detecting...</p>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-400/20">
+                <p id="gpu-compatibility" class="text-sm"></p>
+            </div>
+        </div>
+
+        <!-- Generation Form -->
+        <div class="glass rounded-xl p-6 mb-8 card-hover">
+            <h2 class="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                ✨ Generate Image
+            </h2>
+            
+            <!-- Quality Tips -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                <p class="text-sm text-blue-200">
+                    <strong>💡 Quality Tips:</strong> Use 25-30 steps for best quality. Add "photorealistic, highly detailed, 8k" to prompts for sharper images.
+                </p>
+            </div>
+            
+            <form id="generation-form">
+                <!-- Model Selection -->
+                <div class="mb-6">
+                    <label for="model" class="block text-sm font-medium mb-2 text-purple-300">🎨 Model</label>
+                    <select 
+                        id="model" 
+                        name="model" 
+                        class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none"
+                    >
+                        <option value="stable-diffusion-1.5">Stable Diffusion 1.5</option>
+                    </select>
+                    <div id="model-info" class="mt-2 text-xs text-gray-400"></div>
+                </div>
+
+                <!-- Leonardo.ai Specific Controls -->
+                <div id="leonardo-controls" class="hidden mb-6 space-y-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                        <h3 class="text-sm font-semibold mb-3 text-blue-300">🚀 Leonardo.ai Controls</h3>
+                        
+                        <!-- API Key Status -->
+                        <div id="api-key-status" class="mb-4 p-3 bg-gray-700/50 rounded border border-gray-600">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-purple-300">🔑 API Key Status</span>
+                                <button 
+                                    id="set-api-key-btn"
+                                    class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs font-medium transition-all duration-200"
+                                >
+                                    Set API Key
+                                </button>
+                                <button 
+                                    onclick="refreshApiKeyStatus()"
+                                    class="px-3 py-1 bg-orange-500 hover:bg-orange-600 rounded text-xs font-medium transition-all duration-200 ml-2"
+                                >
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                            <div id="api-key-display" class="text-xs text-gray-400 mt-2">
+                                No API key set
+                            </div>
+                        </div>
+                        
+                        <!-- Model Selection -->
+                        <div>
+                            <label for="leonardo-model" class="block text-sm font-medium mb-2 text-purple-300">🎭 Model</label>
+                            <select id="leonardo-model" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="phoenix-1-0">Leonardo Phoenix Enhanced (Best Available)</option>
+                                <option value="phoenix-0-9">Leonardo Legacy Enhanced</option>
+                                <option value="universal">Universal Enhanced</option>
+                            </select>
+                        </div>
+
+                        <!-- Aspect Ratio -->
+                        <div>
+                            <label for="leonardo-aspect" class="block text-sm font-medium mb-2 text-purple-300">📐 Aspect Ratio</label>
+                            <select id="leonardo-aspect" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="1:1">Square (1024x1024)</option>
+                                <option value="16:9">Widescreen (1344x768)</option>
+                                <option value="9:16">Portrait (768x1344)</option>
+                                <option value="4:3">Standard (1024x768)</option>
+                                <option value="3:4">Vertical (768x1024)</option>
+                                <option value="2:3">Tall (832x1216)</option>
+                                <option value="3:2">Wide (1216x832)</option>
+                            </select>
+                        </div>
+
+                        <!-- Preset Style -->
+                        <div>
+                            <label for="leonardo-style" class="block text-sm font-medium mb-2 text-purple-300">🎨 Style</label>
+                            <select id="leonardo-style" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="LEONARDO" selected>Leonardo (Best Quality)</option>
+                                <option value="CREATIVE">Creative</option>
+                                <option value="DYNAMIC">Dynamic</option>
+                                <option value="CINEMATIC">Cinematic</option>
+                                <option value="FANTASY_ART">Fantasy Art</option>
+                                <option value="ANIME">Anime</option>
+                                <option value="COMIC_BOOK">Comic Book</option>
+                                <option value="ILLUSTRATION">Illustration</option>
+                            </select>
+                        </div>
+
+                        <!-- Quality Level -->
+                        <div>
+                            <label for="leonardo-quality" class="block text-sm font-medium mb-2 text-purple-300">⭐ Quality</label>
+                            <select id="leonardo-quality" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="high" selected>High (Balanced)</option>
+                                <option value="ultra">Ultra (Best Quality)</option>
+                                <option value="standard">Standard (Fast)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🆓 Puter.com Specific Controls (FREE!) -->
+                <div id="puter-controls" class="hidden mb-6 space-y-4">
+                    <div class="bg-green-800/50 rounded-lg p-4 border border-green-700">
+                        <h3 class="text-sm font-semibold mb-3 text-green-300">🆓 Puter.com Controls (FREE!)</h3>
+                        
+                        <!-- Model Selection -->
+                        <div>
+                            <label for="puter-model" class="block text-sm font-medium mb-2 text-green-300">🎭 Model</label>
+                            <select id="puter-model" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="dall-e-3" selected>🔥 DALL-E 3 (Best Quality)</option>
+                                <option value="gpt-image-1.5">💎 GPT Image 1.5 (OpenAI)</option>
+                                <option value="gemini-2.5-flash-image-preview">🧠 Gemini 2.5 Flash (Google)</option>
+                            </select>
+                        </div>
+
+                        <!-- Quality Settings -->
+                        <div>
+                            <label for="puter-quality" class="block text-sm font-medium mb-2 text-green-300">⭐ Quality</label>
+                            <select id="puter-quality" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="standard" selected>Standard (DALL-E 3)</option>
+                                <option value="hd">HD (DALL-E 3)</option>
+                                <option value="medium">Medium (GPT Image)</option>
+                                <option value="high">High (GPT Image)</option>
+                                <option value="low">Low (GPT Image)</option>
+                            </select>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-green-900/30 rounded-lg border border-green-600">
+                            <p class="text-xs text-green-300 font-semibold">✨ FREE PREMIUM ACCESS!</p>
+                            <p class="text-xs text-green-200">No API keys • No rate limits • No signup required</p>
+                            <button onclick="refreshApiKeyStatus()" class="mt-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold transition-colors">
+                                🔄 Refresh Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="prompt" class="text-sm font-medium text-purple-300">💭 Prompt *</label>
+                        <button 
+                            type="button"
+                            id="enhance-prompt-btn"
+                            class="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1"
+                        >
+                            <span>✨</span>
+                            <span>Enhance with AI</span>
+                        </button>
+                    </div>
+                    <textarea 
+                        id="prompt" 
+                        name="prompt" 
+                        rows="3" 
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="A beautiful landscape with mountains and a lake..."
+                        required
+                    ></textarea>
+                    
+                    <!-- Advanced Enhancement Panel -->
+                    <div id="enhanced-prompt-panel" class="hidden mt-4 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-400/30">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold text-purple-300">✨ AI Prompt Enhancement</h3>
+                            <button id="close-enhancement-panel" class="text-gray-400 hover:text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Style Selection -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-purple-300 mb-2">🎨 Enhancement Style</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="photorealistic">
+                                    📸 Photorealistic
+                                </button>
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="artistic">
+                                    🎨 Artistic
+                                </button>
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="cinematic">
+                                    🎬 Cinematic
+                                </button>
+                                <button class="enhance-style-btn px-3 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg text-xs font-medium transition-colors border border-purple-400/30" data-style="anime">
+                                    🌸 Anime
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Detail Level -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-purple-300 mb-2">⚡ Detail Level</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button class="detail-level-btn px-3 py-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg text-xs font-medium transition-colors border border-blue-400/30" data-level="low">
+                                    Low
+                                </button>
+                                <button class="detail-level-btn px-3 py-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg text-xs font-medium transition-colors border border-blue-400/30 selected" data-level="medium">
+                                    Medium
+                                </button>
+                                <button class="detail-level-btn px-3 py-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg text-xs font-medium transition-colors border border-blue-400/30" data-level="high">
+                                    High
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced Results -->
+                        <div id="enhanced-results" class="space-y-3">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="mb-4">
+                    <label for="negative_prompt" class="block text-sm font-medium mb-2 text-purple-300">🚫 Negative Prompt</label>
+                    <textarea 
+                        id="negative_prompt" 
+                        name="negative_prompt" 
+                        rows="2" 
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="blurry, low quality, distorted..."
+                    ></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="aspect_ratio" class="block text-sm font-medium mb-2 text-purple-300">📐 Aspect Ratio</label>
+                        <select 
+                            id="aspect_ratio" 
+                            name="aspect_ratio" 
+                            class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="1:1">1:1 (Square)</option>
+                            <option value="16:9">16:9 (Landscape)</option>
+                            <option value="9:16">9:16 (Portrait)</option>
+                            <option value="4:3">4:3 (Landscape)</option>
+                            <option value="3:4">3:4 (Portrait)</option>
+                            <option value="2:3">2:3 (Portrait)</option>
+                            <option value="3:2">3:2 (Landscape)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="resolution" class="block text-sm font-medium mb-2 text-purple-300">📏 Resolution</label>
+                        <select 
+                            id="resolution" 
+                            name="resolution" 
+                            class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="512x512">512x512 (Fast)</option>
+                            <option value="768x768">768x768 (Medium)</option>
+                            <option value="1024x1024">1024x1024 (High Quality)</option>
+                            <option value="1536x1536">1536x1536 (Ultra HD)</option>
+                            <option value="2048x2048">2048x2048 (4K)</option>
+                        </select>
+                    </div>
+                </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="steps" class="block text-sm font-medium mb-2 text-purple-300">⚡ Steps</label>
+                            <input 
+                                type="number" 
+                                id="steps" 
+                                name="num_inference_steps" 
+                                min="1" 
+                                max="50" 
+                                value="25"
+                                class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            >
+                        </div>
+                        <div>
+                            <label for="guidance" class="block text-sm font-medium mb-2 text-purple-300">🎯 Guidance</label>
+                            <input 
+                                type="number" 
+                                id="guidance" 
+                                name="guidance_scale" 
+                                min="0" 
+                                max="20" 
+                                step="0.5"
+                                value="7.5"
+                                class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label for="width" class="block text-sm font-medium mb-2 text-purple-300">📐 Width</label>
+                        <select id="width" name="width" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024">1024px</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="height" class="block text-sm font-medium mb-2 text-purple-300">📐 Height</label>
+                        <select id="height" name="height" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024">1024px</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="seed" class="block text-sm font-medium mb-2 text-purple-300">🎲 Seed</label>
+                        <input 
+                            type="number" 
+                            id="seed" 
+                            name="seed" 
+                            value="-1"
+                            class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                            placeholder="-1 for random"
+                        >
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="generate-btn"
+                    class="w-full gradient-btn text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-200 flex items-center justify-center gap-2"
+                >
+                    <span>🎨 Generate Image</span>
+                </button>
+            </form>
+
+            <!-- Batch Generation Section -->
+            <div id="batch-section" class="mt-6 bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 hidden">
+                <h3 class="text-lg font-semibold text-blue-300 mb-4">🚀 Batch Generation</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Batch Prompts (one per line)</label>
+                    <textarea 
+                        id="batch-prompts" 
+                        rows="6" 
+                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter multiple prompts, one per line...&#10;a beautiful sunset over mountains&#10;a futuristic city at night&#10;a magical forest with glowing trees"
+                    ></textarea>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button 
+                        type="button" 
+                        id="start-batch-btn"
+                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                    >
+                        🚀 Start Batch Generation
+                    </button>
+                    <button 
+                        type="button" 
+                        id="clear-batch-btn"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                    >
+                        🗑️ Clear
+                    </button>
+                </div>
+                
+                <!-- Batch Progress -->
+                <div id="batch-progress" class="mt-4 hidden">
+                    <div class="bg-gray-700 rounded-full h-3 mb-2">
+                        <div id="batch-progress-bar" class="bg-green-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        <span id="batch-status-text">Starting batch generation...</span>
+                        <span id="batch-count-text" class="float-right">0 / 0</span>
+                    </div>
+                </div>
+                
+                <!-- Batch Results -->
+                <div id="batch-results" class="mt-4 hidden">
+                    <h4 class="text-md font-semibold text-blue-300 mb-2">📊 Batch Results</h4>
+                    <div id="batch-results-grid" class="grid grid-cols-2 gap-4">
+                        <!-- Results will be added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Image Reference Section -->
+            <div id="reference-section" class="mt-6 bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 hidden">
+                <h3 class="text-lg font-semibold text-blue-300 mb-4">🖼️ Image Reference Generation</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Reference Image</label>
+                    <div class="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                        <input 
+                            type="file" 
+                            id="reference-image-input" 
+                            accept="image/*" 
+                            class="hidden"
+                        >
+                        <label for="reference-image-input" class="cursor-pointer">
+                            <div id="reference-preview" class="mb-2">
+                                <span class="text-gray-400">📁 Click to upload reference image</span>
+                            </div>
+                            <span class="text-sm text-gray-400">Supports JPG, PNG, WebP</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Prompt</label>
+                    <textarea 
+                        id="reference-prompt" 
+                        rows="3" 
+                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Describe what you want to generate using the reference image style..."
+                    ></textarea>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="generate-reference-btn"
+                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                >
+                    🎨 Generate with Reference
+                </button>
+            </div>
+            
+            <!-- Mode Toggle -->
+            <div class="mt-6 flex gap-4">
+                <button 
+                    type="button" 
+                    id="single-mode-btn"
+                    class="flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                >
+                    🎨 Single Generation
+                </button>
+                <button 
+                    type="button" 
+                    id="batch-mode-btn"
+                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                >
+                    🚀 Batch Generation
+                </button>
+                <button 
+                    type="button" 
+                    id="reference-mode-btn"
+                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                >
+                    🖼️ Reference Generation
+                </button>
+            </div>
+            <div id="loading" class="mt-6 bg-gray-800/50 rounded-lg p-6 border border-gray-700/50" style="display: none; position: relative; z-index: 10; opacity: 1;">
+                <div class="flex items-center justify-center gap-4">
+                    <div class="loading-spinner"></div>
+                    <span class="text-lg font-semibold text-blue-300">Generating masterpiece...</span>
+                </div>
+                <div class="mt-4">
+                    <div class="text-center text-sm text-gray-300 mb-2">
+                        <span class="text-purple-300">⏱️ Generation Time: </span>
+                        <span id="loading-time" class="font-mono text-blue-300">0.0s</span>
+                    </div>
+                    <div class="bg-gray-700 rounded-full h-3">
+                        <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center text-xs text-gray-400 mt-2">
+                        <span id="loading-status">Initializing...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result -->
+            <div id="result" class="hidden mt-6">
+                <div class="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg p-4 border border-green-400/30">
+                    <h3 class="text-lg font-semibold mb-2 text-green-300">✅ Generation Complete!</h3>
+                    <p class="text-sm text-gray-300 mb-4">
+                        Time: <span id="generation-time">0</span>s | 
+                        VRAM: <span id="generation-vram">0</span>GB
+                    </p>
+                    <img id="generated-image" class="w-full rounded-lg shadow-lg" alt="Generated image">
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <button 
+                        id="download-btn"
+                        class="gradient-btn text-white font-bold py-2 px-6 rounded-lg transition duration-200 flex items-center gap-2"
+                    >
+                        <span>💾 Download Image</span>
+                    </button>
+                    <button 
+                        id="new-generation-btn"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200"
+                    >
+                        🔄 Generate Another
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery Section -->
+        <div class="glass rounded-xl p-6 card-hover">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                    🖼️ Image Gallery
+                </h2>
+                <div class="flex gap-3">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="🔍 Search prompts..."
+                        class="px-4 py-2 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none w-64"
+                    >
+                    <button 
+                        id="search-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <span>🔍</span>
+                        <span>Search</span>
+                    </button>
+                    <button 
+                        id="refresh-gallery-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <span>🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Gallery Stats -->
+            <div id="gallery-stats" class="mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-400/30">
+                <div class="flex items-center justify-center gap-6 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span>📸</span>
+                        <span class="text-purple-300">Images:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>💾</span>
+                        <span class="text-purple-300">Storage:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>⚡</span>
+                        <span class="text-purple-300">Avg Time:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>🎨</span>
+                        <span class="text-purple-300">Models:</span>
+                        <span class="font-semibold text-white">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gallery Grid -->
+            <div id="gallery-grid" class="gallery-grid">
+                <!-- Gallery items will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content rounded-xl max-w-5xl max-h-full overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="modal-title" class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                        🎨 Image Details
+                    </h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <img id="modal-image" class="w-full rounded-lg mb-6 shadow-2xl" src="" alt="">
+                <div id="modal-details" class="text-sm text-gray-300 space-y-4">
+                    <!-- Details will be populated here -->
+                </div>
+                <div class="mt-6 flex gap-4">
+                    <button id="download-btn" class="gradient-btn text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>💾</span>
+                        <span>Download</span>
+                    </button>
+                    <button id="delete-btn" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>🗑️</span>
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = ''; // Base URL for API calls
+        
+        // Make refreshApiKeyStatus globally accessible
+        window.refreshApiKeyStatus = function() {
+            console.log('🔄 Force refreshing API key status...');
+            updateApiKeyStatus();
+        };
+        
+        // Load gallery
+        async function loadGallery() {
+            try {
+                const response = await fetch(`${API_BASE}/gallery`);
+                const data = await response.json();
+                gallery = data.images;
+                
+                // Update stats
+                updateGalleryStats(data.stats);
+                
+                // Render gallery
+                renderGallery();
+                
+            } catch (error) {
+                console.error('Failed to load gallery:', error);
+                document.getElementById('gallery-stats').innerHTML = '❌ Failed to load gallery';
+            }
+        }
+
+        // Update gallery stats
+        function updateGalleryStats(stats) {
+            const statsElement = document.getElementById('gallery-stats');
+            const totalSize = stats.total_size_mb || (stats.total_size ? (stats.total_size / 1024 / 1024).toFixed(2) : '0');
+            const avgTime = stats.avg_generation_time || 'N/A';
+            const modelsUsed = stats.models_used ? stats.models_used.length : 0;
+            
+            statsElement.innerHTML = `
+                📸 ${stats.total_images || 0} images | 
+                💾 ${totalSize}MB | 
+                ⚡ ${avgTime}s avg | 
+                🎨 ${modelsUsed} models
+            `;
+        }
+
+        // Render gallery
+        function renderGallery(imagesToRender = gallery) {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            if (imagesToRender.length === 0) {
+                grid.innerHTML = `
+                    <div class="gallery-empty">
+                        <i class="fas fa-images"></i>
+                        <h3>No images in gallery yet</h3>
+                        <p>Generate some images to see them here!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            imagesToRender.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.onclick = () => openImageModal(item.id);
+                
+                div.innerHTML = `
+                    <img src="" alt="${item.prompt || 'Generated image'}" loading="lazy">
+                    <div class="gallery-item-content">
+                        <div class="gallery-item-title">${item.prompt || 'Generated image'}</div>
+                        <div class="gallery-item-meta">
+                            <span class="gallery-item-model">${item.model || 'Unknown'}</span>
+                            <span class="gallery-item-time">${item.generation_time ? item.generation_time.toFixed(1) + 's' : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Load image thumbnail
+                loadGalleryImage(item.id, div.querySelector('img'));
+                
+                grid.appendChild(div);
+            });
+        }
+
+        // Load gallery image
+        async function loadGalleryImage(imageId, imgElement) {
+            try {
+                const response = await fetch(`${API_BASE}/gallery/${imageId}`);
+                const data = await response.json();
+                imgElement.src = `data:image/png;base64,${data.image}`;
+            } catch (error) {
+                console.error('Failed to load image:', error);
+                imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzM3NDE1MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+RmFpbGVkIHRvIGxvYWQ8L3RleHQ+PC9zdmc+';
+            }
+        }
+
+        // Open image modal
+        async function openImageModal(imageId) {
+            try {
+                // Check if modal elements exist
+                const modal = document.getElementById('image-modal');
+                const modalImage = document.getElementById('modal-image');
+                const modalDetails = document.getElementById('modal-details');
+                
+                console.log('🔍 Modal elements found:', {
+                    modal: !!modal,
+                    modalImage: !!modalImage,
+                    modalDetails: !!modalDetails
+                });
+                
+                if (!modal || !modalImage || !modalDetails) {
+                    console.error('Modal elements not found:', {
+                        modal: !!modal,
+                        modalImage: !!modalImage,
+                        modalDetails: !!modalDetails
+                    });
+                    alert('Image modal not available. Please refresh the page.');
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/gallery/${imageId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Failed to load image:', data.error);
+                    alert('Failed to load image: ' + data.error);
+                    return;
+                }
+                
+                // Set image
+                modalImage.src = `data:image/png;base64,${data.image}`;
+                
+                // Populate details
+                modalDetails.innerHTML = `
+                    <div class="bg-gray-800/50 rounded-lg p-4">
+                        <div class="mb-4">
+                            <strong class="text-purple-300">📝 Prompt:</strong>
+                            <p class="mt-1 text-gray-300">${data.prompt || 'No prompt available'}</p>
+                        </div>
+                        <div class="mb-4">
+                            <strong class="text-purple-300">🎭 Model:</strong>
+                            <p class="mt-1 text-gray-300">${data.model || 'Unknown model'}</p>
+                        </div>
+                        <div class="mb-4">
+                            <strong class="text-purple-300">⏱️ Generation Time:</strong>
+                            <p class="mt-1 text-gray-300">${data.generation_time ? `${data.generation_time.toFixed(2)}s` : 'N/A'}</p>
+                        </div>
+                        <div class="mb-4">
+                            <strong class="text-purple-300">📏 Resolution:</strong>
+                            <p class="mt-1 text-gray-300">${data.width || 'N/A'}x${data.height || 'N/A'}</p>
+                        </div>
+                        <div class="mb-4">
+                            <strong class="text-purple-300">📅 Date:</strong>
+                            <p class="mt-1 text-gray-300">${data.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Store current image ID for download/delete
+                modal.dataset.imageId = imageId;
+                
+                modal.classList.remove('hidden');
+                console.log('✅ Modal opened successfully');
+                
+            } catch (error) {
+                console.error('Failed to open image:', error);
+                alert('Failed to load image details: ' + error.message);
+            }
+        }
+
+        // Close modal
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('image-modal').classList.add('hidden');
+        });
+
+        // Download image
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const modal = document.getElementById('image-modal');
+            const imageId = modal.dataset.imageId;
+            const modalImage = document.getElementById('modal-image');
+            
+            const link = document.createElement('a');
+            link.download = `generated_image_${imageId}.png`;
+            link.href = modalImage.src;
+            link.click();
+        });
+
+        // Delete image
+        document.getElementById('delete-btn').addEventListener('click', async () => {
+            const modal = document.getElementById('image-modal');
+            const imageId = modal.dataset.imageId;
+            
+            if (confirm('Are you sure you want to delete this image?')) {
+                try {
+                    await fetch(`${API_BASE}/gallery/${imageId}`, { method: 'DELETE' });
+                    modal.classList.add('hidden');
+                    loadGallery(); // Refresh gallery
+                } catch (error) {
+                    console.error('Failed to delete image:', error);
+                    alert('Failed to delete image');
+                }
+            }
+        });
+
+        // Search gallery
+        document.getElementById('search-btn').addEventListener('click', async () => {
+            const query = document.getElementById('search-input').value;
+            try {
+                const response = await fetch(`${API_BASE}/gallery/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                renderGallery(data.images);
+            } catch (error) {
+                console.error('Search failed:', error);
+            }
+        });
+
+        // Refresh gallery
+        document.getElementById('refresh-gallery-btn').addEventListener('click', loadGallery);
+
+        // Search on Enter key
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('search-btn').click();
+            }
+        });
+
+        // Advanced Prompt Enhancement functionality
+        let currentEnhancementStyle = "photorealistic";
+        let currentDetailLevel = "medium";
+        let allEnhancements = {};
+        
+        document.getElementById('enhance-prompt-btn').addEventListener('click', async (e) => {
+            e.preventDefault(); // Prevent form submission
+            e.stopPropagation(); // Stop event bubbling
+            
+            const promptTextarea = document.getElementById('prompt');
+            const originalPrompt = promptTextarea.value.trim();
+            
+            if (!originalPrompt) {
+                alert('Please enter a prompt first!');
+                return;
+            }
+            
+            // Show enhancement panel
+            document.getElementById('enhanced-prompt-panel').classList.remove('hidden');
+            
+            // Perform enhancement
+            await performEnhancement(originalPrompt);
+        });
+        
+        // Style selection
+        document.querySelectorAll('.enhance-style-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Prevent form submission
+                e.stopPropagation(); // Stop event bubbling
+                
+                // Update selection
+                document.querySelectorAll('.enhance-style-btn').forEach(b => b.classList.remove('bg-purple-500/60', 'border-purple-400'));
+                btn.classList.add('bg-purple-500/60', 'border-purple-400');
+                
+                currentEnhancementStyle = btn.dataset.style;
+                
+                // Re-enhance with new style
+                const originalPrompt = document.getElementById('prompt').value.trim();
+                if (originalPrompt) {
+                    performEnhancement(originalPrompt);
+                }
+            });
+        });
+        
+        // Detail level selection
+        document.querySelectorAll('.detail-level-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Prevent form submission
+                e.stopPropagation(); // Stop event bubbling
+                
+                // Update selection
+                document.querySelectorAll('.detail-level-btn').forEach(b => b.classList.remove('bg-blue-500/60', 'border-blue-400'));
+                btn.classList.add('bg-blue-500/60', 'border-blue-400');
+                
+                currentDetailLevel = btn.dataset.level;
+                
+                // Re-enhance with new detail level
+                const originalPrompt = document.getElementById('prompt').value.trim();
+                if (originalPrompt) {
+                    performEnhancement(originalPrompt);
+                }
+            });
+        });
+        
+        // Close enhancement panel
+        document.getElementById('close-enhancement-panel').addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent form submission
+            e.stopPropagation(); // Stop event bubbling
+            document.getElementById('enhanced-prompt-panel').classList.add('hidden');
+        });
+        
+        // Perform enhancement
+        async function performEnhancement(prompt) {
+            const resultsDiv = document.getElementById('enhanced-results');
+            
+            // Show loading
+            resultsDiv.innerHTML = '<div class="text-center py-4"><div class="loading-spinner mx-auto"></div><p class="text-sm text-gray-300 mt-2">Enhancing prompt...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/enhance-prompt`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        prompt: prompt,
+                        style: currentEnhancementStyle,
+                        detail_level: currentDetailLevel
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to enhance prompt');
+                }
+                
+                const data = await response.json();
+                allEnhancements = data.all_enhancements;
+                
+                // Display all enhancement options
+                displayEnhancementResults(data);
+                
+            } catch (error) {
+                console.error('Prompt enhancement failed:', error);
+                resultsDiv.innerHTML = '<p class="text-red-400 text-sm">Failed to enhance prompt. Please try again.</p>';
+            }
+        }
+        
+        // Display enhancement results
+        function displayEnhancementResults(data) {
+            const resultsDiv = document.getElementById('enhanced-results');
+            
+            let html = `
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-purple-300 mb-2">🎯 Primary Enhancement (${data.style})</h4>
+                    <div class="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg border border-green-400/30">
+                        <p class="text-sm text-white mb-2">${data.enhanced_prompt}</p>
+                        <button class="use-enhanced-btn px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-xs font-medium transition-colors" data-prompt="${data.enhanced_prompt}">
+                            ✅ Use This Enhancement
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-purple-300 mb-2">🎨 All Style Options</h4>
+                    <div class="space-y-2">
+            `;
+            
+            for (const [style, enhanced] of Object.entries(data.all_enhancements)) {
+                const isSelected = style === data.style;
+                const bgClass = isSelected ? 'from-purple-500/30 to-pink-500/30' : 'from-gray-500/20 to-gray-600/20';
+                const borderClass = isSelected ? 'border-purple-400/50' : 'border-gray-600/30';
+                
+                html += `
+                    <div class="p-2 bg-gradient-to-r ${bgClass} rounded-lg border ${borderClass}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium text-purple-300 capitalize">${style}</span>
+                            ${isSelected ? '<span class="text-xs text-green-400">✅ Selected</span>' : ''}
+                        </div>
+                        <p class="text-xs text-white mb-2 line-clamp-2">${enhanced}</p>
+                        <button class="use-style-btn px-2 py-1 bg-purple-500 hover:bg-purple-600 rounded text-xs font-medium transition-colors" data-style="${style}" data-prompt="${enhanced}">
+                            Use ${style.charAt(0).toUpperCase() + style.slice(1)}
+                        </button>
+                    </div>
+                `;
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+            
+            // Add event listeners for the buttons
+            resultsDiv.querySelectorAll('.use-enhanced-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent form submission
+                    e.stopPropagation(); // Stop event bubbling
+                    document.getElementById('prompt').value = btn.dataset.prompt;
+                    document.getElementById('enhanced-prompt-panel').classList.add('hidden');
+                });
+            });
+            
+            resultsDiv.querySelectorAll('.use-style-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent form submission
+                    e.stopPropagation(); // Stop event bubbling
+                    document.getElementById('prompt').value = btn.dataset.prompt;
+                    document.getElementById('enhanced-prompt-panel').classList.add('hidden');
+                });
+            });
+        }
+
+        // Load available models
+        async function loadModels() {
+            try {
+                console.log('🔍 Loading models...');
+                const response = await fetch(`${API_BASE}/models`);
+                const data = await response.json();
+                
+                console.log('🔍 Models response:', data);
+                
+                // Store both local and modern models
+                availableModels = data.local_models || {};
+                modernGenerators = data.modern_generators || {};
+                
+                console.log('🔍 Available models:', availableModels);
+                console.log('🔍 Modern generators:', modernGenerators);
+                
+                // Update model dropdown with both types
+                updateModelDropdown();
+                
+                // Update model info when selection changes
+                document.getElementById('model').addEventListener('change', updateModelInfo);
+                updateModelInfo();
+                
+                // Add aspect ratio and resolution change listeners
+                function updateDimensions() {
+                    const aspectRatio = document.getElementById('aspect_ratio').value;
+                    const resolution = document.getElementById('resolution').value;
+                    
+                    if (aspectRatio && resolution) {
+                        const [baseWidth, baseHeight] = resolution.split('x').map(Number);
+                        let newWidth, newHeight;
+                        
+                        switch(aspectRatio) {
+                            case '1:1':
+                                newWidth = baseWidth;
+                                newHeight = baseHeight;
+                                break;
+                            case '16:9':
+                                newWidth = baseWidth;
+                                newHeight = Math.round(baseWidth * 9 / 16);
+                                break;
+                            case '9:16':
+                                newWidth = baseWidth;
+                                newHeight = Math.round(baseWidth * 16 / 9);
+                                break;
+                            case '4:3':
+                                newWidth = baseWidth;
+                                newHeight = Math.round(baseWidth * 3 / 4);
+                                break;
+                            case '3:4':
+                                newWidth = baseWidth;
+                                newHeight = Math.round(baseWidth * 4 / 3);
+                                break;
+                            case '2:3':
+                                newWidth = baseWidth;
+                                newHeight = Math.round(baseWidth * 3 / 2);
+                                break;
+                            case '3:2':
+                                newWidth = baseWidth;
+                                newHeight = Math.round(baseWidth * 2 / 3);
+                                break;
+                            default:
+                                newWidth = baseWidth;
+                                newHeight = baseHeight;
+                                break;
+                        }
+                        
+                        // Update the width and height fields
+                        const widthSelect = document.getElementById('width');
+                        const heightSelect = document.getElementById('height');
+                        
+                        // Add options if they don't exist
+                        if (!Array.from(widthSelect.options).some(opt => opt.value == newWidth)) {
+                            const option = document.createElement('option');
+                            option.value = newWidth;
+                            option.textContent = `${newWidth}px`;
+                            widthSelect.appendChild(option);
+                        }
+                        
+                        if (!Array.from(heightSelect.options).some(opt => opt.value == newHeight)) {
+                            const option = document.createElement('option');
+                            option.value = newHeight;
+                            option.textContent = `${newHeight}px`;
+                            heightSelect.appendChild(option);
+                        }
+                        
+                        // Set the values
+                        widthSelect.value = newWidth;
+                        heightSelect.value = newHeight;
+                        
+                        // Update resolution dropdown to show actual dimensions
+                        const resolutionSelect = document.getElementById('resolution');
+                        const currentResolution = resolutionSelect.value;
+                        
+                        // Update the resolution option text to show actual dimensions
+                        Array.from(resolutionSelect.options).forEach(option => {
+                            const [resWidth, resHeight] = option.value.split('x').map(Number);
+                            let actualWidth, actualHeight;
+                            
+                            switch(aspectRatio) {
+                                case '1:1':
+                                    actualWidth = resWidth;
+                                    actualHeight = resHeight;
+                                    break;
+                                case '16:9':
+                                    actualWidth = resWidth;
+                                    actualHeight = Math.round(resWidth * 9 / 16);
+                                    break;
+                                case '9:16':
+                                    actualWidth = resWidth;
+                                    actualHeight = Math.round(resWidth * 16 / 9);
+                                    break;
+                                case '4:3':
+                                    actualWidth = resWidth;
+                                    actualHeight = Math.round(resWidth * 3 / 4);
+                                    break;
+                                case '3:4':
+                                    actualWidth = resWidth;
+                                    actualHeight = Math.round(resWidth * 4 / 3);
+                                    break;
+                                case '2:3':
+                                    actualWidth = resWidth;
+                                    actualHeight = Math.round(resWidth * 3 / 2);
+                                    break;
+                                case '3:2':
+                                    actualWidth = resWidth;
+                                    actualHeight = Math.round(resWidth * 2 / 3);
+                                    break;
+                                default:
+                                    actualWidth = resWidth;
+                                    actualHeight = resHeight;
+                                    break;
+                            }
+                            
+                            option.textContent = `${resWidth}x${resHeight} → ${actualWidth}x${actualHeight}`;
+                        });
+                        
+                        console.log(`📏 Dimensions updated: ${newWidth}x${newHeight} (${aspectRatio}, ${currentResolution})`);
+                    }
+                }
+                
+                document.getElementById('aspect_ratio').addEventListener('change', updateDimensions);
+                document.getElementById('resolution').addEventListener('change', updateDimensions);
+                
+            } catch (error) {
+                console.error('Failed to load models:', error);
+                // Add fallback options
+                availableModels = {
+                    'stable-diffusion-1.5': {
+                        name: 'Stable Diffusion 1.5',
+                        quality: 'Good',
+                        vram_required: '4GB',
+                        speed: 'Medium',
+                        resolution: '512x512',
+                        description: 'Standard Stable Diffusion model',
+                        experimental: false
+                    }
+                };
+                modernGenerators = {
+                    'leonardo-api': {
+                        name: 'Leonardo.ai API',
+                        cost: 'Paid',
+                        speed: 'Fast',
+                        max_resolution: [1024, 1024],
+                        description: 'Professional game asset generator with model selection',
+                        type: 'api'
+                    },
+                    'puter-dall-e-3': {
+                        name: '🆓 DALL-E 3 (FREE)',
+                        cost: 'FREE',
+                        speed: 'Medium',
+                        max_resolution: [1024, 1024],
+                        description: 'Best quality image generation - completely FREE!',
+                        type: 'puter'
+                    },
+                    'puter-gpt-image-1-5': {
+                        name: '🆓 GPT Image 1.5 (FREE)',
+                        cost: 'FREE',
+                        speed: 'Medium',
+                        max_resolution: [1024, 1024],
+                        description: 'OpenAI GPT Image model - FREE access!',
+                        type: 'puter'
+                    },
+                    'puter-gemini-2-5-flash': {
+                        name: '🆓 Gemini 2.5 Flash (FREE)',
+                        cost: 'FREE',
+                        speed: 'Fast',
+                        max_resolution: [1024, 1024],
+                        description: 'Google Gemini image model - completely FREE!',
+                        type: 'puter'
+                    }
+                };
+                updateModelDropdown();
+                updateModelInfo();
+            }
+        }
+        
+        // Update model dropdown with both local and modern generators
+        function updateModelDropdown() {
+            const modelSelect = document.getElementById('model');
+            console.log('🔍 Updating model dropdown...');
+            console.log('🔍 Model select element:', modelSelect);
+            
+            modelSelect.innerHTML = '';
+            
+            // Add local models section
+            if (Object.keys(availableModels).length > 0) {
+                console.log('🔍 Adding local models:', Object.keys(availableModels));
+                const localGroup = document.createElement('optgroup');
+                localGroup.label = '🏠 Local Models (Stable Diffusion)';
+                
+                for (const [key, model] of Object.entries(availableModels)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    // Use available fields or provide defaults
+                    const quality = model.quality || model.speed || 'Medium';
+                    const vram = model.vram_required || model.max_resolution ? `${model.max_resolution[0]}x${model.max_resolution[1]}` : '512x512';
+                    const experimental = model.experimental ? ' [Experimental]' : '';
+                    option.textContent = `${model.name} - ${quality} (${vram})${experimental}`;
+                    localGroup.appendChild(option);
+                    console.log(`🔍 Added local model option: ${key} -> ${option.textContent}`);
+                }
+                
+                modelSelect.appendChild(localGroup);
+            }
+            
+            // Add modern generators section
+            if (Object.keys(modernGenerators).length > 0) {
+                console.log('🔍 Adding modern generators:', Object.keys(modernGenerators));
+                
+                // Add Leonardo.ai as a group
+                if (modernGenerators['leonardo-api']) {
+                    const leonardoGroup = document.createElement('optgroup');
+                    leonardoGroup.label = '🎨 Leonardo.ai';
+                    
+                    const leonardoOption = document.createElement('option');
+                    leonardoOption.value = 'leonardo-api';
+                    leonardoOption.textContent = `${modernGenerators['leonardo-api'].name} - ${modernGenerators['leonardo-api'].cost} (${modernGenerators['leonardo-api'].speed})`;
+                    leonardoGroup.appendChild(leonardoOption);
+                    modelSelect.appendChild(leonardoGroup);
+                    console.log(`🔍 Added Leonardo.ai option: leonardo-api -> ${leonardoOption.textContent}`);
+                }
+                
+                // Add Replicate models as individual options
+                if (modernGenerators['replicate-api']) {
+                    const replicateGroup = document.createElement('optgroup');
+                    replicateGroup.label = '🚀 Replicate Models';
+                    
+                    // Add individual Replicate models
+                    const replicateModels = [
+                        { key: 'black-forest-labs/flux-schnell', name: 'FLUX.1 Schnell', cost: '$0.003', speed: 'Fastest' },
+                        { key: 'black-forest-labs/flux-1.1-pro', name: 'FLUX.1.1 Pro', cost: '$0.015', speed: 'Premium' },
+                        { key: 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b', name: 'Stable Diffusion XL', cost: '$0.005', speed: 'High Quality' },
+                        { key: 'jyoung105/sdxl-turbo:93c488b9fbd6bea622d354c8dcce2724c5f67adb92ccf909038042a21c5238a7', name: 'SDXL Turbo', cost: '$0.003', speed: 'Fast' },
+                        // { key: 'ideogram-ai/ideogram-v3-turbo', name: 'Ideogram V3 Turbo', cost: '$0.008', speed: 'Text & Logos' }, // Temporarily disabled due to binary data issues
+                        // { key: 'google/nano-banana-pro', name: 'Nano Banana Pro', cost: '$0.008', speed: 'Google Fast' }, // Temporarily disabled due to API issues
+                        // { key: 'lucataco/realistic-vision-v5.1:2c8e954decbf70b7607a4414e5785ef9e4de4b8c51d50fb8b8b349160e0ef6bb', name: 'Realistic Vision v5.1', cost: '$0.015', speed: 'Photorealistic' }, // Temporarily disabled due to binary data issues
+                        { key: 'ai-forever/kandinsky-2.2', name: 'Kandinsky 2.2', cost: '$0.008', speed: 'Artistic' }
+                    ];
+                    
+                    replicateModels.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.key;
+                        option.textContent = `${model.name} - ${model.cost} (${model.speed})`;
+                        replicateGroup.appendChild(option);
+                        console.log(`🔍 Added Replicate model option: ${model.key} -> ${option.textContent}`);
+                    });
+                    
+                    modelSelect.appendChild(replicateGroup);
+                }
+                
+                // Add Kandinsky as separate if it exists
+                if (modernGenerators['kandinsky-22']) {
+                    const kandinskyGroup = document.createElement('optgroup');
+                    kandinskyGroup.label = '🎭 Kandinsky';
+                    
+                    const kandinskyOption = document.createElement('option');
+                    kandinskyOption.value = 'kandinsky-22';
+                    kandinskyOption.textContent = `${modernGenerators['kandinsky-22'].name} - ${modernGenerators['kandinsky-22'].cost} (${modernGenerators['kandinsky-22'].speed})`;
+                    kandinskyGroup.appendChild(kandinskyOption);
+                    modelSelect.appendChild(kandinskyGroup);
+                    console.log(`🔍 Added Kandinsky option: kandinsky-22 -> ${kandinskyOption.textContent}`);
+                }
+                
+                // Add Puter.com models as a group
+                const puterModels = Object.entries(modernGenerators).filter(([key, gen]) => key.startsWith('puter-'));
+                if (puterModels.length > 0) {
+                    const puterGroup = document.createElement('optgroup');
+                    puterGroup.label = '🆓 Puter.com (FREE Models)';
+                    
+                    puterModels.forEach(([key, generator]) => {
+                        const option = document.createElement('option');
+                        option.value = key;
+                        option.textContent = `${generator.name} - ${generator.cost} (${generator.speed})`;
+                        puterGroup.appendChild(option);
+                        console.log(`🔍 Added Puter model option: ${key} -> ${option.textContent}`);
+                    });
+                    
+                    modelSelect.appendChild(puterGroup);
+                }
+            }
+            
+            // Add a default option if no models are available
+            if (modelSelect.options.length === 0) {
+                console.log('🔍 No models available, adding default option');
+                const defaultOption = document.createElement('option');
+                defaultOption.value = 'stable-diffusion-1.5';
+                defaultOption.textContent = 'Stable Diffusion 1.5 (Default)';
+                modelSelect.appendChild(defaultOption);
+            }
+            
+            console.log('🔍 Final model dropdown options:', modelSelect.options.length);
+            for (let i = 0; i < modelSelect.options.length; i++) {
+                console.log(`🔍 Option ${i}: ${modelSelect.options[i].value} -> ${modelSelect.options[i].textContent}`);
+            }
+        }
+
+        // Update model information
+        function updateModelInfo() {
+            const modelSelect = document.getElementById('model');
+            const selectedModel = modelSelect.value;
+            const modelInfo = document.getElementById('model-info');
+            const leonardoControls = document.getElementById('leonardo-controls');
+            const puterControls = document.getElementById('puter-controls');
+            
+            // Check if it's a local model
+            if (availableModels[selectedModel]) {
+                const model = availableModels[selectedModel];
+                modelInfo.innerHTML = `
+                    <div class="text-xs space-y-1">
+                        <p>💾 VRAM: ${model.vram_required}</p>
+                        <p>⚡ Speed: ${model.speed}</p>
+                        <p>📏 Resolution: ${model.resolution}</p>
+                        <p>📝 ${model.description}</p>
+                        ${model.experimental ? '<p class="text-yellow-400">⚠️ Experimental model</p>' : ''}
+                    </div>
+                `;
+                leonardoControls.classList.add('hidden');
+                puterControls.classList.add('hidden');
+            }
+            // Check if it's a modern generator
+            else if (modernGenerators[selectedModel]) {
+                const generator = modernGenerators[selectedModel];
+                
+                // Show Leonardo controls if it's Leonardo.ai
+                if (selectedModel === 'leonardo-api') {
+                    leonardoControls.classList.remove('hidden');
+                    puterControls.classList.add('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: API Generator</p>
+                            <p class="text-blue-400">✅ Advanced controls available</p>
+                        </div>
+                    `;
+                    // Update API key status when Leonardo.ai is selected
+                    updateApiKeyStatus();
+                }
+                // Show Puter controls if it's a Puter model
+                else if (generator.type === 'puter') {
+                    puterControls.classList.remove('hidden');
+                    leonardoControls.classList.add('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: Puter.com Generator</p>
+                            <p class="text-green-400">✅ FREE premium access!</p>
+                            <p class="text-green-400">🆓 No API keys needed!</p>
+                        </div>
+                    `;
+                } else {
+                    leonardoControls.classList.add('hidden');
+                    puterControls.classList.add('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: API Generator</p>
+                        </div>
+                    `;
+                }
+            }
+            else {
+                modelInfo.innerHTML = '<p class="text-xs text-gray-400">Select a model to see details</p>';
+                leonardoControls.classList.add('hidden');
+                puterControls.classList.add('hidden');
+            }
+        }
+        
+        // Show API key dialog
+        function showApiKeyDialog(generatorName) {
+            const generator = modernGenerators[generatorName];
+            const apiKey = prompt(`Enter API key for ${generator.name}:`);
+            
+            if (apiKey) {
+                fetch(`${API_BASE}/set-api-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        generator_name: generatorName,
+                        api_key: apiKey
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    updateModelInfo(); // Refresh the model info to show API key status
+                    updateApiKeyStatus(); // This should now work with the correct endpoint
+                })
+                .catch(error => {
+                    console.error('Failed to set API key:', error);
+                    alert('Failed to set API key');
+                });
+            }
+        }
+
+        // Update API key status display
+        function updateApiKeyStatus() {
+            const apiKeyDisplay = document.getElementById('api-key-display');
+            const setApiKeyBtn = document.getElementById('set-api-key-btn');
+            const selectedModel = document.getElementById('model').value;
+            
+            console.log('🔍 Updating API key status for:', selectedModel);
+            
+            if (selectedModel === 'leonardo-api' && modernGenerators[selectedModel]) {
+                // Check if API key is set by calling the backend
+                fetch(`${API_BASE}/api/modern-generators`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('🔍 Modern generators response:', data);
+                        const hasApiKey = data.api_keys_set && data.api_keys_set.includes('leonardo-api');
+                        console.log('🔍 Has API key:', hasApiKey);
+                        
+                        if (hasApiKey) {
+                            apiKeyDisplay.textContent = '✅ API key configured';
+                            apiKeyDisplay.className = 'text-xs text-green-400';
+                            setApiKeyBtn.textContent = 'Update API Key';
+                            setApiKeyBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                            setApiKeyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                        } else {
+                            apiKeyDisplay.textContent = '❌ No API key set';
+                            apiKeyDisplay.className = 'text-xs text-red-400';
+                            setApiKeyBtn.textContent = 'Set API Key';
+                            setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                            setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to check API key status:', error);
+                        apiKeyDisplay.textContent = '❌ Could not check status';
+                        apiKeyDisplay.className = 'text-xs text-red-400';
+                    });
+            } else {
+                apiKeyDisplay.textContent = 'Select Leonardo.ai to see API key status';
+                apiKeyDisplay.className = 'text-xs text-gray-400';
+                setApiKeyBtn.textContent = 'Set API Key';
+                setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            }
+        }
+        
+        // Add event listener for API key button
+        document.getElementById('set-api-key-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showApiKeyDialog('leonardo-api');
+        });
+
+        // Update status
+        async function updateStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const status = await response.json();
+                
+                document.getElementById('device').textContent = status.device;
+                
+                // Show detailed VRAM usage that matches Task Manager
+                const vramText = `${status.vram_reserved.toFixed(2)}GB / ${status.vram_total.toFixed(2)}GB (${status.vram_used_percent.toFixed(1)}%)`;
+                document.getElementById('vram-used').textContent = vramText;
+                
+                document.getElementById('gpu-name').textContent = status.gpu_name;
+                
+                // Update compatibility message
+                const compatElement = document.getElementById('gpu-compatibility');
+                const isCompatible = status.vram_total >= 7.5; // Simple compatibility check
+                if (isCompatible) {
+                    compatElement.innerHTML = `✅ ${status.gpu_name} detected - VRAM: ${status.vram_total.toFixed(1)}GB - Perfect for AI generation!`;
+                    compatElement.className = 'text-sm text-green-400';
+                } else {
+                    compatElement.innerHTML = `⚠️ ${status.gpu_name} detected - VRAM: ${status.vram_total.toFixed(1)}GB - May be insufficient`;
+                    compatElement.className = 'text-sm text-yellow-400';
+                }
+                
+                // Update optimal settings hints
+                if (status.optimal_settings) {
+                    const stepsInput = document.getElementById('steps');
+                    const guidanceInput = document.getElementById('guidance');
+                    
+                    if (stepsInput && !stepsInput.dataset.defaulted) {
+                        stepsInput.value = status.optimal_settings.default_steps;
+                        stepsInput.max = status.optimal_settings.max_steps;
+                        stepsInput.dataset.defaulted = 'true';
+                    }
+                    
+                    if (guidanceInput && !guidanceInput.dataset.defaulted) {
+                        guidanceInput.value = status.optimal_settings.default_guidance;
+                        guidanceInput.dataset.defaulted = 'true';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to update status:', error);
+                document.getElementById('device').textContent = 'Loading...';
+                document.getElementById('vram-used').textContent = 'Checking...';
+                document.getElementById('gpu-name').textContent = 'Detecting...';
+                document.getElementById('gpu-compatibility').innerHTML = '🔄 Connecting to server...';
+                document.getElementById('gpu-compatibility').className = 'text-sm text-blue-400';
+            }
+        }
+
+        // Generate image
+        document.getElementById('generation-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Declare timeInterval at the very top of the function scope
+            let timeInterval = null;
+            const startTime = Date.now();
+            
+            const formData = new FormData(e.target);
+            const selectedModel = formData.get('model');
+            
+            // Debug: Log what we're getting from the form
+            console.log('🔍 Form data debug:');
+            console.log('- selectedModel:', selectedModel);
+            console.log('- all form entries:', Array.from(formData.entries()));
+            
+            // Debug: Check Leonardo controls visibility
+            const leonardoControls = document.getElementById('leonardo-controls');
+            console.log('- Leonardo controls visible:', !leonardoControls.classList.contains('hidden'));
+            
+            // Validate model selection
+            if (!selectedModel || selectedModel === 'None' || selectedModel === '') {
+                alert('Please select a model before generating.');
+                return;
+            }
+            
+            // Validate prompt
+            const prompt = formData.get('prompt');
+            if (!prompt || prompt.trim() === '') {
+                alert('Please enter a prompt before generating.');
+                return;
+            }
+            
+            // Base data for all models
+            let data = {
+                prompt: formData.get('prompt'),
+                negative_prompt: formData.get('negative_prompt'),
+                num_inference_steps: parseInt(formData.get('num_inference_steps')),
+                guidance_scale: parseFloat(formData.get('guidance_scale')),
+                seed: parseInt(formData.get('seed')),
+                model: selectedModel
+            };
+            
+            // Handle aspect ratio and resolution - this should override width/height
+            const aspectRatio = formData.get('aspect_ratio');
+            const resolution = formData.get('resolution');
+            
+            console.log('🔍 Debug - Raw form values:');
+            console.log('  aspectRatio:', aspectRatio);
+            console.log('  resolution:', resolution);
+            console.log('  width from form:', formData.get('width'));
+            console.log('  height from form:', formData.get('height'));
+            
+            if (aspectRatio && resolution) {
+                // Calculate dimensions based on aspect ratio and resolution
+                const [baseWidth, baseHeight] = resolution.split('x').map(Number);
+                console.log('🔍 Debug - Parsed resolution:', baseWidth, 'x', baseHeight);
+                
+                switch(aspectRatio) {
+                    case '1:1':
+                        data.width = baseWidth;
+                        data.height = baseHeight;
+                        break;
+                    case '16:9':
+                        data.width = baseWidth;
+                        data.height = Math.round(baseWidth * 9 / 16);
+                        break;
+                    case '9:16':
+                        data.width = baseWidth;
+                        data.height = Math.round(baseWidth * 16 / 9);
+                        break;
+                    case '4:3':
+                        data.width = baseWidth;
+                        data.height = Math.round(baseWidth * 3 / 4);
+                        break;
+                    case '3:4':
+                        data.width = baseWidth;
+                        data.height = Math.round(baseWidth * 4 / 3);
+                        break;
+                    case '2:3':
+                        data.width = baseWidth;
+                        data.height = Math.round(baseWidth * 3 / 2);
+                        break;
+                    case '3:2':
+                        data.width = baseWidth;
+                        data.height = Math.round(baseWidth * 2 / 3);
+                        break;
+                    default:
+                        // Keep original dimensions from form
+                        data.width = parseInt(formData.get('width'));
+                        data.height = parseInt(formData.get('height'));
+                        break;
+                }
+                
+                console.log(`📏 ${aspectRatio} aspect ratio applied: ${data.width}x${data.height}`);
+            } else {
+                // If no aspect ratio/resolution selected, use form values
+                data.width = parseInt(formData.get('width'));
+                data.height = parseInt(formData.get('height'));
+                console.log('🔍 Using form dimensions:', data.width, 'x', data.height);
+            }
+            
+            // Add aspect_ratio to data for Replicate section
+            data.aspect_ratio = aspectRatio;
+            
+            console.log('🔍 Final generation data:', data);
+            
+            // Add Leonardo.ai specific parameters if selected
+            if (selectedModel === 'leonardo-api') {
+                // Get values directly from the select elements
+                const leonardoModel = document.getElementById('leonardo-model')?.value;
+                const leonardoAspect = document.getElementById('leonardo-aspect')?.value;
+                const leonardoStyle = document.getElementById('leonardo-style')?.value;
+                const leonardoQuality = document.getElementById('leonardo-quality')?.value;
+                
+                console.log('🔍 Leonardo control values:', {
+                    leonardoModel,
+                    leonardoAspect,
+                    leonardoStyle,
+                    leonardoQuality
+                });
+                
+                // Set optimal resolution for Leonardo.ai (minimum 1024x1024 for best quality)
+                const leonardoAspectRatios = {
+                    '1:1': [1024, 1024],
+                    '16:9': [1344, 768],
+                    '9:16': [768, 1344],
+                    '4:3': [1024, 768],
+                    '3:4': [768, 1024],
+                    '2:3': [832, 1216],
+                    '3:2': [1216, 832]
+                };
+                
+                // Override width/height with Leonardo.ai optimal resolutions
+                if (leonardoAspectRatios[leonardoAspect]) {
+                    [data.width, data.height] = leonardoAspectRatios[leonardoAspect];
+                } else {
+                    // Default to 1024x1024 for Leonardo.ai
+                    [data.width, data.height] = [1024, 1024];
+                }
+                
+                // Add Leonardo.ai specific parameters to the data
+                Object.assign(data, {
+                    leonardo_model: leonardoModel || 'phoenix-1-0',
+                    aspect_ratio: leonardoAspect || '1:1',
+                    preset_style: leonardoStyle || 'LEONARDO',
+                    quality: leonardoQuality || 'high'
+                });
+                
+                console.log('🎨 Leonardo.ai generation with parameters:', data);
+                console.log('📏 Leonardo.ai resolution:', `${data.width}x${data.height} (optimized for quality)`);
+                
+                // Debug the fetch call
+                console.log('🔍 About to call /generate endpoint...');
+                
+                try {
+                    const response = await fetch(`${API_BASE}/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    console.log('🔍 Fetch response status:', response.status);
+                    console.log('🔍 Fetch response headers:', response.headers);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('🔍 HTTP error:', response.status, errorText);
+                        throw new Error(`HTTP error: ${response.status} ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('🔍 Server response:', result);
+                    
+                    // Display result
+                    document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                    document.getElementById('generation-time').textContent = result.generation_time ? `${result.generation_time.toFixed(2)}s` : 'N/A';
+                    document.getElementById('generation-vram').textContent = result.vram_used !== undefined ? `${result.vram_used.toFixed(2)} GB` : 'N/A (Cloud)';
+                    
+                    console.log('🔍 Result data:', {
+                        hasImage: !!result.image,
+                        hasGenerationTime: !!result.generation_time,
+                        hasVramUsed: !!result.vram_used,
+                        generationTime: result.generation_time,
+                        vramUsed: result.vram_used,
+                        galleryId: result.gallery_id
+                    });
+                    
+                    // Show result, hide loading
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').classList.remove('hidden');
+                    
+                    // Clear the timer interval
+                    clearInterval(timeInterval);
+                    
+                    // Complete progress bar
+                    const progressBar = document.getElementById('progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+                    
+                    // Add minimum display time for progress indicator visibility
+                    const minDisplayTime = 1000; // 1 second minimum
+                    const elapsedTime = Date.now() - startTime;
+                    const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+                    
+                    if (remainingTime > 0) {
+                        console.log(`🕐️ Adding ${remainingTime}ms delay for progress indicator visibility`);
+                        setTimeout(() => {
+                            document.getElementById('loading').style.display = 'none';
+                            document.getElementById('result').style.display = 'block';
+                            document.getElementById('result').classList.remove('hidden');
+                            document.getElementById('generate-btn').disabled = false;
+                            updateStatus();
+                        }, remainingTime);
+                    } else {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('result').style.display = 'block';
+                        document.getElementById('result').classList.remove('hidden');
+                        document.getElementById('generate-btn').disabled = false;
+                        updateStatus();
+                    }
+                    
+                    // Reload gallery to show the new image
+                    loadGallery();
+                    
+                    console.log('✅ Leonardo.ai generation successful!');
+                    console.log(`🖼️ Image saved to gallery (ID: ${result.gallery_id})`);
+                    
+                    return; // Exit early for Leonardo models
+                    
+                } catch (error) {
+                    console.error('🔍 Leonardo.ai generation failed:', error);
+                    throw new Error(`Leonardo.ai generation failed: ${error.message}`);
+                }
+            } else if (selectedModel === 'replicate-api' || selectedModel === 'kandinsky-22' || selectedModel.startsWith('black-forest-labs/') || selectedModel.startsWith('stability-ai/') || selectedModel.startsWith('jyoung105/') || selectedModel.startsWith('ai-forever/')) {
+                console.log('🚀 Replicate generation with parameters:', data);
+                
+                // Set optimal resolution for Replicate models
+                const replicateAspectRatios = {
+                    '1:1': [1024, 1024],
+                    '16:9': [1344, 768],
+                    '9:16': [768, 1344],
+                    '4:3': [1024, 768],
+                    '3:4': [768, 1024],
+                    '2:3': [832, 1216],
+                    '3:2': [1216, 832]
+                };
+                
+                const ratio = data.aspect_ratio;
+                if (replicateAspectRatios[ratio]) {
+                    [data.width, data.height] = replicateAspectRatios[ratio];
+                } else {
+                    // Use the dimensions already calculated by aspect ratio logic
+                    // Don't override with hardcoded 1024x1024
+                    console.log('🔍 Using pre-calculated dimensions:', data.width, 'x', data.height);
+                }
+                
+                // Add Replicate specific parameters
+                Object.assign(data, {
+                    replicate_model: selectedModel
+                });
+                
+                console.log('🎨 Replicate generation with parameters:', data);
+                console.log('📏 Replicate resolution:', `${data.width}x${data.height}`);
+                
+                // Debug the fetch call
+                console.log('🔍 About to call /generate endpoint for Replicate...');
+                
+                try {
+                    const response = await fetch('/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    console.log('🔍 Replicate fetch response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('🔍 HTTP error:', response.status, errorText);
+                        throw new Error(`HTTP error: ${response.status} ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('🔍 Replicate server response:', result);
+                    
+                    // Display result
+                    document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                    document.getElementById('generation-time').textContent = result.generation_time ? `${result.generation_time.toFixed(2)}s` : 'N/A';
+                    document.getElementById('generation-vram').textContent = result.vram_used !== undefined ? `${result.vram_used.toFixed(2)} GB` : 'N/A (Cloud)';
+                    
+                    // Check actual image dimensions
+                    const img = document.getElementById('generated-image');
+                    img.onload = function() {
+                        console.log('🔍 Actual image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+                        const actualRatio = img.naturalWidth / img.naturalHeight;
+                        console.log('🔍 Actual aspect ratio:', actualRatio.toFixed(2));
+                        
+                        if (Math.abs(actualRatio - 1.777) < 0.1) {
+                            console.log('✅ SUCCESS: Image has correct 16:9 aspect ratio!');
+                        } else if (Math.abs(actualRatio - 1.0) < 0.1) {
+                            console.log('⚠️ WARNING: Image is still square (1:1 aspect ratio)');
+                        } else {
+                            console.log('⚠️ WARNING: Image has unexpected aspect ratio:', actualRatio.toFixed(2));
+                        }
+                    };
+                    
+                    console.log('🔍 Replicate result data:', {
+                        hasImage: !!result.image,
+                        hasGenerationTime: !!result.generation_time,
+                        hasVramUsed: !!result.vram_used,
+                        generationTime: result.generation_time,
+                        vramUsed: result.vram_used
+                    });
+                    
+                    // Show result, hide loading
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').classList.remove('hidden');
+                    
+                    // Clear the timer interval
+                    clearInterval(timeInterval);
+                    
+                    // Complete progress bar
+                    const progressBar = document.getElementById('progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+                    
+                    document.getElementById('generate-btn').disabled = false;
+                    updateStatus();
+                    
+                    // Reload gallery to show the new image
+                    loadGallery();
+                    
+                    console.log('✅ Replicate generation successful!');
+                    
+                    return; // Exit early for Replicate models
+                    
+                } catch (error) {
+                    console.error('🔍 Replicate generation failed:', error);
+                    throw new Error(`Replicate generation failed: ${error.message}`);
+                }
+            } else {
+                console.log('🏠 Local model generation with parameters:', data);
+                
+                // Update width/height based on aspect ratio for local models
+                const aspectRatios = {
+                    '1:1': [512, 512],  // Local models use smaller resolution
+                    '16:9': [512, 288],
+                    '9:16': [288, 512],
+                    '4:3': [512, 384],
+                    '3:4': [384, 512],
+                    '2:3': [416, 624],
+                    '3:2': [624, 416]
+                };
+                
+                const ratio = data.aspect_ratio;
+                if (aspectRatios[ratio]) {
+                    [data.width, data.height] = aspectRatios[ratio];
+                }
+                
+                console.log('🎨 Local model generation with parameters:', data);
+                
+                // Generate image using local model
+                console.log('🔍 About to call /generate endpoint for local model...');
+                
+                try {
+                    const response = await fetch('/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    console.log('🔍 Local model fetch response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('🔍 HTTP error:', response.status, errorText);
+                        throw new Error(`HTTP error: ${response.status} ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('🔍 Local model server response:', result);
+                    
+                    // Display result
+                    document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                    document.getElementById('generation-time').textContent = result.generation_time ? `${result.generation_time.toFixed(2)}s` : 'N/A';
+                    document.getElementById('generation-vram').textContent = result.vram_used !== undefined ? `${result.vram_used.toFixed(2)} GB` : 'N/A (Cloud)';
+                    
+                    console.log('🔍 Local model result data:', {
+                        hasImage: !!result.image,
+                        hasGenerationTime: !!result.generation_time,
+                        hasVramUsed: !!result.vram_used,
+                        generationTime: result.generation_time,
+                        vramUsed: result.vram_used
+                    });
+                    
+                    // Show result, hide loading
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').classList.remove('hidden');
+                    
+                    // Clear the timer interval
+                    clearInterval(timeInterval);
+                    
+                    // Complete progress bar
+                    const progressBar = document.getElementById('progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+                    
+                    document.getElementById('generate-btn').disabled = false;
+                    updateStatus();
+                    
+                    // Reload gallery to show the new image
+                    loadGallery();
+                    
+                    console.log('✅ Local model generation successful!');
+                    
+                } catch (error) {
+                    console.error('🔍 Local model generation failed:', error);
+                    throw new Error(`Local model generation failed: ${error.message}`);
+                }
+            }
+
+            // Show loading
+            console.log('🔍 Showing loading indicator...');
+            const loadingElement = document.getElementById('loading');
+            const resultElement = document.getElementById('result');
+            const generateBtn = document.getElementById('generate-btn');
+            
+            console.log('🔍 Elements found:', {
+                loading: !!loadingElement,
+                result: !!resultElement,
+                generateBtn: !!generateBtn
+            });
+            
+            // Force show loading with inline styles
+            if (loadingElement) {
+                loadingElement.style.display = 'block';
+                loadingElement.style.visibility = 'visible';
+                loadingElement.style.position = 'relative';
+                loadingElement.style.zIndex = '10';
+                loadingElement.style.opacity = '1';
+                loadingElement.style.transform = 'scale(1)';
+                console.log('✅ Loading element shown with inline styles');
+                console.log('🔍 Loading element classes:', loadingElement.className);
+                console.log('🔍 Loading element styles:', loadingElement.style.cssText);
+            } else {
+                console.error('❌ Loading element not found');
+            }
+            
+            if (resultElement) {
+                resultElement.classList.add('hidden');
+                resultElement.style.display = 'none';
+                console.log('✅ Result element hidden');
+            } else {
+                console.error('❌ Result element not found');
+            }
+            
+            if (generateBtn) {
+                generateBtn.disabled = true;
+                console.log('✅ Generate button disabled');
+            } else {
+                console.error('❌ Generate button not found');
+            }
+            
+            // Update generation time
+            console.log('🔍 Starting timer interval...');
+            timeInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                
+                console.log(`🔍 Timer update: ${elapsed.toFixed(1)}s elapsed`);
+                
+                // Update loading time display
+                const loadingTimeElement = document.getElementById('loading-time');
+                if (loadingTimeElement) {
+                    loadingTimeElement.textContent = `${elapsed.toFixed(1)}s`;
+                    console.log(`✅ Updated loading time: ${elapsed.toFixed(1)}s`);
+                } else {
+                    console.error('❌ Loading time element not found');
+                }
+                
+                // Update loading status
+                const loadingStatusElement = document.getElementById('loading-status');
+                if (loadingStatusElement) {
+                    if (elapsed < 2) {
+                        loadingStatusElement.textContent = 'Initializing Leonardo.ai...';
+                    } else if (elapsed < 5) {
+                        loadingStatusElement.textContent = 'Generating image...';
+                    } else if (elapsed < 10) {
+                        loadingStatusElement.textContent = 'Refining details...';
+                    } else {
+                        loadingStatusElement.textContent = 'Almost done...';
+                    }
+                    console.log(`✅ Updated loading status: ${loadingStatusElement.textContent}`);
+                } else {
+                    console.error('❌ Loading status element not found');
+                }
+                
+                // Update progress bar (simulate progress)
+                const progressBar = document.getElementById('progress-bar');
+                if (progressBar) {
+                    // Simulate progress that speeds up over time
+                    const progress = Math.min(95, elapsed * 8); // Max 95% until complete
+                    progressBar.style.width = `${progress}%`;
+                    console.log(`✅ Updated progress bar: ${progress}%`);
+                } else {
+                    console.error('❌ Progress bar element not found');
+                }
+                
+                // Also update the result time (for when it shows)
+                const resultTimeElement = document.getElementById('generation-time');
+                if (resultTimeElement) {
+                    resultTimeElement.textContent = `Time: ${elapsed.toFixed(1)}s`;
+                } else {
+                    console.error('❌ Result time element not found');
+                }
+            }, 100);
+
+            // 🆓 Check if this is a Puter.com model (FREE!)
+            if (modernGenerators[selectedModel] && modernGenerators[selectedModel].type === 'puter') {
+                try {
+                    console.log('🆓 Using Puter.com FREE generation!');
+                    
+                    // Get Puter-specific parameters
+                    const puterModel = document.getElementById('puter-model')?.value || 'dall-e-3';
+                    const puterQuality = document.getElementById('puter-quality')?.value || 'standard';
+                    
+                    console.log('🎨 Puter generation:', {
+                        model: puterModel,
+                        quality: puterQuality,
+                        prompt: data.prompt
+                    });
+                    
+                    // Build Puter options
+                    const puterOptions = {
+                        model: puterModel
+                    };
+                    
+                    // Add quality if supported by the model
+                    if (puterModel === 'dall-e-3' && puterQuality === 'hd') {
+                        puterOptions.quality = 'hd';
+                    } else if (puterModel.includes('gpt-image') && ['high', 'medium', 'low'].includes(puterQuality)) {
+                        puterOptions.quality = puterQuality;
+                    }
+                    
+                    // Generate with Puter.com
+                    const startTime = Date.now();
+                    const imageElement = await puter.ai.txt2img(data.prompt, puterOptions);
+                    const generationTime = (Date.now() - startTime) / 1000;
+                    
+                    console.log('🎨 Puter.com image element:', imageElement);
+                    console.log('🎨 Image element type:', typeof imageElement);
+                    console.log('🎨 Image element src:', imageElement.src ? 'Has src' : 'No src');
+                    console.log('🎨 Image element properties:', imageElement ? Object.keys(imageElement) : 'null');
+                    
+                    // Check if we got a valid image element
+                    if (!imageElement) {
+                        throw new Error('Puter.com returned null image element');
+                    }
+                    
+                    // Puter.com returns an img element with src set to data URL
+                    if (imageElement.src && imageElement.src.startsWith('data:image/')) {
+                        console.log('✅ Puter.com returned data URL image');
+                        
+                        // Use the data URL directly - no need for canvas conversion
+                        document.getElementById('generated-image').src = imageElement.src;
+                        document.getElementById('generation-time').textContent = `${generationTime.toFixed(2)}s`;
+                        document.getElementById('generation-vram').textContent = 'N/A (Cloud)';
+                        
+                        // Show result, hide loading
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('result').style.display = 'block';
+                        document.getElementById('result').classList.remove('hidden');
+                        
+                        // Show success message
+                        console.log('✅ Puter.com generation successful!');
+                        console.log('🖼️ Image displayed successfully using data URL');
+                        
+                        // Reload gallery to show the new image
+                        loadGallery();
+                        
+                        // Clear the timer interval
+                        clearInterval(timeInterval);
+                        document.getElementById('generate-btn').disabled = false;
+                        updateStatus();
+                        
+                        return; // Exit early for Puter models
+                    }
+                    
+                    // Fallback: Try to load the image and get dimensions
+                    if (imageElement.complete && imageElement.naturalWidth > 0 && imageElement.naturalHeight > 0) {
+                        console.log('✅ Using natural dimensions:', imageElement.naturalWidth, 'x', imageElement.naturalHeight);
+                        
+                        // Use the data URL directly
+                        document.getElementById('generated-image').src = imageElement.src;
+                        document.getElementById('generation-time').textContent = `${generationTime.toFixed(2)}s`;
+                        document.getElementById('generation-vram').textContent = 'N/A (Cloud)';
+                        
+                        // Show result, hide loading
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('result').style.display = 'block';
+                        document.getElementById('result').classList.remove('hidden');
+                        
+                        console.log('✅ Puter.com generation successful!');
+                        loadGallery();
+                        
+                        // Clear the timer interval
+                        clearInterval(timeInterval);
+                        document.getElementById('generate-btn').disabled = false;
+                        updateStatus();
+                        return;
+                    }
+                    
+                    // If we get here, try to wait for image to load
+                    console.log('⏳ Waiting for image to load...');
+                    imageElement.onload = function() {
+                        console.log('✅ Image loaded, dimensions:', this.naturalWidth, 'x', this.naturalHeight);
+                        
+                        if (this.naturalWidth > 0 && this.naturalHeight > 0) {
+                            document.getElementById('generated-image').src = this.src;
+                            document.getElementById('generation-time').textContent = `${generationTime.toFixed(2)}s`;
+                            document.getElementById('generation-vram').textContent = 'N/A (Cloud)';
+                            
+                            // Show result, hide loading
+                            document.getElementById('loading').style.display = 'none';
+                            document.getElementById('result').style.display = 'block';
+                            document.getElementById('result').classList.remove('hidden');
+                            
+                            document.getElementById('generate-btn').disabled = false;
+                            updateStatus();
+                        } else {
+                            console.error('❌ Image loaded but has invalid dimensions');
+                            
+                            // Clear the timer interval even on error
+                            clearInterval(timeInterval);
+                            document.getElementById('generate-btn').disabled = false;
+                            updateStatus();
+                            
+                            throw new Error('Image has invalid dimensions after loading');
+                        }
+                    };
+                    
+                    imageElement.onerror = function() {
+                        console.error('❌ Failed to load Puter.com image');
+                        
+                        // Clear the timer interval even on error
+                        clearInterval(timeInterval);
+                        document.getElementById('generate-btn').disabled = false;
+                        updateStatus();
+                        
+                        throw new Error('Failed to load Puter.com image');
+                    };
+                    
+                    // If image is not complete, give it a moment to load
+                    if (!imageElement.complete) {
+                        console.log('⏳ Image not complete, waiting...');
+                        // The onload handler will take care of it
+                        return;
+                    }
+                    
+                    throw new Error(`Unable to process Puter.com image element`);
+                    
+                } catch (puterError) {
+                    console.error('🆓 Puter.com generation failed:', puterError);
+                    throw new Error(`Puter.com generation failed: ${puterError.message}`);
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('HTTP error:', response.status, errorText);
+                    
+                    // Try to parse as JSON for more detailed error
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.detail || errorMessage;
+                    } catch (e) {
+                        // If not JSON, use the raw text
+                        if (errorText) {
+                            errorMessage = `Server error: ${errorText}`;
+                        }
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+
+                const result = await response.json();
+                
+                // Display result
+                document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                document.getElementById('generation-time').textContent = result.generation_time ? `${result.generation_time.toFixed(2)}s` : 'N/A';
+                document.getElementById('generation-vram').textContent = result.vram_used !== undefined ? `${result.vram_used.toFixed(2)} GB` : 'N/A (Cloud)';
+                
+                // Show result, hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').classList.remove('hidden');
+                
+                // Reload gallery to show the new image
+                loadGallery();
+                
+            } catch (error) {
+                console.error('Generation failed:', error);
+                
+                // Show user-friendly error message
+                let errorMessage = error.message;
+                
+                // Provide helpful suggestions based on common errors
+                if (errorMessage.includes('Failed to load model')) {
+                    errorMessage += '\n\nSuggestions:\n- Try selecting a different model\n- Check if the model is properly configured\n- Restart the application if needed';
+                } else if (errorMessage.includes('API key')) {
+                    errorMessage += '\n\nSuggestions:\n- Check your API key configuration\n- Ensure the API key is valid and has credits';
+                } else if (errorMessage.includes('CUDA') || errorMessage.includes('VRAM')) {
+                    errorMessage += '\n\nSuggestions:\n- Try using a smaller image size\n- Close other applications using GPU memory\n- Try using CPU-only mode if available';
+                }
+                
+                alert('Generation failed: ' + errorMessage);
+                document.getElementById('loading').classList.add('hidden');
+            } finally {
+                clearInterval(timeInterval);
+                document.getElementById('generate-btn').disabled = false;
+                updateStatus();
+            }
+        });
+
+        // Download image
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const img = document.getElementById('generated-image');
+            const link = document.createElement('a');
+            link.download = `generated-image-${Date.now()}.png`;
+            link.href = img.src;
+            link.click();
+        });
+
+        // Mode switching functionality
+        let currentMode = 'single';
+        
+        document.getElementById('single-mode-btn').addEventListener('click', () => switchMode('single'));
+        document.getElementById('batch-mode-btn').addEventListener('click', () => switchMode('batch'));
+        document.getElementById('reference-mode-btn').addEventListener('click', () => switchMode('reference'));
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Hide all sections
+            document.getElementById('generation-form').classList.add('hidden');
+            document.getElementById('batch-section').classList.add('hidden');
+            document.getElementById('reference-section').classList.add('hidden');
+            
+            // Reset button styles
+            document.getElementById('single-mode-btn').className = 'flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+            document.getElementById('batch-mode-btn').className = 'flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+            document.getElementById('reference-mode-btn').className = 'flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+            
+            // Show selected section and highlight button
+            switch(mode) {
+                case 'single':
+                    document.getElementById('generation-form').classList.remove('hidden');
+                    document.getElementById('single-mode-btn').className = 'flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+                    break;
+                case 'batch':
+                    document.getElementById('batch-section').classList.remove('hidden');
+                    document.getElementById('batch-mode-btn').className = 'flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+                    break;
+                case 'reference':
+                    document.getElementById('reference-section').classList.remove('hidden');
+                    document.getElementById('reference-mode-btn').className = 'flex-1 bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+                    break;
+            }
+        }
+        
+        // Batch generation functionality
+        let currentBatchJob = null;
+        let batchInterval = null;
+        
+        document.getElementById('start-batch-btn').addEventListener('click', startBatchGeneration);
+        document.getElementById('clear-batch-btn').addEventListener('click', clearBatchPrompts);
+        
+        async function startBatchGeneration() {
+            const promptsText = document.getElementById('batch-prompts').value.trim();
+            if (!promptsText) {
+                alert('Please enter at least one prompt');
+                return;
+            }
+            
+            const prompts = promptsText.split('\n').filter(p => p.trim()).map(p => p.trim());
+            const selectedModel = document.querySelector('select[name="model"]')?.value || 'stable-diffusion-1.5';
+            
+            // Show progress
+            document.getElementById('batch-progress').classList.remove('hidden');
+            document.getElementById('batch-results').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/batch-generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompts: prompts,
+                        model: selectedModel,
+                        parameters: {
+                            width: 512,
+                            height: 512,
+                            steps: 20,
+                            guidance_scale: 7.5
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentBatchJob = result.job_id;
+                    updateBatchProgress();
+                    batchInterval = setInterval(updateBatchProgress, 2000);
+                } else {
+                    alert('Failed to start batch generation: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('Batch generation error:', error);
+                alert('Failed to start batch generation');
+            }
+        }
+        
+        async function updateBatchProgress() {
+            if (!currentBatchJob) return;
+            
+            try {
+                const response = await fetch(`/api/batch-status/${currentBatchJob}`);
+                const status = await response.json();
+                
+                if (status.error) {
+                    clearInterval(batchInterval);
+                    return;
+                }
+                
+                // Update progress bar
+                const progressBar = document.getElementById('batch-progress-bar');
+                progressBar.style.width = `${status.progress_percentage}%`;
+                
+                // Update status text
+                const statusText = document.getElementById('batch-status-text');
+                const countText = document.getElementById('batch-count-text');
+                
+                statusText.textContent = `Status: ${status.status}`;
+                countText.textContent = `${status.completed_count + status.failed_count} / ${status.total_count}`;
+                
+                // Show results if completed
+                if (status.status === 'completed') {
+                    clearInterval(batchInterval);
+                    showBatchResults(status.results);
+                }
+                
+            } catch (error) {
+                console.error('Batch status error:', error);
+            }
+        }
+        
+        function showBatchResults(results) {
+            const resultsGrid = document.getElementById('batch-results-grid');
+            resultsGrid.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'bg-gray-700 rounded-lg p-3';
+                
+                if (result.success) {
+                    resultCard.innerHTML = `
+                        <img src="data:image/png;base64,${result.image}" alt="Generated image" class="w-full h-32 object-cover rounded mb-2">
+                        <p class="text-xs text-gray-300 line-clamp-2">${result.prompt}</p>
+                        <span class="text-xs text-green-400">✅ Success</span>
+                    `;
+                } else {
+                    resultCard.innerHTML = `
+                        <div class="w-full h-32 bg-gray-600 rounded mb-2 flex items-center justify-center">
+                            <span class="text-gray-400">❌ Failed</span>
+                        </div>
+                        <p class="text-xs text-gray-300 line-clamp-2">${result.prompt}</p>
+                        <span class="text-xs text-red-400">❌ ${result.error}</span>
+                    `;
+                }
+                
+                resultsGrid.appendChild(resultCard);
+            });
+            
+            document.getElementById('batch-results').classList.remove('hidden');
+        }
+        
+        function clearBatchPrompts() {
+            document.getElementById('batch-prompts').value = '';
+            document.getElementById('batch-progress').classList.add('hidden');
+            document.getElementById('batch-results').classList.add('hidden');
+            if (batchInterval) {
+                clearInterval(batchInterval);
+            }
+        }
+        
+        // Image reference functionality
+        let referenceImageData = null;
+        
+        document.getElementById('reference-image-input').addEventListener('change', handleReferenceImage);
+        document.getElementById('generate-reference-btn').addEventListener('click', generateWithReference);
+        
+        function handleReferenceImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                referenceImageData = e.target.result;
+                
+                // Show preview
+                const preview = document.getElementById('reference-preview');
+                preview.innerHTML = `<img src="${referenceImageData}" alt="Reference" class="max-h-32 mx-auto rounded">`;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function generateWithReference() {
+            const prompt = document.getElementById('reference-prompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+            
+            if (!referenceImageData) {
+                alert('Please upload a reference image');
+                return;
+            }
+            
+            const selectedModel = document.querySelector('select[name="model"]')?.value || 'stable-diffusion-1.5';
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            formData.append('model', selectedModel);
+            formData.append('reference_image', referenceImageData);
+            formData.append('width', 512);
+            formData.append('height', 512);
+            formData.append('steps', 20);
+            formData.append('guidance_scale', 7.5);
+            
+            try {
+                const response = await fetch('/api/generate-with-reference', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show result in the main result section
+                    document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                    document.getElementById('generation-time').textContent = result.generation_time ? `${result.generation_time.toFixed(2)}s` : 'N/A';
+                    document.getElementById('generation-vram').textContent = result.vram_used !== undefined ? `${result.vram_used.toFixed(2)} GB` : 'N/A';
+                    
+                    // Show result section
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').classList.remove('hidden');
+                    
+                    // Reload gallery
+                    loadGallery();
+                } else {
+                    alert('Reference generation failed: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('Reference generation error:', error);
+                alert('Failed to generate with reference');
+            }
+        }
+        updateStatus();
+        setInterval(updateStatus, 5000); // Update status every 5 seconds
+        loadModels(); // Load available models
+        loadGallery(); // Load gallery on startup
+    </script>
+</body>
+</html>
