@@ -7,6 +7,31 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-17
+
+### 🐛 Azure AI FLUX-1.1-pro Fix
+
+#### ✨ Fixed
+- **Azure AI Integration** - Resolved 404/400 errors with FLUX models
+- **FLUX-1.1-pro Support** - Switched from problematic FLUX.2-pro to working FLUX-1.1-pro
+- **Endpoint Configuration** - Locked to working Azure OpenAI deployment endpoint
+- **Gallery Integration** - Fixed image gallery saving for Azure generations
+- **API Version** - Using confirmed working api-version 2024-02-01
+
+#### 🔧 Technical Changes
+- **Endpoint**: `https://azure-flux-2-resource.openai.azure.com/openai/deployments/FLUX-1.1-pro/images/generations?api-version=2024-02-01`
+- **Authentication**: Standard Azure OpenAI api-key header
+- **Request Format**: OpenAI-style with model, prompt, n, size parameters
+- **Gallery Fix**: Added required guidance and resolution arguments to ImageGallery.add_image()
+
+#### 🎯 Impact
+- Azure AI now generates images reliably with FLUX-1.1-pro
+- All Azure images are properly saved to the gallery
+- Removed retry loops and verbose logging for cleaner operation
+- Frontend updated to use flux-1-1-pro model option
+
+---
+
 ## [1.1.0] - 2026-02-16
 
 ### 🚀 Major Replicate API Integration

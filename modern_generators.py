@@ -3,15 +3,63 @@ Modern Commercial Image Generators
 Support for Nano Banana Pro, Seedream, Leonardo.ai API-based generators
 """
 
-import requests
+import os
 import json
+import time
+import requests
 import base64
 import io
-from typing import Dict, Any, Optional, List
-from PIL import Image
-import json
-import os
-import time
+import random
+from typing import Dict, List, Optional, Any, Union
+from PIL import Image, ImageOps
+from datetime import datetime
+
+# Try to import Azure Identity for Entra ID authentication
+try:
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+    AZURE_IDENTITY_AVAILABLE = True
+    print("✅ Azure Identity package available for Entra ID authentication")
+except ImportError:
+    AZURE_IDENTITY_AVAILABLE = False
+    print("⚠️ Azure Identity package not available, falling back to API key authentication")
+
+def retry_with_backoff(request_func, max_retries=3, base_delay=1.0, max_delay=60.0):
+    """
+    Retry function with exponential backoff for handling rate limits
+    """
+    for attempt in range(max_retries):
+        try:
+            response = request_func()
+            
+            # If successful, return the response
+            if response.status_code == 200:
+                return response
+            
+            # If rate limited, wait and retry
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    # Calculate exponential backoff with jitter
+                    delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+                    print(f"[AZURE] Rate limited (429), retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(delay)
+                    continue
+                else:
+                    print(f"[AZURE] Rate limited after {max_retries} attempts")
+                    return response
+            
+            # For other errors, don't retry
+            return response
+            
+        except Exception as e:
+            if attempt < max_retries - 1:
+                delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+                print(f"[AZURE] Request failed: {e}, retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(delay)
+                continue
+            else:
+                print(f"[AZURE] Request failed after {max_retries} attempts: {e}")
+                raise
+
 import asyncio
 import replicate
 
@@ -34,6 +82,7 @@ class ModernGeneratorManager:
         self.available_generators = {}
         self._setup_leonardo_ai()
         self._setup_replicate()
+        self._setup_azure_ai()
         print(f"Initialized {len(self.available_generators)} generator(s)")
     
     def _setup_replicate(self):
@@ -152,19 +201,21 @@ class ModernGeneratorManager:
             "models": {
                 "phoenix-1-0": {
                     "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",
-                    "name": "Leonardo Phoenix 1.0",
+                    "name": "Phoenix",
                     "description": "Leonardo's flagship model - highest quality",
                     "max_resolution": (1472, 832),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Best available model for highest quality"
+                    "note": "Best available model for highest quality",
+                    "api_version": "v1"
                 },
                 "phoenix-0-9": {
-                    "id": "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
-                    "name": "Leonardo Phoenix 0.9",
+                    "id": None,
+                    "name": "Phoenix 0.9",
                     "description": "Previous version of Phoenix model",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Still high quality but older version"
+                    "note": "Still high quality but older version",
+                    "api_version": "v1"
                 },
                 "universal": {
                     "id": None,
@@ -172,7 +223,125 @@ class ModernGeneratorManager:
                     "description": "Universal model with advanced prompt optimization",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Optimized for all content types"
+                    "note": "Optimized for all content types",
+                    "api_version": "v1"
+                },
+                "flux-dev": {
+                    "id": "b2614463-296c-462a-9586-aafdb8f00e36",
+                    "name": "FLUX Dev",
+                    "description": "FLUX development model for testing",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Development version of FLUX",
+                    "api_version": "v1"
+                },
+                "flux-schnell": {
+                    "id": "1dd50843-d653-4516-a8e3-f0238ee453ff",
+                    "name": "FLUX Schnell",
+                    "description": "Fastest FLUX model for quick generation",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Ultra-fast generation with good quality",
+                    "api_version": "v1"
+                },
+                "flux-1-kontext": {
+                    "id": "28aeddf8-bd19-4803-80fc-79602d1a9989",
+                    "name": "FLUX.1 Kontext [pro]",
+                    "description": "FLUX 1.1 with context awareness",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Professional model with context understanding",
+                    "api_version": "v1"
+                },
+                "flux-2-pro": {
+                    "id": None,
+                    "name": "FLUX.2 Pro",
+                    "description": "Latest FLUX 2.0 Pro model",
+                    "max_resolution": (1440, 1440),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "2:3"],
+                    "note": "Most advanced FLUX model",
+                    "api_version": "v2"
+                },
+                "gpt-image-1-5": {
+                    "id": None,
+                    "name": "GPT Image-1.5",
+                    "description": "OpenAI's GPT Image generation model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "AI-powered image generation",
+                    "api_version": "v2"
+                },
+                "ideogram-3-0": {
+                    "id": None,
+                    "name": "Ideogram 3.0",
+                    "description": "Text-to-image with typography",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Excellent for text and logo generation",
+                    "api_version": "v2"
+                },
+                "lucid-origin": {
+                    "id": "7b592283-e8a7-4c5a-9ba6-d18c31f258b9",
+                    "name": "Lucid Origin",
+                    "description": "Creative and artistic model",
+                    "max_resolution": (1920, 1080),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Perfect for creative and artistic content",
+                    "api_version": "v1"
+                },
+                "lucid-realism": {
+                    "id": "05ce0082-2d80-4a2d-8653-4d1c85e2418e",
+                    "name": "Lucid Realism",
+                    "description": "Photorealistic and detailed model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Highly realistic and detailed",
+                    "api_version": "v1"
+                },
+                "nano-banana": {
+                    "id": None,
+                    "name": "Nano Banana",
+                    "description": "Fast and efficient model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Quick generation with good quality",
+                    "api_version": "v2"
+                },
+                "nano-banana-pro": {
+                    "id": None,
+                    "name": "Nano Banana Pro",
+                    "description": "Enhanced Nano Banana model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1"],  # Only 1:1 confirmed working
+                    "note": "Higher quality Nano Banana model - 1024x1024 only",
+                    "api_version": "v2"
+                },
+                "phoenix": {
+                    "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",
+                    "name": "Phoenix",
+                    "description": "Leonardo's flagship model",
+                    "max_resolution": (1472, 832),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
+                    "note": "Best available model for highest quality",
+                    "api_version": "v1"
+                },
+                "seedream-4-0": {
+                    "id": None,
+                    "name": "Seedream 4.0",
+                    "description": "Creative and imaginative model",
+                    "max_resolution": (1920, 1080),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Perfect for creative concepts",
+                    "api_version": "v2"
+                },
+                "seedream-4-5": {
+                    "id": None,
+                    "name": "Seedream 4.5",
+                    "description": "Enhanced Seedream model",
+                    "max_resolution": (1920, 1080),
+                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"],
+                    "note": "Latest version with improved quality",
+                    "api_version": "v2"
                 }
             },
             "preset_styles": [
@@ -181,7 +350,82 @@ class ModernGeneratorManager:
                 {"id": "CINEMATIC", "name": "Cinematic", "description": "Movie-like quality"},
                 {"id": "FANTASY_ART", "name": "Fantasy Art", "description": "Fantasy themed"},
                 {"id": "ANIME", "name": "Anime", "description": "Anime style"},
-                {"id": "COMIC_BOOK", "name": "Comic Book", "description": "Comic book style"}
+                {"id": "COMIC_BOOK", "name": "Comic Book", "description": "Comic book style"},
+                {"id": "REALISTIC", "name": "Realistic", "description": "Photorealistic style"},
+                {"id": "ARTISTIC", "name": "Artistic", "description": "Painterly and artistic"},
+                {"id": "3D_RENDER", "name": "3D Render", "description": "3D rendering style"},
+                {"id": "PHOTOGRAPHIC", "name": "Photographic", "description": "Photography style"},
+                {"id": "ILLUSTRATION", "name": "Illustration", "description": "Book illustration style"},
+                {"id": "CONCEPT_ART", "name": "Concept Art", "description": "Concept design style"},
+                {"id": "SKETCH", "name": "Sketch", "description": "Pencil sketch style"},
+                {"id": "OIL_PAINTING", "name": "Oil Painting", "description": "Oil painting style"},
+                {"id": "WATERCOLOR", "name": "Watercolor", "description": "Watercolor painting"},
+                {"id": "CHARACTER", "name": "Character", "description": "Character design"},
+                {"id": "LANDSCAPE", "name": "Landscape", "description": "Landscape photography"},
+                {"id": "PORTRAIT", "name": "Portrait", "description": "Portrait photography"},
+                {"id": "ABSTRACT", "name": "Abstract", "description": "Abstract art"},
+                {"id": "MINIMALIST", "name": "Minimalist", "description": "Clean and minimal"},
+                {"id": "VINTAGE", "name": "Vintage", "description": "Vintage and retro"},
+                {"id": "GOTHIC", "name": "Gothic", "description": "Dark and gothic"},
+                {"id": "STEAMPUNK", "name": "Steampunk", "description": "Victorian steampunk"},
+                {"id": "CYBERPUNK", "name": "Cyberpunk", "description": "Futuristic cyberpunk"},
+                {"id": "RETRO", "name": "Retro", "description": "80s and 90s retro"},
+                {"id": "PIXEL_ART", "name": "Pixel Art", "description": "Pixel art style"},
+                {"id": "CARTOON", "name": "Cartoon", "description": "Cartoon style"},
+                {"id": "MANGA", "name": "Manga", "description": "Manga comic style"},
+                {"id": "CHIBI", "name": "Chibi", "description": "Cute chibi style"},
+                {"id": "TATTOO", "name": "Tattoo", "description": "Tattoo design style"},
+                {"id": "GRAFFITI", "name": "Graffiti", "description": "Street art graffiti"},
+                {"id": "NEON", "name": "Neon", "description": "Neon lighting effects"},
+                {"id": "PASTEL", "name": "Pastel", "description": "Soft pastel colors"},
+                {"id": "MONOCHROME", "name": "Monochrome", "description": "Black and white"},
+                {"id": "SEPIA", "name": "Sepia", "description": "Sepia tone"},
+                {"id": "HIGH_CONTRAST", "name": "High Contrast", "description": "Bold and dramatic"},
+                {"id": "SOFT_FOCUS", "name": "Soft Focus", "description": "Dreamy and soft"},
+                {"id": "HDR", "name": "HDR", "description": "High dynamic range"},
+                {"id": "LONG_EXPOSURE", "name": "Long Exposure", "description": "Photography effect"},
+                {"id": "MACRO", "name": "Macro", "description": "Close-up photography"},
+                {"id": "WIDE_ANGLE", "name": "Wide Angle", "description": "Wide lens effect"},
+                {"id": "FISHEYE", "name": "Fisheye", "description": "Fisheye lens effect"},
+                {"id": "TILT_SHIFT", "name": "Tilt Shift", "description": "Miniature effect"},
+                {"id": "VIGNETTE", "name": "Vignette", "description": "Darkened edges"},
+                {"id": "BOKEH", "name": "Bokeh", "description": "Blurry background"},
+                {"id": "LENS_FLARE", "name": "Lens Flare", "description": "Light flare effects"},
+                {"id": "MOTION_BLUR", "name": "Motion Blur", "description": "Motion blur effect"},
+                {"id": "DOUBLE_EXPOSURE", "name": "Double Exposure", "description": "Multiple exposures"},
+                {"id": "INFRARED", "name": "Infrared", "description": "Infrared photography"},
+                {"id": "THERMAL", "name": "Thermal", "description": "Thermal imaging"},
+                {"id": "XRAY", "name": "X-Ray", "description": "X-ray vision"},
+                {"id": "NIGHT_VISION", "name": "Night Vision", "description": "Night vision effect"},
+                {"id": "UV", "name": "UV Light", "description": "UV lighting effects"},
+                {"id": "MIRROR", "name": "Mirror", "description": "Mirror reflection"},
+                {"id": "KALEIDOSCOPE", "name": "Kaleidoscope", "description": "Kaleidoscope pattern"},
+                {"id": "GLITCH", "name": "Glitch", "description": "Digital glitch effect"},
+                {"id": "PIXELATED", "name": "Pixelated", "description": "Pixelated effect"},
+                {"id": "DITHERED", "name": "Dithered", "description": "Color dithering"},
+                {"id": "POSTER", "name": "Poster", "description": "Poster art style"},
+                {"id": "COMIC_STRIP", "name": "Comic Strip", "description": "Comic book panels"},
+                {"id": "MANGA_PANEL", "name": "Manga Panel", "description": "Manga comic panels"},
+                {"id": "STORYBOARD", "name": "Storyboard", "description": "Film storyboard"},
+                {"id": "CONCEPT_BOARD", "name": "Concept Board", "description": "Concept art board"},
+                {"id": "MOOD_BOARD", "name": "Mood Board", "description": "Mood and atmosphere"},
+                {"id": "COLOR_PALETTE", "name": "Color Palette", "description": "Specific color scheme"},
+                {"id": "BLACK_AND_WHITE", "name": "Black and White", "description": "Monochrome photography"},
+                {"id": "COLOR_POP", "name": "Color Pop", "description": "Vibrant colors"},
+                {"id": "EARTH_TONES", "name": "Earth Tones", "description": "Natural earth colors"},
+                {"id": "OCEAN_BLUE", "name": "Ocean Blue", "description": "Ocean blue colors"},
+                {"id": "FOREST_GREEN", "name": "Forest Green", "description": "Forest green colors"},
+                {"id": "SUNSET_ORANGE", "name": "Sunset Orange", "description": "Sunset orange colors"},
+                {"id": "PURPLE_DREAM", "name": "Purple Dream", "description": "Purple fantasy colors"},
+                {"id": "GOLDEN_HOUR", "name": "Golden Hour", "description": "Warm golden light"},
+                {"id": "BLUE_HOUR", "name": "Blue Hour", "description": "Cool blue light"},
+                {"id": "MAGIC_HOUR", "name": "Magic Hour", "description": "Perfect lighting"},
+                {"id": "GOLDEN_GLOW", "name": "Golden Glow", "description": "Golden light effect"},
+                {"id": "SILVER_GLOW", "name": "Silver Glow", "description": "Silver light effect"},
+                {"id": "RAINBOW", "name": "Rainbow", "description": "Rainbow colors"},
+                {"id": "NEON_RAINBOW", "name": "Neon Rainbow", "description": "Neon rainbow colors"},
+                {"id": "PASTEL_RAINBOW", "name": "Pastel Rainbow", "description": "Soft rainbow colors"},
+                {"id": "MONOCHROME_RAINBOW", "name": "Monochrome Rainbow", "description": "B&W rainbow"}
             ],
             "quality_levels": [
                 {"id": "standard", "name": "Standard", "description": "Good quality, faster generation"},
@@ -196,6 +440,37 @@ class ModernGeneratorManager:
                 {"id": "3:4", "name": "Vertical", "resolution": (768, 1024)},
                 {"id": "2:3", "name": "Tall", "resolution": (832, 1216)},
                 {"id": "3:2", "name": "Wide", "resolution": (1216, 832)}
+            ]
+        }
+    
+    def _setup_azure_ai(self):
+        """Setup Azure AI generator configuration"""
+        self.available_generators["azure-ai"] = {
+            "name": "Azure AI",
+            "type": "api",
+            "description": "Microsoft Azure AI with FLUX models",
+            "api_endpoint": "https://azure-flux-2-resource.openai.azure.com",
+            "max_resolution": (1024, 1024),
+            "quality": "Professional",
+            "speed": "Fast",
+            "cost": "Azure Credits",
+            "features": ["text-to-image", "enterprise-grade", "high-availability"],
+            "models": {
+                "flux-1-1-pro": {
+                    "name": "FLUX.1.1 Pro",
+                    "description": "FLUX 1.1 Pro model on Azure (working)",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1"],
+                    "note": "Azure-hosted FLUX.1.1 Pro - 1024x1024",
+                    "deployment_name": "FLUX-1.1-pro"
+                }
+            },
+            "aspect_ratios": [
+                {"id": "1:1", "name": "Square", "resolution": (1024, 1024)}
+            ],
+            "quality_levels": [
+                {"id": "standard", "name": "Standard", "description": "Good quality"},
+                {"id": "high", "name": "High", "description": "Better quality"}
             ]
         }
     
@@ -434,7 +709,7 @@ class ModernGeneratorManager:
                         "height": height,
                         "num_inference_steps": steps,
                         "guidance_scale": guidance_scale,
-                        "negative_prompt": negative_prompt if negative_prompt else None,
+                        "negative_prompt": negative_prompt or "",
                         "num_outputs": 1
                     }
                 )
@@ -457,7 +732,7 @@ class ModernGeneratorManager:
                         "height": height,
                         "num_inference_steps": steps,
                         "guidance_scale": guidance_scale,
-                        "negative_prompt": negative_prompt if negative_prompt else None,
+                        "negative_prompt": negative_prompt or "",
                         "num_outputs": 1
                     }
                 )
@@ -503,7 +778,7 @@ class ModernGeneratorManager:
                             "height": height,
                             "num_inference_steps": steps,
                             "guidance_scale": guidance_scale,
-                            "negative_prompt": negative_prompt if negative_prompt else None,
+                            "negative_prompt": negative_prompt or "",
                             "num_outputs": 1
                         }
                     )
@@ -512,13 +787,30 @@ class ModernGeneratorManager:
                     print(f"[REPLICATE] Output type: {type(output)}")
                     print(f"[REPLICATE] Output content: {output}")
                     
-                    # Handle the output with enhanced debugging
+                    # Handle the output with enhanced debugging and FileOutput support
                     if isinstance(output, list) and len(output) > 0:
                         first_item = output[0]
                         if isinstance(first_item, str) and first_item.startswith('http'):
                             # URL returned
                             image_url = first_item
                             print(f"[REPLICATE] Ideogram V3 Turbo returned list with URL: {image_url}")
+                        elif hasattr(first_item, 'read'):
+                            # FileOutput object from official Replicate client
+                            print(f"[REPLICATE] FileOutput detected, using read() method")
+                            image_data = first_item.read()
+                            print(f"[REPLICATE] Read {len(image_data)} bytes from FileOutput")
+                            
+                            if len(image_data) < 100:
+                                print(f"[ERROR] FileOutput data too small: {len(image_data)} bytes, likely corrupted")
+                                raise ValueError(f"Ideogram V3 Turbo returned corrupted FileOutput: {len(image_data)} bytes")
+                            
+                            try:
+                                image = Image.open(io.BytesIO(image_data))
+                                print(f"[REPLICATE] Ideogram V3 Turbo image loaded from FileOutput: {image.size}")
+                                return image
+                            except Exception as img_error:
+                                print(f"[ERROR] Failed to load image from FileOutput: {img_error}")
+                                raise ValueError(f"Failed to load Ideogram V3 Turbo image from FileOutput: {img_error}")
                         elif isinstance(first_item, bytes):
                             # Binary image data returned directly
                             print(f"[REPLICATE] Ideogram V3 Turbo returned binary image data directly")
@@ -544,6 +836,23 @@ class ModernGeneratorManager:
                             # URL returned
                             image_url = output
                             print(f"[REPLICATE] Ideogram V3 Turbo returned string URL: {image_url}")
+                        elif hasattr(output, 'read'):
+                            # FileOutput object from official Replicate client
+                            print(f"[REPLICATE] FileOutput detected (single), using read() method")
+                            image_data = output.read()
+                            print(f"[REPLICATE] Read {len(image_data)} bytes from FileOutput")
+                            
+                            if len(image_data) < 100:
+                                print(f"[ERROR] FileOutput data too small: {len(image_data)} bytes, likely corrupted")
+                                raise ValueError(f"Ideogram V3 Turbo returned corrupted FileOutput: {len(image_data)} bytes")
+                            
+                            try:
+                                image = Image.open(io.BytesIO(image_data))
+                                print(f"[REPLICATE] Ideogram V3 Turbo image loaded from FileOutput: {image.size}")
+                                return image
+                            except Exception as img_error:
+                                print(f"[ERROR] Failed to load image from FileOutput: {img_error}")
+                                raise ValueError(f"Failed to load Ideogram V3 Turbo image from FileOutput: {img_error}")
                         elif output.startswith('\x89') or len(output) > 1000:
                             # Binary image data returned directly (PNG signature or large binary)
                             print(f"[REPLICATE] Ideogram V3 Turbo returned binary string")
@@ -577,6 +886,23 @@ class ModernGeneratorManager:
                         except Exception as img_error:
                             print(f"[ERROR] Failed to load image from binary data: {img_error}")
                             raise ValueError(f"Failed to load Ideogram V3 Turbo image: {img_error}")
+                    elif hasattr(output, 'read'):
+                        # FileOutput object from official Replicate client (direct)
+                        print(f"[REPLICATE] FileOutput detected (direct), using read() method")
+                        image_data = output.read()
+                        print(f"[REPLICATE] Read {len(image_data)} bytes from FileOutput")
+                        
+                        if len(image_data) < 100:
+                            print(f"[ERROR] FileOutput data too small: {len(image_data)} bytes, likely corrupted")
+                            raise ValueError(f"Ideogram V3 Turbo returned corrupted FileOutput: {len(image_data)} bytes")
+                        
+                        try:
+                            image = Image.open(io.BytesIO(image_data))
+                            print(f"[REPLICATE] Ideogram V3 Turbo image loaded from direct FileOutput: {image.size}")
+                            return image
+                        except Exception as img_error:
+                            print(f"[ERROR] Failed to load image from direct FileOutput: {img_error}")
+                            raise ValueError(f"Failed to load Ideogram V3 Turbo image from direct FileOutput: {img_error}")
                     elif hasattr(output, '__iter__') and not isinstance(output, (str, bytes)):
                         print(f"[REPLICATE] Ideogram V3 Turbo returned iterator, collecting...")
                         output_list = []
@@ -874,7 +1200,7 @@ class ModernGeneratorManager:
                             "height": height,
                             "num_inference_steps": steps,
                             "guidance_scale": guidance_scale,
-                            "negative_prompt": negative_prompt if negative_prompt else None,
+                            "negative_prompt": negative_prompt or "",
                             "num_outputs": 1
                         }
                     )
@@ -1171,11 +1497,14 @@ class ModernGeneratorManager:
         print(f"[SEARCH] Generated callback ID: {callback_id}")
         
         # Get parameters with defaults
-        model_key = kwargs.get("model", "phoenix-1-0")
+        model_key = kwargs.get("leonardo_model", kwargs.get("model", "phoenix-1-0"))
         aspect_ratio = kwargs.get("aspect_ratio", "1:1")
+        width = kwargs.get("width", None)
+        height = kwargs.get("height", None)
         
         print(f"[SEARCH] Model key: {model_key}")
         print(f"[SEARCH] Aspect ratio: {aspect_ratio}")
+        print(f"[SEARCH] Width: {width}, Height: {height}")
         
         # Get model info
         generator_info = self.available_generators["leonardo-api"]
@@ -1189,47 +1518,233 @@ class ModernGeneratorManager:
         model_info = models[model_key]
         print(f"[SEARCH] Selected model: {model_info['name']} (ID: {model_info['id']})")
         
-        # Get resolution from aspect ratio
-        aspect_ratios = {ar["id"]: ar for ar in generator_info["aspect_ratios"]}
-        if aspect_ratio not in aspect_ratios:
-            aspect_ratio = "1:1"  # Default fallback
+        # Get API version for this model
+        api_version = model_info.get("api_version", "v1")
+        print(f"[SEARCH] API version: {api_version}")
         
-        resolution = aspect_ratios[aspect_ratio]["resolution"]
-        width, height = resolution
-        print(f"[SEARCH] Resolution: {width}x{height}")
-        
-        # Build generation payload with Phoenix model optimized settings
-        generation_payload = {
-            "prompt": enhanced_prompt,  # Use enhanced prompt
-            "width": width,
-            "height": height,
-            "num_images": 1,
-            "alchemy": True,  # Use alchemy for Phoenix models (quality mode)
-            "ultra": False,    # Ultra not needed for Phoenix
-            "contrast": 3.5,   # Standard contrast for Phoenix
-            "negative_prompt": self._get_optimized_negative_prompt(kwargs.get("negative_prompt", "")),
-            "num_inference_steps": kwargs.get("num_inference_steps", 25),  # Phoenix needs fewer steps
-            "guidance_scale": kwargs.get("guidance_scale", 7.0)   # Phoenix works well with lower guidance
-        }
-        
-        # Add preset style if specified and valid
-        preset_style = kwargs.get("preset_style", "LEONARDO")  # Default to LEONARDO for best quality
-        valid_styles = ["LEONARDO", "CREATIVE", "DYNAMIC", "CINEMATIC", "FANTASY_ART", "ANIME", "COMIC_BOOK", "ILLUSTRATION"]
-        if preset_style in valid_styles:
-            generation_payload["presetStyle"] = preset_style
-            print(f"[STYLE] Applying Leonardo preset style: {preset_style}")
+        # Get resolution from aspect ratio or use provided dimensions
+        if width and height:
+            # Use dimensions provided by frontend (already calculated)
+            print(f"[SEARCH] Using frontend dimensions: {width}x{height}")
+            
+            # Check if dimensions exceed model's maximum resolution
+            max_width, max_height = model_info["max_resolution"]
+            if width > max_width or height > max_height:
+                print(f"[SEARCH] Dimensions exceed model max resolution {max_width}x{max_height}")
+                # Scale down to fit within max resolution while maintaining aspect ratio
+                scale_factor = min(max_width / width, max_height / height)
+                width = int(width * scale_factor)
+                height = int(height * scale_factor)
+                print(f"[SEARCH] Scaled down to: {width}x{height}")
+            
+            # Round dimensions to nearest multiple of 8 (required by most models)
+            width = max(8, (width // 8) * 8)
+            height = max(8, (height // 8) * 8)
+            print(f"[SEARCH] Final dimensions (rounded to 8): {width}x{height}")
         else:
-            print(f"[STYLE] Invalid style {preset_style}, using LEONARDO default")
-            generation_payload["presetStyle"] = "LEONARDO"
-        
-        # Only add modelId if it's not None (let Leonardo choose default model)
-        if model_info["id"] is not None:
-            generation_payload["modelId"] = model_info["id"]
-            print(f"[SEARCH] Using specific model ID: {model_info['id']}")
+            # Fallback to aspect ratio calculation
+            aspect_ratios = {ar["id"]: ar for ar in generator_info["aspect_ratios"]}
+            if aspect_ratio not in aspect_ratios:
+                aspect_ratio = "1:1"  # Default fallback
+            
+            resolution = aspect_ratios[aspect_ratio]["resolution"]
+            width, height = resolution
+            print(f"[SEARCH] Using aspect ratio fallback: {aspect_ratio} -> {width}x{height}")
+            
+            # Check if dimensions exceed model's maximum resolution
+            max_width, max_height = model_info["max_resolution"]
+            if width > max_width or height > max_height:
+                print(f"[SEARCH] Dimensions exceed model max resolution {max_width}x{max_height}")
+                # Scale down to fit within max resolution while maintaining aspect ratio
+                scale_factor = min(max_width / width, max_height / height)
+                width = int(width * scale_factor)
+                height = int(height * scale_factor)
+                print(f"[SEARCH] Scaled down to: {width}x{height}")
+            
+            # Round dimensions to nearest multiple of 8 (required by most models)
+            width = max(8, (width // 8) * 8)
+            height = max(8, (height // 8) * 8)
+            print(f"[SEARCH] Fallback final dimensions (rounded to 8): {width}x{height}")
+                    
+        # Build generation payload based on API version
+        if api_version == "v2":
+            # V2 API format
+            model_name = model_key.replace("-", ".").replace("_", "-")
+            
+            # Special handling for specific models
+            if model_key == "flux-2-pro":
+                model_name = "flux-pro-2.0"
+            elif model_key == "gpt-image-1-5":
+                model_name = "gpt-image-1.5"
+            elif model_key == "ideogram-3-0":
+                model_name = "ideogram-v3.0"
+            elif model_key == "seedream-4-0":
+                model_name = "seedream-4.0"
+            elif model_key == "seedream-4-5":
+                model_name = "seedream-4.5"
+            elif model_key == "nano-banana":
+                model_name = "gemini-2.5-flash-image"
+            elif model_key == "nano-banana-pro":
+                model_name = "gemini-image-2"
+            
+            # Build V2 payload - seed must NOT be included if not set (null causes validation errors)
+            v2_params = {
+                "prompt": enhanced_prompt,
+                "width": width,
+                "height": height,
+                "quantity": 1,
+                "prompt_enhance": "OFF",
+                "style_ids": ["111dc692-d470-4eec-b791-3475abac4c46"]
+            }
+            seed_val = kwargs.get("seed", -1)
+            if seed_val and seed_val != -1:
+                v2_params["seed"] = seed_val
+            
+            generation_payload = {
+                "public": False,
+                "model": model_name,
+                "parameters": v2_params
+            }
+            print(f"[V2] Payload for {model_key}: model={model_name}, width={width}, height={height}, seed included={seed_val != -1}")
+            # Model-specific V2 overrides
+            if model_key in ["nano-banana-pro", "nano-banana"]:
+                if "seed" in generation_payload["parameters"]:
+                    del generation_payload["parameters"]["seed"]
+                if model_key == "nano-banana-pro":
+                    # Nano Banana Pro only supports 1024x1024
+                    generation_payload["parameters"]["width"] = 1024
+                    generation_payload["parameters"]["height"] = 1024
+            elif model_key == "flux-2-pro":
+                # FLUX.2 Pro requires exact dimensions per official documentation
+                flux2_dimensions = {
+                    "1:1": (1440, 1440),
+                    "16:9": (1440, 810),
+                    "9:16": (810, 1440),
+                    "2:3": (960, 1440),
+                }
+                if aspect_ratio in flux2_dimensions:
+                    w, h = flux2_dimensions[aspect_ratio]
+                else:
+                    w, h = 1440, 1440
+                generation_payload["parameters"]["width"] = w
+                generation_payload["parameters"]["height"] = h
+                print(f"[V2] FLUX.2 Pro official dimensions: {w}x{h} for {aspect_ratio}")
+            elif model_key == "gpt-image-1-5":
+                generation_payload["parameters"]["mode"] = "QUALITY"
+            elif model_key == "ideogram-3-0":
+                generation_payload["parameters"]["mode"] = "TURBO"
+            elif model_key in ["seedream-4-0", "seedream-4-5"]:
+                generation_payload["parameters"]["guidances"] = {
+                    "image_reference": []
+                }
+            
+            # Use V2 endpoint
+            api_endpoint = "https://cloud.leonardo.ai/api/rest/v2/generations"
+            
         else:
-            print(f"[SEARCH] Using Leonardo default model (no modelId specified)")
+            # V1 API format
+            generation_payload = {
+                "prompt": enhanced_prompt,  # Use enhanced prompt
+                "width": width,
+                "height": height,
+                "num_images": 1,
+                "alchemy": True,  # Use alchemy for Phoenix models (quality mode)
+                "ultra": False,    # Ultra not needed for Phoenix
+                "contrast": 3.5,   # Standard contrast for Phoenix
+                "negative_prompt": self._get_optimized_negative_prompt(kwargs.get("negative_prompt", "")),
+                "num_inference_steps": kwargs.get("num_inference_steps", 25),  # Phoenix needs fewer steps
+                "guidance_scale": kwargs.get("guidance_scale", 7.0)   # Phoenix works well with lower guidance
+            }
+            
+            # Add preset style if specified and valid
+            preset_style = kwargs.get("preset_style", "LEONARDO")  # Default to LEONARDO for best quality
+            valid_styles = ["LEONARDO", "CREATIVE", "DYNAMIC", "CINEMATIC", "FANTASY_ART", "ANIME", "COMIC_BOOK", "ILLUSTRATION"]
+            if preset_style in valid_styles:
+                generation_payload["presetStyle"] = preset_style
+                print(f"[STYLE] Applying Leonardo preset style: {preset_style}")
+            else:
+                print(f"[STYLE] Invalid style {preset_style}, using LEONARDO default")
+                generation_payload["presetStyle"] = "LEONARDO"
+            
+            # Add styleUUID for FLUX models
+            if model_key in ["flux-dev", "flux-schnell"]:
+                generation_payload["styleUUID"] = "111dc692-d470-4eec-b791-3475abac4c46"
+                generation_payload["enhancePrompt"] = False
+                generation_payload["contrast"] = 3.5
+                # For FLUX models, use num_images instead of alchemy
+                generation_payload["num_images"] = 1
+                # Remove alchemy for FLUX models
+                if "alchemy" in generation_payload:
+                    del generation_payload["alchemy"]
+                if "ultra" in generation_payload:
+                    del generation_payload["ultra"]
+                if "negative_prompt" in generation_payload:
+                    del generation_payload["negative_prompt"]
+                if "num_inference_steps" in generation_payload:
+                    del generation_payload["num_inference_steps"]
+                if "guidance_scale" in generation_payload:
+                    del generation_payload["guidance_scale"]
+                print(f"[FLUX] Using FLUX-specific payload format")
+            
+            # Add modelId if available
+            if model_info["id"] is not None:
+                generation_payload["modelId"] = model_info["id"]
+                print(f"[SEARCH] Using specific model ID: {model_info['id']}")
+            
+            # Model-specific adjustments
+            if model_key in ["phoenix-1-0", "phoenix"]:
+                # Phoenix models use alchemy and need specific parameters
+                generation_payload["alchemy"] = True
+                generation_payload["ultra"] = False
+                generation_payload["contrast"] = 3.5
+                # Phoenix models don't use negative_prompt
+                if "negative_prompt" in generation_payload:
+                    del generation_payload["negative_prompt"]
+                # Phoenix models use fewer steps
+                generation_payload["num_inference_steps"] = 15
+                generation_payload["guidance_scale"] = 7.0
+            elif model_key in ["flux-dev", "flux-schnell"]:
+                # FLUX models already handled above
+                pass
+            elif model_key in ["lucid-origin", "lucid-realism"]:
+                # Lucid models don't use alchemy
+                generation_payload["alchemy"] = False
+                generation_payload["ultra"] = False
+                generation_payload["contrast"] = 3.5
+                # Lucid models don't use negative_prompt
+                if "negative_prompt" in generation_payload:
+                    del generation_payload["negative_prompt"]
+            elif model_key == "flux-1-kontext":
+                # FLUX.1 Kontext requires exact dimension pairs from the API
+                KONTEXT_DIMENSIONS = {
+                    "1:1": (1024, 1024),
+                    "16:9": (1568, 672),   # Closest to 16:9 (2.33:1)
+                    "9:16": (672, 1568),
+                    "4:3": (1248, 832),    # Closest to 4:3 (1.5:1)
+                    "3:4": (832, 1248),
+                    "2:3": (880, 1184),    # Closest to 2:3
+                    "3:2": (1184, 880),
+                }
+                w, h = KONTEXT_DIMENSIONS.get(aspect_ratio, (1024, 1024))
+                generation_payload["width"] = w
+                generation_payload["height"] = h
+                generation_payload["contrast"] = 3.5
+                generation_payload["num_images"] = 1
+                generation_payload["enhancePrompt"] = False
+                generation_payload["styleUUID"] = "111dc692-d470-4eec-b791-3475abac4c46"
+                # Remove incompatible parameters not in Kontext docs
+                for key in ["alchemy", "ultra", "negative_prompt", "num_inference_steps", "guidance_scale", "presetStyle"]:
+                    if key in generation_payload:
+                        del generation_payload[key]
+                print(f"[FLUX] FLUX.1 Kontext exact dimensions: {w}x{h} for {aspect_ratio}")
+            else:
+                # Default V1 parameters for other models
+                pass
+            
+            # Use V1 endpoint
+            api_endpoint = self.available_generators['leonardo-api']['api_endpoint']
         
-        print(f"[QUALITY] SD 1.5 Optimized Settings: steps={generation_payload['num_inference_steps']}, guidance={generation_payload['guidance_scale']}")
+        print(f"[SEARCH] Using API endpoint: {api_endpoint}")
         print(f"[QUALITY] Enhanced prompt with {len(enhanced_prompt.split(','))} quality terms")
         print(f"[QUALITY] Comprehensive negative prompt for maximum quality")
         
@@ -1237,10 +1752,10 @@ class ModernGeneratorManager:
         
         print(f"[ART] Leonardo.ai generation with {model_info['name']}")
         print(f"[RATIO] Aspect Ratio: {aspect_ratio} ({width}x{height})")
-        print(f"[STYLE] Style: {preset_style}")
+        print(f"[STYLE] Style: {kwargs.get('preset_style', 'LEONARDO')}")
         print(f"[QUALITY] Quality: {kwargs.get('quality', 'standard')}")
         print(f"[SEARCH] Payload: {json.dumps(generation_payload, indent=2)}")
-        print(f"[SEARCH] Sending request to: {self.available_generators['leonardo-api']['api_endpoint']}")
+        print(f"[SEARCH] Sending request to: {api_endpoint}")
         print(f"[SEARCH] Headers: {headers}")
         print(f"[SEARCH] Payload: {json.dumps(generation_payload, indent=2)}")
         
@@ -1248,7 +1763,7 @@ class ModernGeneratorManager:
             print(f"[SEND] Sending POST request...")
             # Start generation
             response = requests.post(
-                self.available_generators["leonardo-api"]["api_endpoint"],
+                api_endpoint,
                 headers=headers,
                 json=generation_payload,
                 timeout=30
@@ -1263,14 +1778,62 @@ class ModernGeneratorManager:
             data = response.json()
             print(f"[SEND] Response data: {json.dumps(data, indent=2)}")
             
-            # Extract generation ID from the response
-            if "sdGenerationJob" in data and "generationId" in data["sdGenerationJob"]:
-                generation_id = data["sdGenerationJob"]["generationId"]
-            elif "generations_by_pk" in data and "id" in data["generations_by_pk"]:
-                generation_id = data["generations_by_pk"]["id"]
+            # Extract generation ID from the response based on API version
+            if api_version == "v2":
+                # V2 API response format - multiple possible structures
+                generation_id = None
+                
+                # Try different V2 response structures
+                if "sd_generation_job" in data and "id" in data["sd_generation_job"]:
+                    generation_id = data["sd_generation_job"]["id"]
+                    print(f"[V2] Found generation ID in sd_generation_job: {generation_id}")
+                elif "generations_by_pk" in data and "id" in data["generations_by_pk"]:
+                    generation_id = data["generations_by_pk"]["id"]
+                    print(f"[V2] Found generation ID in generations_by_pk: {generation_id}")
+                elif "id" in data:
+                    generation_id = data["id"]
+                    print(f"[V2] Found generation ID in root: {generation_id}")
+                elif "generationId" in data:
+                    generation_id = data["generationId"]
+                    print(f"[V2] Found generationId in root: {generation_id}")
+                elif "generate" in data and "generationId" in data["generate"]:
+                    generation_id = data["generate"]["generationId"]
+                    print(f"[V2] Found generation ID in generate object: {generation_id}")
+                else:
+                    print(f"[ERROR] Full V2 response structure: {json.dumps(data, indent=2)}")
+                    
+                    # Check if response is a list (error response)
+                    if isinstance(data, list):
+                        print(f"[ERROR] V2 API returned error list instead of expected object")
+                        if len(data) > 0 and isinstance(data[0], dict):
+                            error_data = data[0]
+                            if "extensions" in error_data:
+                                print(f"[ERROR] API Error: {error_data.get('extensions', {}).get('details', {}).get('message', 'Unknown error')}")
+                            elif "message" in error_data:
+                                print(f"[ERROR] API Error: {error_data['message']}")
+                        raise ValueError(f"V2 API returned error: {data}")
+                    else:
+                        print(f"[ERROR] Response keys: {list(data.keys())}")
+                        print(f"[ERROR] Looking for generation ID in any field...")
+                        
+                        # Try to find any field that might contain the generation ID
+                        for key, value in data.items():
+                            if isinstance(value, dict) and 'id' in value:
+                                print(f"[ERROR] Found potential ID in {key}: {value['id']}")
+                            elif isinstance(value, str) and len(value) > 10:
+                                print(f"[ERROR] Found potential ID string in {key}: {value}")
+                    
+                    raise ValueError("Could not extract generation ID from V2 response")
+                    
             else:
-                print(f"� Full response structure: {json.dumps(data, indent=2)}")
-                raise ValueError("Could not extract generation ID from response")
+                # V1 API response format
+                if "sdGenerationJob" in data and "generationId" in data["sdGenerationJob"]:
+                    generation_id = data["sdGenerationJob"]["generationId"]
+                elif "generations_by_pk" in data and "id" in data["generations_by_pk"]:
+                    generation_id = data["generations_by_pk"]["id"]
+                else:
+                    print(f"[ERROR] Full V1 response structure: {json.dumps(data, indent=2)}")
+                    raise ValueError("Could not extract generation ID from V1 response")
             
             print(f"[OK] Leonardo.ai generation started: {generation_id}")
             
@@ -1448,6 +2011,92 @@ class ModernGeneratorManager:
             "seedream": "/webhook/seedream/{callback_id}"  # Future support
         }
     
+    async def generate_with_azure_ai(self, prompt: str, **kwargs) -> Image.Image:
+        """Generate image using Azure AI API"""
+        print(f"[AZURE] Azure AI generation with {prompt[:100]}...")
+        
+        if "azure-ai" not in self.api_keys:
+            raise ValueError("API key required for Azure AI")
+        
+        # Get parameters (preserve requested size for post-processing)
+        target_width = kwargs.get("width", 1024)
+        target_height = kwargs.get("height", 1024)
+        model_key = kwargs.get("model", "flux-1-1-pro")
+        
+        # Get model info
+        generator_info = self.available_generators["azure-ai"]
+        models = generator_info["models"]
+        
+        if model_key not in models:
+            raise ValueError(f"Model {model_key} not available in Azure AI")
+        
+        model_info = models[model_key]
+        deployment_name = model_info["deployment_name"]
+        
+        # Azure AI FLUX.2-Pro only supports 1024x1024; we'll fit to requested aspect after generation
+        request_width, request_height = 1024, 1024
+        
+        # Azure OpenAI endpoint (working for FLUX-1.1-pro)
+        endpoint = "https://azure-flux-2-resource.openai.azure.com"
+
+        # Use API key header (standard Azure OpenAI)
+        api_key = self.api_keys.get("azure-ai")
+        if not api_key:
+            raise ValueError("API key required for Azure AI")
+        auth_headers = {
+            'api-key': api_key,
+            'Content-Type': 'application/json'
+        }
+
+        # Lock to the working endpoint and api-version
+        api_versions = ["2024-02-01"]
+
+        # Request body for OpenAI images endpoint (use model name)
+        generation_body = {
+            "model": "FLUX-1.1-pro",
+            "prompt": prompt,
+            "n": 1,
+            "size": "1024x1024"
+        }
+
+        # Single working endpoint
+        generation_url = f"{endpoint}/openai/deployments/{deployment_name}/images/generations?api-version=2024-02-01"
+
+        print(f"[AZURE] Generating with FLUX-1.1-pro at {generation_url}")
+        print(f"[AZURE] Prompt: {prompt[:100]}...")
+        try:
+            response = requests.post(
+                generation_url,
+                headers=auth_headers,
+                json=generation_body,
+                timeout=60
+            )
+            response.raise_for_status()
+            response_data = response.json()
+
+            if 'data' not in response_data or not response_data['data']:
+                raise ValueError("No image data in response")
+
+            image_data = response_data['data'][0]
+            if 'b64_json' in image_data:
+                b64_img = image_data['b64_json']
+                image_bytes = base64.b64decode(b64_img)
+                image = Image.open(io.BytesIO(image_bytes))
+                print(f"[AZURE] Generated image: {image.size}")
+                if image.size != (target_width, target_height):
+                    try:
+                        resample = getattr(Image, "Resampling", Image).LANCZOS
+                    except Exception:
+                        resample = Image.LANCZOS
+                    image = ImageOps.fit(image, (target_width, target_height), method=resample)
+                    print(f"[AZURE] Fitted image to: {image.size}")
+                return image
+            else:
+                raise ValueError("Unexpected image format in response")
+        except Exception as e:
+            raise ValueError(f"Azure AI generation failed: {e}")
+        raise ValueError("Azure AI generation failed: no response")
+    
     async def generate_image(self, generator_name: str, prompt: str, **kwargs) -> Image.Image:
         """Generate image using specified modern generator"""
         print(f"[ART] Starting generation with {generator_name}")
@@ -1463,6 +2112,8 @@ class ModernGeneratorManager:
         try:
             if generator_name == "leonardo-api":
                 return await self.generate_with_leonardo(prompt, **kwargs)
+            elif generator_name == "azure-ai":
+                return await self.generate_with_azure_ai(prompt, **kwargs)
             elif generator_name == "nano-banana-pro":
                 return await self.generate_with_nano_banana(prompt, **kwargs)
             elif generator_name == "seedream":

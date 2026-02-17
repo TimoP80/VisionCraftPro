@@ -752,6 +752,43 @@
         </div>
     </div>
 
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content rounded-xl max-w-lg w-full">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                        🔑 Set API Key
+                    </h3>
+                    <button id="close-api-modal" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-gray-300 mb-2">Enter API key for <span id="api-key-generator-name" class="text-blue-400 font-semibold"></span>:</p>
+                    <textarea id="api-key-input" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Enter your API key here..."></textarea>
+                </div>
+                
+                <div class="bg-gray-800/50 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-gray-400"><strong>Format:</strong></p>
+                    <p id="api-key-format" class="text-xs text-gray-500 font-mono mt-1"></p>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button id="save-api-key" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                        Save API Key
+                    </button>
+                    <button id="cancel-api-key" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Image Modal -->
     <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
         <div class="modal-content rounded-xl max-w-5xl max-h-full overflow-auto">
@@ -785,7 +822,7 @@
     </div>
 
     <script>
-        const API_BASE = ''; // Base URL for API calls
+        const API_BASE = window.location.origin; // Base URL for API calls (dynamic)
         
         // Make refreshApiKeyStatus globally accessible
         window.refreshApiKeyStatus = function() {
@@ -846,7 +883,12 @@
             imagesToRender.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'gallery-item';
-                div.onclick = () => openImageModal(item.id);
+                div.onclick = () => {
+                    console.log('🔍 Gallery item clicked:', item.id);
+                    openImageModal(item.id);
+                };
+                
+                console.log('🔍 Creating gallery item for:', item.id, item.prompt);
                 
                 div.innerHTML = `
                     <img src="" alt="${item.prompt || 'Generated image'}" loading="lazy">
@@ -869,9 +911,17 @@
         // Load gallery image
         async function loadGalleryImage(imageId, imgElement) {
             try {
+                console.log('🔍 Loading gallery image:', imageId);
                 const response = await fetch(`${API_BASE}/gallery/${imageId}`);
                 const data = await response.json();
+                console.log('🔍 Gallery image data received:', imageId, !!data.image);
                 imgElement.src = `data:image/png;base64,${data.image}`;
+                imgElement.onload = () => {
+                    console.log('✅ Gallery image loaded successfully:', imageId);
+                };
+                imgElement.onerror = () => {
+                    console.error('❌ Gallery image failed to load:', imageId);
+                };
             } catch (error) {
                 console.error('Failed to load image:', error);
                 imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzM3NDE1MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+RmFpbGVkIHRvIGxvYWQ8L3RleHQ+PC9zdmc+';
@@ -946,6 +996,93 @@
                 modal.classList.remove('hidden');
                 console.log('✅ Modal opened successfully');
                 
+                // Hide main page scrollbar when modal is open
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
+                
+                // Force modal to be visible with inline styles
+                modal.style.cssText = `
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    background: rgba(0, 0, 0, 0.8) !important;
+                    z-index: 9999 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 20px !important;
+                    box-sizing: border-box !important;
+                    overflow: hidden !important;
+                `;
+                
+                // Make modal content visible
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.style.cssText = `
+                        background: rgba(30, 41, 59, 0.95) !important;
+                        border-radius: 12px !important;
+                        max-width: calc(90vw - 40px) !important;
+                        max-height: calc(90vh - 40px) !important;
+                        overflow: auto !important;
+                        padding: 24px !important;
+                        padding-top: 60px !important;
+                        border: 1px solid rgba(148, 163, 184, 0.2) !important;
+                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3) !important;
+                        position: relative !important;
+                        box-sizing: border-box !important;
+                    `;
+                }
+                
+                // Make close button more visible and properly positioned
+                const closeBtn = document.getElementById('close-modal');
+                if (closeBtn) {
+                    closeBtn.style.cssText = `
+                        position: absolute !important;
+                        top: 15px !important;
+                        right: 15px !important;
+                        background: rgba(239, 68, 68, 0.9) !important;
+                        color: white !important;
+                        border: 1px solid rgba(239, 68, 68, 0.3) !important;
+                        border-radius: 50% !important;
+                        width: 36px !important;
+                        height: 36px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        cursor: pointer !important;
+                        z-index: 10001 !important;
+                        font-size: 18px !important;
+                        font-weight: bold !important;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+                        transition: all 0.2s ease !important;
+                    `;
+                    closeBtn.innerHTML = '✕';
+                    
+                    // Add hover effect
+                    closeBtn.addEventListener('mouseenter', () => {
+                        closeBtn.style.background = 'rgba(220, 38, 38, 0.9)';
+                        closeBtn.style.transform = 'scale(1.05)';
+                    });
+                    closeBtn.addEventListener('mouseleave', () => {
+                        closeBtn.style.background = 'rgba(239, 68, 68, 0.9)';
+                        closeBtn.style.transform = 'scale(1)';
+                    });
+                }
+                
+                // Make modal image visible
+                const modalImg = document.getElementById('modal-image');
+                if (modalImg) {
+                    modalImg.style.cssText = `
+                        max-width: 100% !important;
+                        max-height: 60vh !important;
+                        border-radius: 8px !important;
+                        border: 1px solid rgba(148, 163, 184, 0.2) !important;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+                    `;
+                }
+                
             } catch (error) {
                 console.error('Failed to open image:', error);
                 alert('Failed to load image details: ' + error.message);
@@ -954,7 +1091,59 @@
 
         // Close modal
         document.getElementById('close-modal').addEventListener('click', () => {
-            document.getElementById('image-modal').classList.add('hidden');
+            const modal = document.getElementById('image-modal');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            
+            // Restore main page scrollbar
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        });
+
+        // Also close modal when clicking outside
+        document.getElementById('image-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'image-modal') {
+                const modal = document.getElementById('image-modal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                
+                // Restore main page scrollbar
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('image-modal');
+                const apiModal = document.getElementById('api-key-modal');
+                
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    
+                    // Restore main page scrollbar
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                }
+                
+                if (!apiModal.classList.contains('hidden')) {
+                    closeApiKeyModal();
+                }
+            }
+        });
+
+        // API Key Modal Event Listeners
+        document.getElementById('close-api-modal').addEventListener('click', closeApiKeyModal);
+        document.getElementById('cancel-api-key').addEventListener('click', closeApiKeyModal);
+        document.getElementById('save-api-key').addEventListener('click', saveApiKey);
+        
+        // Close API key modal when clicking outside
+        document.getElementById('api-key-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'api-key-modal') {
+                closeApiKeyModal();
+            }
         });
 
         // Download image
@@ -1397,7 +1586,12 @@
                     option.value = key;
                     // Use available fields or provide defaults
                     const quality = model.quality || model.speed || 'Medium';
-                    const vram = model.vram_required || model.max_resolution ? `${model.max_resolution[0]}x${model.max_resolution[1]}` : '512x512';
+                    let vram = '512x512';
+                    if (model.max_resolution && Array.isArray(model.max_resolution) && model.max_resolution.length >= 2) {
+                        vram = `${model.max_resolution[0]}x${model.max_resolution[1]}`;
+                    } else if (model.vram_required) {
+                        vram = model.vram_required;
+                    }
                     const experimental = model.experimental ? ' [Experimental]' : '';
                     option.textContent = `${model.name} - ${quality} (${vram})${experimental}`;
                     localGroup.appendChild(option);
@@ -1411,17 +1605,52 @@
             if (Object.keys(modernGenerators).length > 0) {
                 console.log('🔍 Adding modern generators:', Object.keys(modernGenerators));
                 
-                // Add Leonardo.ai as a group
+                // Add Leonardo.ai models as individual options
                 if (modernGenerators['leonardo-api']) {
                     const leonardoGroup = document.createElement('optgroup');
-                    leonardoGroup.label = '🎨 Leonardo.ai';
+                    leonardoGroup.label = '🎨 Leonardo.ai Models';
                     
-                    const leonardoOption = document.createElement('option');
-                    leonardoOption.value = 'leonardo-api';
-                    leonardoOption.textContent = `${modernGenerators['leonardo-api'].name} - ${modernGenerators['leonardo-api'].cost} (${modernGenerators['leonardo-api'].speed})`;
-                    leonardoGroup.appendChild(leonardoOption);
+                    const leonardoInfo = modernGenerators['leonardo-api'];
+                    console.log('🔍 Leonardo.ai info:', leonardoInfo);
+                    
+                    const models = leonardoInfo.models;
+                    console.log('🔍 Leonardo.ai models:', models);
+                    
+                    if (!models) {
+                        console.error('❌ Leonardo.ai models not found in generator info');
+                        return;
+                    }
+                    
+                    // Add each Leonardo.ai model as an individual option
+                    for (const [modelKey, modelInfo] of Object.entries(models)) {
+                        console.log(`🔍 Processing Leonardo model: ${modelKey}`, modelInfo);
+                        
+                        if (!modelInfo) {
+                            console.error(`❌ Model info not found for ${modelKey}`);
+                            continue;
+                        }
+                        
+                        const option = document.createElement('option');
+                        option.value = `leonardo-api:${modelKey}`;
+                        
+                        // Format: "Model Name - Description (Max Resolution) [Note]"
+                        const resolution = modelInfo.max_resolution;
+                        let resolutionText = 'Unknown';
+                        if (resolution && Array.isArray(resolution) && resolution.length >= 2) {
+                            resolutionText = `${resolution[0]}x${resolution[1]}`;
+                        } else {
+                            console.warn(`⚠️ Invalid resolution for ${modelKey}:`, resolution);
+                        }
+                        
+                        const note = modelInfo.note ? ` [${modelInfo.note}]` : '';
+                        
+                        option.textContent = `${modelInfo.name || 'Unknown Model'} - ${modelInfo.description || 'No description'} (${resolutionText})${note}`;
+                        leonardoGroup.appendChild(option);
+                        console.log(`🔍 Added Leonardo model option: ${modelKey} -> ${option.textContent}`);
+                    }
+                    
                     modelSelect.appendChild(leonardoGroup);
-                    console.log(`🔍 Added Leonardo.ai option: leonardo-api -> ${leonardoOption.textContent}`);
+                    console.log(`🔍 Added Leonardo.ai group with ${Object.keys(models).length} models`);
                 }
                 
                 // Add Replicate models as individual options
@@ -1481,6 +1710,19 @@
                     
                     modelSelect.appendChild(puterGroup);
                 }
+                
+                // Add Azure AI
+                if (modernGenerators['azure-ai']) {
+                    const azureGroup = document.createElement('optgroup');
+                    azureGroup.label = '☁️ Azure AI';
+                    
+                    const azureOption = document.createElement('option');
+                    azureOption.value = 'azure-ai:flux-1-1-pro';
+                    azureOption.textContent = `${modernGenerators['azure-ai'].name} - ${modernGenerators['azure-ai'].cost} (${modernGenerators['azure-ai'].speed})`;
+                    azureGroup.appendChild(azureOption);
+                    modelSelect.appendChild(azureGroup);
+                    console.log(`🔍 Added Azure AI option: azure-ai:flux-1-1-pro -> ${azureOption.textContent}`);
+                }
             }
             
             // Add a default option if no models are available
@@ -1506,6 +1748,10 @@
             const leonardoControls = document.getElementById('leonardo-controls');
             const puterControls = document.getElementById('puter-controls');
             
+            console.log('🔍 updateModelInfo called with:', selectedModel);
+            console.log('🔍 availableModels:', Object.keys(availableModels));
+            console.log('🔍 modernGenerators:', Object.keys(modernGenerators));
+            
             // Check if it's a local model
             if (availableModels[selectedModel]) {
                 const model = availableModels[selectedModel];
@@ -1521,54 +1767,71 @@
                 leonardoControls.classList.add('hidden');
                 puterControls.classList.add('hidden');
             }
-            // Check if it's a modern generator
-            else if (modernGenerators[selectedModel]) {
-                const generator = modernGenerators[selectedModel];
+            // Check if it's a modern generator model (with colon format)
+            else if (selectedModel.includes(':')) {
+                const [generatorName, modelKey] = selectedModel.split(':');
+                console.log('🔍 Parsed generator:', generatorName, 'model:', modelKey);
                 
-                // Show Leonardo controls if it's Leonardo.ai
-                if (selectedModel === 'leonardo-api') {
-                    leonardoControls.classList.remove('hidden');
-                    puterControls.classList.add('hidden');
-                    modelInfo.innerHTML = `
-                        <div class="text-xs space-y-1">
-                            <p>💰 Cost: ${generator.cost}</p>
-                            <p>⚡ Speed: ${generator.speed}</p>
-                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                            <p>📝 ${generator.description}</p>
-                            <p>🔧 Type: API Generator</p>
-                            <p class="text-blue-400">✅ Advanced controls available</p>
-                        </div>
-                    `;
-                    // Update API key status when Leonardo.ai is selected
-                    updateApiKeyStatus();
-                }
-                // Show Puter controls if it's a Puter model
-                else if (generator.type === 'puter') {
-                    puterControls.classList.remove('hidden');
-                    leonardoControls.classList.add('hidden');
-                    modelInfo.innerHTML = `
-                        <div class="text-xs space-y-1">
-                            <p>💰 Cost: ${generator.cost}</p>
-                            <p>⚡ Speed: ${generator.speed}</p>
-                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                            <p>📝 ${generator.description}</p>
-                            <p>🔧 Type: Puter.com Generator</p>
-                            <p class="text-green-400">✅ FREE premium access!</p>
-                            <p class="text-green-400">🆓 No API keys needed!</p>
-                        </div>
-                    `;
-                } else {
-                    leonardoControls.classList.add('hidden');
-                    puterControls.classList.add('hidden');
-                    modelInfo.innerHTML = `
-                        <div class="text-xs space-y-1">
-                            <p>💰 Cost: ${generator.cost}</p>
-                            <p>⚡ Speed: ${generator.speed}</p>
-                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                            <p>📝 ${generator.description}</p>
-                            <p>🔧 Type: API Generator</p>
-                        </div>
-                    `;
+                if (modernGenerators[generatorName]) {
+                    const generator = modernGenerators[generatorName];
+                    console.log('🔍 Found generator:', generator.name);
+                    
+                    // Handle Leonardo.ai models
+                    if (generatorName === 'leonardo-api') {
+                        leonardoControls.classList.remove('hidden');
+                        puterControls.classList.add('hidden');
+                        
+                        const modelInfo = generator.models[modelKey];
+                        const aspectRatios = modelInfo.aspect_ratios.join(', ');
+                        modelInfo.innerHTML = `
+                            <div class="text-xs space-y-1">
+                                <p>🎨 Model: ${modelInfo.name}</p>
+                                <p>📝 ${modelInfo.description}</p>
+                                <p>📏 Max Resolution: ${modelInfo.max_resolution[0]}x${modelInfo.max_resolution[1]}</p>
+                                <p>📐 Aspect Ratios: ${aspectRatios}</p>
+                                <p>💰 Cost: ${generator.cost}</p>
+                                <p>⚡ Speed: ${generator.speed}</p>
+                                <p>🔧 Type: Leonardo.ai Model</p>
+                                <p class="text-blue-400">✅ Advanced controls available</p>
+                                ${modelInfo.note ? `<p class="text-yellow-400">💡 ${modelInfo.note}</p>` : ''}
+                            </div>
+                        `;
+                        updateApiKeyStatus();
+                    }
+                    // Handle Azure AI models
+                    else if (generatorName === 'azure-ai') {
+                        leonardoControls.classList.remove('hidden');
+                        puterControls.classList.add('hidden');
+                        
+                        const modelInfo = generator.models[modelKey];
+                        modelInfo.innerHTML = `
+                            <div class="text-xs space-y-1">
+                                <p>🎨 Model: ${modelInfo.name}</p>
+                                <p>📝 ${modelInfo.description}</p>
+                                <p>📏 Max Resolution: ${modelInfo.max_resolution[0]}x${modelInfo.max_resolution[1]}</p>
+                                <p>📐 Aspect Ratios: ${modelInfo.aspect_ratios.join(', ')}</p>
+                                <p>💰 Cost: ${generator.cost}</p>
+                                <p>⚡ Speed: ${generator.speed}</p>
+                                <p>🔧 Type: Azure AI Generator</p>
+                                <p class="text-blue-400">✅ Enterprise-grade quality</p>
+                                ${modelInfo.note ? `<p class="text-yellow-400">💡 ${modelInfo.note}</p>` : ''}
+                            </div>
+                        `;
+                        updateApiKeyStatus();
+                    }
+                    else {
+                        leonardoControls.classList.add('hidden');
+                        puterControls.classList.add('hidden');
+                        modelInfo.innerHTML = `
+                            <div class="text-xs space-y-1">
+                                <p>💰 Cost: ${generator.cost}</p>
+                                <p>⚡ Speed: ${generator.speed}</p>
+                                <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                                <p>📝 ${generator.description}</p>
+                                <p>🔧 Type: API Generator</p>
+                            </div>
+                        `;
+                    }
                 }
             }
             else {
@@ -1580,30 +1843,137 @@
         
         // Show API key dialog
         function showApiKeyDialog(generatorName) {
-            const generator = modernGenerators[generatorName];
-            const apiKey = prompt(`Enter API key for ${generator.name}:`);
+            console.log('🔍 showApiKeyDialog called with:', generatorName);
+            console.log('🔍 modernGenerators keys:', Object.keys(modernGenerators));
             
-            if (apiKey) {
-                fetch(`${API_BASE}/set-api-key`, {
+            const generator = modernGenerators[generatorName];
+            console.log('🔍 generator found:', !!generator);
+            
+            if (!generator) {
+                console.error('❌ Generator not found:', generatorName);
+                alert('Generator not found: ' + generatorName);
+                return;
+            }
+            
+            const modal = document.getElementById('api-key-modal');
+            const generatorNameSpan = document.getElementById('api-key-generator-name');
+            const formatText = document.getElementById('api-key-format');
+            const apiInput = document.getElementById('api-key-input');
+            
+            console.log('🔍 Modal elements found:', {
+                modal: !!modal,
+                generatorNameSpan: !!generatorNameSpan,
+                formatText: !!formatText,
+                apiInput: !!apiInput
+            });
+            
+            if (!modal || !generatorNameSpan || !formatText || !apiInput) {
+                console.error('❌ Modal elements not found');
+                alert('Modal elements not found. Please refresh the page.');
+                return;
+            }
+            
+            // Set generator name
+            generatorNameSpan.textContent = generator.name;
+            
+            // Set format hint
+            if (generatorName === 'azure-ai') {
+                formatText.textContent = 'https://your-endpoint.openai.azure.com|your-subscription-key';
+            } else if (generatorName === 'leonardo-api') {
+                formatText.textContent = 'Your Leonardo.ai API key';
+            } else {
+                formatText.textContent = 'Your API key';
+            }
+            
+            // Clear input
+            apiInput.value = '';
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            
+            // Force modal to be visible with inline styles
+            modal.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: rgba(0, 0, 0, 0.75) !important;
+                z-index: 9999 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 1rem !important;
+            `;
+            
+            console.log('🔍 Modal should be visible now');
+            console.log('🔍 Modal styles:', modal.style.cssText);
+            console.log('🔍 Modal classes:', modal.className);
+            
+            // Focus on input
+            setTimeout(() => apiInput.focus(), 100);
+            
+            console.log(`🔍 Opening API key dialog for ${generator.name}`);
+        }
+        
+        // Close API key modal
+        function closeApiKeyModal() {
+            const modal = document.getElementById('api-key-modal');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+        
+        // Save API key
+        async function saveApiKey() {
+            const generatorDisplayName = document.getElementById('api-key-generator-name').textContent;
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            
+            if (!apiKey) {
+                alert('Please enter an API key');
+                return;
+            }
+            
+            // Find the generator key from the display name
+            let generatorKey = null;
+            for (const [key, generator] of Object.entries(modernGenerators)) {
+                if (generator.name === generatorDisplayName) {
+                    generatorKey = key;
+                    break;
+                }
+            }
+            
+            if (!generatorKey) {
+                alert('Generator not found');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/set-api-key`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        generator_name: generatorName,
+                        generator_name: generatorKey,
                         api_key: apiKey
                     })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    updateModelInfo(); // Refresh the model info to show API key status
-                    updateApiKeyStatus(); // This should now work with the correct endpoint
-                })
-                .catch(error => {
-                    console.error('Failed to set API key:', error);
-                    alert('Failed to set API key');
                 });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('🔍 API key set result:', result);
+                    closeApiKeyModal();
+                    updateApiKeyStatus(); // Refresh status
+                    alert(`API key set successfully for ${generatorDisplayName}!`);
+                } else {
+                    const error = await response.text();
+                    console.error('Failed to set API key:', error);
+                    alert(`Failed to set API key: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error setting API key:', error);
+                alert('Error setting API key. Please try again.');
             }
         }
 
@@ -1615,7 +1985,14 @@
             
             console.log('🔍 Updating API key status for:', selectedModel);
             
-            if (selectedModel === 'leonardo-api' && modernGenerators[selectedModel]) {
+            // Extract generator name from model value
+            let generatorName = selectedModel;
+            if (selectedModel.includes(':')) {
+                generatorName = selectedModel.split(':')[0];
+            }
+            
+            // Handle Leonardo.ai (both old and new format)
+            if (generatorName === 'leonardo-api') {
                 // Check if API key is set by calling the backend
                 fetch(`${API_BASE}/api/modern-generators`)
                     .then(response => response.json())
@@ -1643,8 +2020,38 @@
                         apiKeyDisplay.textContent = '❌ Could not check status';
                         apiKeyDisplay.className = 'text-xs text-red-400';
                     });
-            } else {
-                apiKeyDisplay.textContent = 'Select Leonardo.ai to see API key status';
+            }
+            // Handle Azure AI
+            else if (generatorName === 'azure-ai') {
+                fetch(`${API_BASE}/api/modern-generators`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('🔍 Modern generators response:', data);
+                        const hasApiKey = data.api_keys_set && data.api_keys_set.includes('azure-ai');
+                        console.log('🔍 Has API key:', hasApiKey);
+                        
+                        if (hasApiKey) {
+                            apiKeyDisplay.textContent = '✅ API key configured';
+                            apiKeyDisplay.className = 'text-xs text-green-400';
+                            setApiKeyBtn.textContent = 'Update API Key';
+                            setApiKeyBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                            setApiKeyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                        } else {
+                            apiKeyDisplay.textContent = '❌ No API key set';
+                            apiKeyDisplay.className = 'text-xs text-red-400';
+                            setApiKeyBtn.textContent = 'Set API Key';
+                            setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                            setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to check API key status:', error);
+                        apiKeyDisplay.textContent = '❌ Could not check status';
+                        apiKeyDisplay.className = 'text-xs text-red-400';
+                    });
+            }
+            else {
+                apiKeyDisplay.textContent = `Select ${generatorName === 'leonardo-api' ? 'Leonardo.ai' : generatorName === 'azure-ai' ? 'Azure AI' : 'a supported generator'} to see API key status`;
                 apiKeyDisplay.className = 'text-xs text-gray-400';
                 setApiKeyBtn.textContent = 'Set API Key';
                 setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
@@ -1656,7 +2063,16 @@
         document.getElementById('set-api-key-btn').addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            showApiKeyDialog('leonardo-api');
+            
+            // Get the currently selected generator
+            const selectedModel = document.getElementById('model').value;
+            let generatorName = selectedModel;
+            if (selectedModel.includes(':')) {
+                generatorName = selectedModel.split(':')[0];
+            }
+            
+            console.log('🔍 Setting API key for generator:', generatorName);
+            showApiKeyDialog(generatorName);
         });
 
         // Update status
@@ -1765,46 +2181,87 @@
             console.log('  height from form:', formData.get('height'));
             
             if (aspectRatio && resolution) {
-                // Calculate dimensions based on aspect ratio and resolution
-                const [baseWidth, baseHeight] = resolution.split('x').map(Number);
-                console.log('🔍 Debug - Parsed resolution:', baseWidth, 'x', baseHeight);
-                
-                switch(aspectRatio) {
-                    case '1:1':
-                        data.width = baseWidth;
-                        data.height = baseHeight;
-                        break;
-                    case '16:9':
-                        data.width = baseWidth;
-                        data.height = Math.round(baseWidth * 9 / 16);
-                        break;
-                    case '9:16':
-                        data.width = baseWidth;
-                        data.height = Math.round(baseWidth * 16 / 9);
-                        break;
-                    case '4:3':
-                        data.width = baseWidth;
-                        data.height = Math.round(baseWidth * 3 / 4);
-                        break;
-                    case '3:4':
-                        data.width = baseWidth;
-                        data.height = Math.round(baseWidth * 4 / 3);
-                        break;
-                    case '2:3':
-                        data.width = baseWidth;
-                        data.height = Math.round(baseWidth * 3 / 2);
-                        break;
-                    case '3:2':
-                        data.width = baseWidth;
-                        data.height = Math.round(baseWidth * 2 / 3);
-                        break;
-                    default:
-                        // Keep original dimensions from form
-                        data.width = parseInt(formData.get('width'));
-                        data.height = parseInt(formData.get('height'));
-                        break;
+                // Check if it's a Leonardo.ai model - use model-specific resolutions
+                if (selectedModel && selectedModel.startsWith('leonardo-api:')) {
+                    const modelKey = selectedModel.split(':')[1];
+                    const generator = modernGenerators['leonardo-api'];
+                    const modelInfo = generator.models[modelKey];
+                    
+                    if (modelInfo && generator.aspect_ratios) {
+                        // Find the aspect ratio configuration for this model
+                        const aspectRatioConfig = generator.aspect_ratios.find(ar => ar.id === aspectRatio);
+                        if (aspectRatioConfig) {
+                            data.width = aspectRatioConfig.resolution[0];
+                            data.height = aspectRatioConfig.resolution[1];
+                            console.log('🔍 Leonardo.ai aspect ratio applied:', aspectRatio, `(${data.width}x${data.height})`);
+                        } else {
+                            // Fallback to 1:1 if aspect ratio not found
+                            data.width = 1024;
+                            data.height = 1024;
+                            console.log('🔍 Aspect ratio not found for Leonardo.ai model, using 1:1 fallback');
+                        }
+                    } else {
+                        // Fallback to generic calculation
+                        const [baseWidth, baseHeight] = resolution.split('x').map(Number);
+                        console.log('🔍 Debug - Parsed resolution:', baseWidth, 'x', baseHeight);
+                        
+                        switch(aspectRatio) {
+                            case '1:1':
+                                data.width = baseWidth;
+                                data.height = baseHeight;
+                                break;
+                            case '16:9':
+                                data.width = baseWidth;
+                                data.height = Math.round(baseWidth * 9 / 16);
+                                break;
+                            case '9:16':
+                                data.width = baseWidth;
+                                data.height = Math.round(baseWidth * 16 / 9);
+                                break;
+                            case '4:3':
+                                data.width = baseWidth;
+                                data.height = Math.round(baseWidth * 3 / 4);
+                                break;
+                            case '3:4':
+                                data.width = baseWidth;
+                                data.height = Math.round(baseWidth * 4 / 3);
+                                break;
+                            default:
+                                data.width = baseWidth;
+                                data.height = baseHeight;
+                        }
+                    }
+                } else {
+                    // Generic calculation for non-Leonardo models
+                    const [baseWidth, baseHeight] = resolution.split('x').map(Number);
+                    console.log('🔍 Debug - Parsed resolution:', baseWidth, 'x', baseHeight);
+                    
+                    switch(aspectRatio) {
+                        case '1:1':
+                            data.width = baseWidth;
+                            data.height = baseHeight;
+                            break;
+                        case '16:9':
+                            data.width = baseWidth;
+                            data.height = Math.round(baseWidth * 9 / 16);
+                            break;
+                        case '9:16':
+                            data.width = baseWidth;
+                            data.height = Math.round(baseWidth * 16 / 9);
+                            break;
+                        case '4:3':
+                            data.width = baseWidth;
+                            data.height = Math.round(baseWidth * 3 / 4);
+                            break;
+                        case '3:4':
+                            data.width = baseWidth;
+                            data.height = Math.round(baseWidth * 4 / 3);
+                            break;
+                        default:
+                            data.width = baseWidth;
+                            data.height = baseHeight;
+                    }
                 }
-                
                 console.log(`📏 ${aspectRatio} aspect ratio applied: ${data.width}x${data.height}`);
             } else {
                 // If no aspect ratio/resolution selected, use form values
@@ -1819,12 +2276,17 @@
             console.log('🔍 Final generation data:', data);
             
             // Add Leonardo.ai specific parameters if selected
-            if (selectedModel === 'leonardo-api') {
+            if (selectedModel === 'leonardo-api' || selectedModel.startsWith('leonardo-api:')) {
                 // Get values directly from the select elements
-                const leonardoModel = document.getElementById('leonardo-model')?.value;
+                let leonardoModel = document.getElementById('leonardo-model')?.value;
                 const leonardoAspect = document.getElementById('leonardo-aspect')?.value;
                 const leonardoStyle = document.getElementById('leonardo-style')?.value;
                 const leonardoQuality = document.getElementById('leonardo-quality')?.value;
+                
+                // If using new format, extract model from selectedModel
+                if (selectedModel.startsWith('leonardo-api:')) {
+                    leonardoModel = selectedModel.split(':')[1];
+                }
                 
                 console.log('🔍 Leonardo control values:', {
                     leonardoModel,
@@ -1832,6 +2294,9 @@
                     leonardoStyle,
                     leonardoQuality
                 });
+                
+                // Use the main aspect ratio instead of Leonardo dropdown to avoid conflicts
+                const effectiveAspectRatio = aspectRatio || leonardoAspect;
                 
                 // Set optimal resolution for Leonardo.ai (minimum 1024x1024 for best quality)
                 const leonardoAspectRatios = {
@@ -1844,9 +2309,10 @@
                     '3:2': [1216, 832]
                 };
                 
-                // Override width/height with Leonardo.ai optimal resolutions
-                if (leonardoAspectRatios[leonardoAspect]) {
-                    [data.width, data.height] = leonardoAspectRatios[leonardoAspect];
+                // Override width/height with Leonardo.ai optimal resolutions using effective aspect ratio
+                if (leonardoAspectRatios[effectiveAspectRatio]) {
+                    [data.width, data.height] = leonardoAspectRatios[effectiveAspectRatio];
+                    console.log(`🔍 Leonardo.ai resolution override: ${effectiveAspectRatio} -> ${data.width}x${data.height}`);
                 } else {
                     // Default to 1024x1024 for Leonardo.ai
                     [data.width, data.height] = [1024, 1024];
@@ -1854,8 +2320,9 @@
                 
                 // Add Leonardo.ai specific parameters to the data
                 Object.assign(data, {
+                    model: 'leonardo-api', // Always use leonardo-api for backend
                     leonardo_model: leonardoModel || 'phoenix-1-0',
-                    aspect_ratio: leonardoAspect || '1:1',
+                    aspect_ratio: effectiveAspectRatio || '1:1', // Use effective aspect ratio
                     preset_style: leonardoStyle || 'LEONARDO',
                     quality: leonardoQuality || 'high'
                 });
@@ -2059,6 +2526,70 @@
                 } catch (error) {
                     console.error('🔍 Replicate generation failed:', error);
                     throw new Error(`Replicate generation failed: ${error.message}`);
+                }
+            }
+            // Handle Azure AI models
+            else if (selectedModel.startsWith('azure-ai:')) {
+                console.log('☁️ Azure AI generation with parameters:', data);
+                
+                // Azure AI uses 1024x1024 for FLUX.2-Pro
+                data.width = 1024;
+                data.height = 1024;
+                
+                // Add Azure AI specific parameters
+                Object.assign(data, {
+                    model: 'azure-ai', // Use azure-ai for backend
+                    azure_model: selectedModel.split(':')[1] // flux-1-1-pro
+                });
+                
+                console.log('🎨 Azure AI generation with parameters:', data);
+                console.log('📏 Azure AI resolution:', `${data.width}x${data.height}`);
+                
+                // Debug the fetch call
+                console.log('🔍 About to call /generate endpoint for Azure AI...');
+                
+                try {
+                    const response = await fetch(`${API_BASE}/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    console.log('🔍 Azure AI fetch response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('🔍 HTTP error:', response.status, errorText);
+                        throw new Error(`HTTP error: ${response.status} ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('🔍 Azure AI server response:', result);
+                    
+                    // Display result
+                    document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
+                    document.getElementById('generation-time').textContent = result.generation_time ? `${result.generation_time.toFixed(2)}s` : 'N/A';
+                    document.getElementById('generation-vram').textContent = 'N/A (Cloud)';
+                    
+                    // Show result, hide loading
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').classList.remove('hidden');
+                    document.getElementById('generate-btn').disabled = false;
+                    updateStatus();
+                    
+                    // Reload gallery to show the new image
+                    loadGallery();
+                    
+                    console.log('✅ Azure AI generation successful!');
+                    
+                    return; // Exit early for Azure AI models
+                    
+                } catch (error) {
+                    console.error('🔍 Azure AI generation failed:', error);
+                    throw new Error(`Azure AI generation failed: ${error.message}`);
                 }
             } else {
                 console.log('🏠 Local model generation with parameters:', data);

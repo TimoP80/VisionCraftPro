@@ -5,11 +5,15 @@ Web server for VisionCraft Pro with Puter.com integration
 """
 
 import os
+import io
+import base64
+import json
 import time
 import asyncio
-import base64
-import io
-from typing import Dict, List, Any, Optional
+import uuid
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -73,105 +77,61 @@ async def root():
         </html>
         """)
 
+@app.get("/test")
+async def test_endpoint():
+    """Test endpoint to verify FastAPI is working"""
+    return {"message": "Test endpoint working"}
+
 @app.get("/models")
 async def get_models_direct():
     """Direct models endpoint for frontend"""
-    return {
-        "local_models": {
-            # Add any local models if available
-            "stable-diffusion-1.5": {
-                "name": "Stable Diffusion 1.5",
-                "quality": "Standard",
-                "speed": "Medium",
-                "vram_required": "4GB",
-                "max_resolution": [512, 512],
-                "experimental": False
-            },
-            "stable-diffusion-xl": {
-                "name": "Stable Diffusion XL",
-                "quality": "High",
-                "speed": "Slow",
-                "vram_required": "8GB",
-                "max_resolution": [1024, 1024],
-                "experimental": False
-            },
-            "sdxl-turbo": {
-                "name": "SDXL Turbo",
-                "quality": "Medium",
-                "speed": "Very Fast",
-                "vram_required": "6GB",
-                "max_resolution": [512, 512],
-                "experimental": True
-            }
-        },
-        "modern_generators": {
-            'leonardo-api': {
-                'name': 'Leonardo.ai API',
-                'cost': 'Paid',
-                'speed': 'Fast',
-                'max_resolution': [1024, 1024],
-                'description': 'Professional game asset generator with model selection',
-                'type': 'api'
-            },
-            'replicate-api': {
-                'name': 'Replicate API',
-                'cost': 'Paid ($5 credit)',
-                'speed': 'Fast',
-                'max_resolution': [1024, 1024],
-                'description': 'Professional AI models including Stable Diffusion XL and more',
-                'type': 'api'
-            },
-            'kandinsky-22': {
-                'name': 'Kandinsky 2.2',
-                'cost': 'Paid ($5 credit)',
-                'speed': 'Medium',
-                'max_resolution': [512, 512],
-                'description': 'Artistic model with unique Russian aesthetic',
-                'type': 'api'
-            },
-            'puter-dall-e-3': {
-                'name': '🆓 DALL-E 3 (FREE)',
-                'cost': 'FREE',
-                'speed': 'Medium',
-                'max_resolution': [1024, 1024],
-                'description': 'OpenAI\'s DALL-E 3 model - completely free',
-                'type': 'api'
-            },
-            'puter-gpt-image-1.5': {
-                'name': '🆓 GPT Image 1.5 (FREE)',
-                'cost': 'FREE',
-                'speed': 'Fast',
-                'max_resolution': [1024, 1024],
-                'description': 'GPT-based image generation - completely free',
-                'type': 'api'
-            },
-            'puter-gemini-2.5-flash': {
-                'name': '🆓 Gemini 2.5 Flash (FREE)',
-                'cost': 'FREE',
-                'speed': 'Very Fast',
-                'max_resolution': [1024, 1024],
-                'description': 'Google\'s Gemini Flash model - completely free',
-                'type': 'api'
-            }
-        }
-    }
-
-@app.get("/api/models")
-async def get_models():
-    """Get available models including Puter.com models"""
-    return {
-        "local_models": {
-            # Add any local models if available
-        },
-        "modern_generators": {
-            'leonardo-api': {
-                'name': 'Leonardo.ai API',
-                'cost': 'Paid',
-                'speed': 'Fast',
-                'max_resolution': [1024, 1024],
-                'description': 'Professional game asset generator with model selection',
-                'type': 'api'
-            },
+    print("🔍 /models endpoint called!")
+    try:
+        global generator_manager
+        
+        # Get local models
+        local_models = {}
+        if generator_manager and hasattr(generator_manager, 'available_generators'):
+            # Add local models if available
+            local_models = generator_manager.available_generators.get('local', {})
+            print(f"🔍 Found {len(local_models)} local models")
+        
+        # Get modern generators with full details
+        modern_generators = {}
+        if generator_manager and hasattr(generator_manager, 'get_available_generators'):
+            available_generators = generator_manager.get_available_generators()
+            print(f"🔍 Available generators: {list(available_generators.keys())}")
+            
+            # Add Leonardo.ai with full model details
+            if 'leonardo-api' in available_generators:
+                leonardo_data = available_generators['leonardo-api']
+                print(f"🔍 Leonardo.ai data keys: {list(leonardo_data.keys())}")
+                print(f"🔍 Leonardo.ai has models: {'models' in leonardo_data}")
+                if 'models' in leonardo_data:
+                    print(f"🔍 Leonardo.ai models count: {len(leonardo_data['models'])}")
+                modern_generators['leonardo-api'] = leonardo_data
+            else:
+                print(f"❌ leonardo-api not found in available_generators")
+            
+            # Add Replicate models
+            if 'replicate-api' in available_generators:
+                modern_generators['replicate-api'] = available_generators['replicate-api']
+                print(f"🔍 Added replicate-api")
+            
+            # Add Kandinsky
+            if 'kandinsky-22' in available_generators:
+                modern_generators['kandinsky-22'] = available_generators['kandinsky-22']
+                print(f"🔍 Added kandinsky-22")
+            
+            # Add Azure AI
+            if 'azure-ai' in available_generators:
+                modern_generators['azure-ai'] = available_generators['azure-ai']
+                print(f"🔍 Added azure-ai")
+        else:
+            print(f"❌ Generator manager not available or missing get_available_generators")
+        
+        # Add Puter.com models
+        modern_generators.update({
             'puter-dall-e-3': {
                 'name': '🆓 DALL-E 3 (FREE)',
                 'cost': 'FREE',
@@ -180,7 +140,7 @@ async def get_models():
                 'description': 'Best quality image generation - completely FREE!',
                 'type': 'puter'
             },
-            'puter-gpt-image-1-5': {
+            'puter-gpt-image-1.5': {
                 'name': '🆓 GPT Image 1.5 (FREE)',
                 'cost': 'FREE',
                 'speed': 'Medium',
@@ -188,15 +148,112 @@ async def get_models():
                 'description': 'OpenAI GPT Image model - FREE access!',
                 'type': 'puter'
             },
-            'puter-gemini-2-5-flash': {
+            'puter-gemini-2.5-flash': {
                 'name': '🆓 Gemini 2.5 Flash (FREE)',
                 'cost': 'FREE',
                 'speed': 'Fast',
                 'max_resolution': [1024, 1024],
-                'description': 'Google Gemini image model - completely FREE!',
+                'description': 'Google Gemini Flash model - FREE access!',
                 'type': 'puter'
             }
+        })
+        
+        print(f"🔍 Final modern_generators keys: {list(modern_generators.keys())}")
+        
+        result = {
+            "local_models": local_models,
+            "modern_generators": modern_generators
         }
+        
+        print(f"🔍 Returning result with {len(result['local_models'])} local models and {len(result['modern_generators'])} modern generators")
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error in /models endpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+@app.get("/api/models")
+async def get_models():
+    """Get available models including Puter.com models"""
+    print("🔍 /api/models endpoint called!")
+    global generator_manager
+    
+    # Get local models
+    local_models = {}
+    if generator_manager and hasattr(generator_manager, 'available_generators'):
+        # Add local models if available
+        local_models = generator_manager.available_generators.get('local', {})
+        print(f"🔍 Found {len(local_models)} local models")
+    
+    # Get modern generators with full details
+    modern_generators = {}
+    if generator_manager and hasattr(generator_manager, 'get_available_generators'):
+        available_generators = generator_manager.get_available_generators()
+        print(f"🔍 Available generators: {list(available_generators.keys())}")
+        
+        # Add Leonardo.ai with full model details
+        if 'leonardo-api' in available_generators:
+            leonardo_data = available_generators['leonardo-api']
+            print(f"🔍 Leonardo.ai data keys: {list(leonardo_data.keys())}")
+            print(f"🔍 Leonardo.ai has models: {'models' in leonardo_data}")
+            if 'models' in leonardo_data:
+                print(f"🔍 Leonardo.ai models count: {len(leonardo_data['models'])}")
+            modern_generators['leonardo-api'] = leonardo_data
+        else:
+            print(f"❌ leonardo-api not found in available_generators")
+        
+        # Add Replicate models
+        if 'replicate-api' in available_generators:
+            modern_generators['replicate-api'] = available_generators['replicate-api']
+            print(f"🔍 Added replicate-api")
+        
+        # Add Kandinsky
+        if 'kandinsky-22' in available_generators:
+            modern_generators['kandinsky-22'] = available_generators['kandinsky-22']
+            print(f"🔍 Added kandinsky-22")
+        
+        # Add Azure AI
+        if 'azure-ai' in available_generators:
+            modern_generators['azure-ai'] = available_generators['azure-ai']
+            print(f"🔍 Added azure-ai")
+    else:
+        print(f"❌ Generator manager not available or missing get_available_generators")
+    
+    # Add Puter.com models
+    modern_generators.update({
+        'puter-dall-e-3': {
+            'name': '🆓 DALL-E 3 (FREE)',
+            'cost': 'FREE',
+            'speed': 'Medium',
+            'max_resolution': [1024, 1024],
+            'description': 'Best quality image generation - completely FREE!',
+            'type': 'puter'
+        },
+        'puter-gpt-image-1.5': {
+            'name': '🆓 GPT Image 1.5 (FREE)',
+            'cost': 'FREE',
+            'speed': 'Medium',
+            'max_resolution': [1024, 1024],
+            'description': 'OpenAI GPT Image model - FREE access!',
+            'type': 'puter'
+        },
+        'puter-gemini-2.5-flash': {
+            'name': '🆓 Gemini 2.5 Flash (FREE)',
+            'cost': 'FREE',
+            'speed': 'Fast',
+            'max_resolution': [1024, 1024],
+            'description': 'Google Gemini Flash model - FREE access!',
+            'type': 'puter'
+        }
+    })
+    
+    print(f"🔍 Final modern_generators keys: {list(modern_generators.keys())}")
+    
+    return {
+        "local_models": local_models,
+        "modern_generators": modern_generators
     }
 
 # Global variables
@@ -206,6 +263,36 @@ generator_manager = None
 generated_images = []  # Simple gallery storage
 image_gallery = None  # Enhanced gallery system
 enhanced_gallery = None  # Enhanced gallery with tagging
+
+# Persistent API key storage
+API_KEYS_FILE = Path("api_keys.json")
+
+def load_api_keys_persistent():
+    """Load API keys from persistent storage"""
+    global api_keys
+    try:
+        if API_KEYS_FILE.exists():
+            with open(API_KEYS_FILE, 'r') as f:
+                api_keys = json.load(f)
+            print(f"📋 Loaded {len(api_keys)} API keys from persistent storage")
+            for key, value in api_keys.items():
+                print(f"  {key}: {'Configured' if value else 'Not set'}")
+        else:
+            print("📋 No persistent API keys file found, starting with empty keys")
+            api_keys = {}
+    except Exception as e:
+        print(f"❌ Failed to load persistent API keys: {e}")
+        api_keys = {}
+
+def save_api_keys_persistent():
+    """Save API keys to persistent storage"""
+    global api_keys
+    try:
+        with open(API_KEYS_FILE, 'w') as f:
+            json.dump(api_keys, f, indent=2)
+        print(f"💾 Saved {len(api_keys)} API keys to persistent storage")
+    except Exception as e:
+        print(f"❌ Failed to save persistent API keys: {e}")
 
 @app.on_event("startup")
 async def startup_event():
@@ -235,30 +322,41 @@ async def startup_event():
     else:
         print("⚠️ Enhanced Gallery not available")
     
-    # Load API keys
-    if load_api_keys:
-        try:
-            api_keys = load_api_keys()
-            print(f"📋 Loaded {len(api_keys)} API keys")
-            for key, value in api_keys.items():
-                print(f"  {key}: {'Configured' if value else 'Not set'}")
-        except Exception as e:
-            print(f"❌ Failed to load API keys: {e}")
-            api_keys = {}
-    else:
-        print("⚠️ API keys loader not available")
-        api_keys = {}
+    # Load API keys from persistent storage
+    load_api_keys_persistent()
     
     # Initialize generator manager
     if ModernGeneratorManager:
         try:
+            print("🔧 Initializing ModernGeneratorManager...")
             generator_manager = ModernGeneratorManager()
+            print(f"🔧 Generator manager created: {type(generator_manager)}")
+            print(f"🔧 Available generators: {list(generator_manager.get_available_generators().keys()) if hasattr(generator_manager, 'get_available_generators') else 'No method'}")
+            
+            # Check if Leonardo.ai models are loaded
+            if hasattr(generator_manager, 'get_available_generators'):
+                available = generator_manager.get_available_generators()
+                if 'leonardo-api' in available:
+                    leonardo_data = available['leonardo-api']
+                    print(f"🔧 Leonardo.ai data keys: {list(leonardo_data.keys())}")
+                    print(f"🔧 Leonardo.ai has models: {'models' in leonardo_data}")
+                    if 'models' in leonardo_data:
+                        print(f"🔧 Leonardo.ai models count: {len(leonardo_data['models'])}")
+                    else:
+                        print("❌ Leonardo.ai models property missing")
+                else:
+                    print("❌ leonardo-api not found in available generators")
+            else:
+                print("❌ Generator manager missing get_available_generators method")
+            
             # Update generator manager with loaded API keys
             for key, value in api_keys.items():
                 generator_manager.api_keys[key] = value
             print("✅ Modern Generator Manager initialized")
         except Exception as e:
             print(f"❌ Failed to initialize generator manager: {e}")
+            import traceback
+            traceback.print_exc()
             generator_manager = None
     else:
         print("⚠️ Modern Generator Manager not available")
@@ -276,6 +374,8 @@ async def generate_image(request: Request):
         
         if model == 'leonardo-api':
             return await generate_with_leonardo(data)
+        elif model == 'azure-ai':
+            return await generate_with_azure_ai(data)
         elif model.startswith('puter-'):
             return {"success": True, "message": "Puter.com models are handled in frontend"}
         elif model in ['stable-diffusion-1.5', 'stable-diffusion-xl', 'sdxl-turbo']:
@@ -590,6 +690,88 @@ async def generate_with_leonardo(data):
         print(f"❌ Leonardo.ai real API generation failed: {e}")
         return {"success": False, "message": f"Leonardo.ai generation failed: {str(e)}"}
 
+async def generate_with_azure_ai(data):
+    """Generate image using Azure AI API"""
+    try:
+        if not generator_manager:
+            return {"success": False, "message": "Azure AI generator not initialized"}
+        
+        # Check if Azure AI API key is available
+        if 'azure-ai' not in api_keys:
+            return {"success": False, "message": "Azure AI API key not set. Please set your API key first."}
+        
+        print(f"🔵 Azure AI generation with {data.get('prompt')[:100]}...")
+        
+        # Get parameters
+        prompt = data.get('prompt')
+        width = data.get('width', 1024)
+        height = data.get('height', 1024)
+        azure_model = data.get('azure_model', 'flux-2-pro')
+        
+        # Generate image
+        result = await generator_manager.generate_with_azure_ai(
+            prompt=prompt,
+            width=width,
+            height=height,
+            model=azure_model
+        )
+        
+        if isinstance(result, Image.Image):
+            # Convert PIL image to base64
+            import base64
+            from io import BytesIO
+            
+            buffered = BytesIO()
+            result.save(buffered, format="PNG")
+            img_base64 = base64.b64encode(buffered.getvalue()).decode()
+            
+            # Add to gallery if available
+            image_entry = None
+            gallery_id = None
+            print(f"[DEBUG] image_gallery available: {image_gallery is not None}")
+            if image_gallery:
+                try:
+                    print(f"[DEBUG] Attempting to add to gallery...")
+                    gallery_id = image_gallery.add_image(
+                        image_data=img_base64,
+                        prompt=prompt,
+                        model="azure-ai",
+                        generation_time=0,
+                        vram_used=0,
+                        steps=1,
+                        guidance=7.5,
+                        resolution=(width, height),
+                        negative_prompt="",
+                        category="other"
+                    )
+                    image_entry = image_gallery.get_image(gallery_id)
+                    print(f"[DEBUG] gallery.add_image returned ID: {gallery_id}")
+                    print(f"[DEBUG] image_gallery.get_image returned: {image_entry is not None}")
+                    print(f"📁 Added to gallery: {gallery_id}")
+                except Exception as gallery_error:
+                    print(f"⚠️ Failed to add to gallery: {gallery_error}")
+                    import traceback
+                    traceback.print_exc()
+            else:
+                print("[DEBUG] image_gallery is None, skipping gallery save")
+            
+            return {
+                "success": True,
+                "image": img_base64,
+                "generation_time": 0,  # Could add timing if needed
+                "vram_used": None,  # Cloud API doesn't use local VRAM
+                "device": "Azure AI API",
+                "timestamp": datetime.now().isoformat(),
+                "gallery_id": image_entry['id'] if image_entry else None,
+                "persistent_id": gallery_id if image_gallery else None
+            }
+        else:
+            return {"success": False, "message": "Azure AI generation failed - no image returned"}
+        
+    except Exception as e:
+        print(f"❌ Azure AI generation failed: {e}")
+        return {"success": False, "message": f"Azure AI generation failed: {str(e)}"}
+
 @app.post("/set-api-key")
 async def set_api_key(request: Request):
     """Set API key for a generator"""
@@ -609,6 +791,14 @@ async def set_api_key(request: Request):
         api_keys[final_generator] = api_key
         print(f"🔑 Setting API key for {final_generator}: {'*' * 10}{api_key[-4:] if len(api_key) > 4 else 'None'}")
         
+        # Save API keys to persistent storage
+        save_api_keys_persistent()
+        
+        # Also update the generator manager's API keys if it exists
+        if generator_manager and hasattr(generator_manager, 'api_keys'):
+            generator_manager.api_keys[final_generator] = api_key
+            print(f"🔄 Updated generator manager API key for {final_generator}")
+        
         return {"success": True, "message": f"API key set for {final_generator}"}
         
     except Exception as e:
@@ -621,6 +811,25 @@ async def get_modern_generators():
         "api_keys_set": list(api_keys.keys()),  # Return actual set keys
         "available": ["leonardo-api", "puter-dall-e-3", "puter-gpt-image-1-5", "puter-gemini-2-5-flash"]
     }
+
+@app.get("/debug/sync-api-keys")
+async def debug_sync_api_keys():
+    """Debug endpoint to sync API keys with generator manager"""
+    try:
+        if generator_manager and hasattr(generator_manager, 'api_keys'):
+            # Sync all API keys from server to generator manager
+            for key, value in api_keys.items():
+                generator_manager.api_keys[key] = value
+            return {
+                "success": True, 
+                "message": "API keys synced",
+                "server_keys": list(api_keys.keys()),
+                "generator_keys": list(generator_manager.api_keys.keys())
+            }
+        else:
+            return {"success": False, "message": "Generator manager not available"}
+    except Exception as e:
+        return {"success": False, "message": f"Sync failed: {str(e)}"}
 
 @app.get("/status")
 async def get_status_simple():
@@ -662,11 +871,10 @@ async def get_status_simple():
                     "gpu_memory": f"{memory_total_gb:.1f}GB",
                     "device": f"{gpu['name']} ({memory_total_gb:.1f}GB)"
                 })
-                
-                print(f"🔍 GPU detected: {gpu['name']} - {memory_total_gb:.1f}GB total, {memory_used_gb:.1f}GB used")
-            else:
-                print("⚠️ No GPU detected or nvidia-smi not available")
-                
+                # Previously logged GPU info every poll; silence to reduce spam
+                pass
+            
+            return status
         except Exception as e:
             print(f"⚠️ GPU detection failed: {e}")
             # Keep default values
