@@ -1,0 +1,8 @@
+{
+  "replicate": "your_replicate_api_token_here",
+  "leonardo": "your_leonardo_api_token_here", 
+  "azure-ai": "your_azure_api_key_here",
+  "fal": "your_fal_api_key_here",
+  "huggingface": "your_huggingface_token_here",
+  "puter": "your_puter_api_key_here"
+}
