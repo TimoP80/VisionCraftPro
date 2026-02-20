@@ -287,23 +287,28 @@ class ModernGeneratorManager:
         
         # Create Modal function stub if not already created
         try:
-            # Import your Modal function - adjust import path as needed
-            from modal_integration import generate_image
+            # Import Modal app and function
+            import modal_integration
+            
+            # Check if Modal app is running
+            if not hasattr(modal_integration, 'app'):
+                print("[ERROR] Modal app not found. Make sure Modal is properly configured.")
+                raise ValueError("Modal app not properly configured")
+                
         except ImportError:
-            # Fallback - create a stub for demonstration
-            # In production, replace this with your actual Modal function import
-            print("[ERROR] Modal function not found. Please update import path in generate_with_modal()")
-            raise ValueError("Modal function not properly imported")
+            print("[ERROR] Modal integration module not found")
+            raise ValueError("Modal integration not properly imported")
         
         try:
-            # Call Modal function asynchronously
-            loop = asyncio.get_event_loop()
+            # Call Modal function remotely - this will execute on Modal's infrastructure
+            print(f"[MODAL] Calling remote Modal function...")
+            print(f"[MODAL] Model: {model_name}")
+            print(f"[MODAL] Prompt: {prompt[:100]}...")
             
-            # Run Modal function in thread pool to avoid blocking
-            image_bytes = await loop.run_in_executor(
-                None,
-                lambda: generate_image.remote(prompt, model_name)
-            )
+            # Use Modal's remote execution - this runs on Modal's servers, not local GPU
+            image_bytes = modal_integration.generate_image.remote(prompt, model_name)
+            
+            print(f"[MODAL] Received {len(image_bytes)} bytes from remote Modal GPU")
             
             # Convert bytes to PIL Image
             image = Image.open(io.BytesIO(image_bytes))
