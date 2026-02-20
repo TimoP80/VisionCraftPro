@@ -42,6 +42,11 @@ class ImageGallery:
                 return []
         return []
     
+    def get_images(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get images from gallery"""
+        # Return most recent images first
+        return sorted(self.metadata, key=lambda x: x.get('timestamp', ''), reverse=True)[:limit]
+    
     def _save_metadata(self):
         """Save metadata to file"""
         try:

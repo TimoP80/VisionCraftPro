@@ -122,6 +122,10 @@ class AdvancedModelManager:
         """Get all models compatible with GTX 1070"""
         return {k: v for k, v in self.available_models.items() if v["compatible"]}
     
+    def get_available_models(self) -> Dict[str, Dict[str, Any]]:
+        """Get all available models"""
+        return self.available_models
+    
     def load_model(self, model_key: str) -> bool:
         """Load a specific model with GTX 1070 optimizations"""
         if model_key not in self.available_models:
@@ -493,8 +497,11 @@ class AdvancedModelManager:
             enhanced = f"{cleaned.strip()}, {', '.join(quality_terms)}"
             return enhanced
     
-    def get_optimal_settings(self, model_key: str) -> Dict[str, Any]:
-        """Get optimal settings for a specific model"""
+    def get_optimal_settings(self, model_key: str = None) -> Dict[str, Any]:
+        """Get optimal settings for a specific model or current model"""
+        if model_key is None:
+            model_key = self.current_model
+        
         base_settings = {
             "default_steps": 25,  # Increased from 20 for better quality
             "max_steps": 50,      # Increased from 30
