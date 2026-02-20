@@ -2,14 +2,16 @@
 
 **Author:** Timo Pitkänen (tpitkane@gmail.com)
 
-A powerful desktop application for AI-powered image generation featuring both local Stable Diffusion and cloud-based Leonardo.ai integration. Optimized for GPUs with 8GB VRAM and designed for professional use.
+A powerful desktop application for AI-powered image generation featuring multiple cloud providers and local generation capabilities. Optimized for GPUs with 8GB VRAM and designed for professional use with access to cutting-edge AI models.
 
 ## 🎨 Features
 
-### **Dual Generation Engine**
-- **Local Stable Diffusion**: Generate images locally with your GPU
-- **Leonardo.ai Integration**: Access professional cloud-based models
-- **Seamless Switching**: Easy transition between local and cloud generation
+### **Multi-Provider Generation Engine**
+- **Replicate API**: Access premium models like FLUX.1 Schnell, FLUX.1.1 Pro, SDXL, and more
+- **Azure AI**: Enterprise-grade generation with FLUX-1.1-pro
+- **Leonardo.ai Integration**: Professional cloud-based models
+- **Local Generation**: Stable Diffusion for offline privacy
+- **Seamless Switching**: Easy transition between all providers
 
 ### **Professional Desktop Application**
 - **Native Desktop Window**: Not a browser tab - real desktop software
@@ -23,12 +25,23 @@ A powerful desktop application for AI-powered image generation featuring both lo
 - **Real-time Monitoring**: VRAM usage, generation time, system status
 - **Persistent Gallery**: All generated images automatically saved
 - **API Key Management**: Secure storage and GUI input for cloud services
-- **Model Selection**: Multiple models and aspect ratios available
+- **Multiple Aspect Ratios**: 1:1, 16:9, 9:16, 4:3, 3:4, 2:3, 3:2
 - **Quality Controls**: Adjustable steps, guidance, and quality settings
+
+### **Replicate API Integration**
+- **FLUX Models**: FLUX.1 Schnell ($0.003), FLUX.1.1 Pro ($0.015) - Premium quality
+- **Stable Diffusion XL**: High-quality generation with version hash support
+- **SDXL Turbo**: Fast generation with jyoung105 model
+- **Kandinsky 2.2**: Artistic style generation
+- **Smart Aspect Ratio Mapping**: Automatic optimization for each model
+
+### **Azure AI Integration**
+- **FLUX-1.1-pro**: Enterprise-grade image generation
+- **Azure OpenAI Endpoint**: Reliable production deployment
+- **Gallery Integration**: Automatic saving of generated images
 
 ### **Leonardo.ai Integration**
 - **Model Selection**: Phoenix 1.0, Phoenix 0.9, Universal models
-- **Aspect Ratios**: Square, Widescreen, Portrait, Standard, Vertical, Tall, Wide
 - **Style Presets**: Creative, Dynamic, Artistic, Photographic, Cinematic, and more
 - **Quality Levels**: Standard, High, Ultra quality options
 - **API Polling**: Reliable status checking and image retrieval
@@ -43,8 +56,11 @@ A powerful desktop application for AI-powered image generation featuring both lo
 - **Storage**: 10GB free disk space for models and generated images
 
 ### **Optional Requirements**
-- **Internet Connection**: Required for Leonardo.ai cloud generation
-- **Leonardo.ai API Key**: For cloud-based generation features
+- **Internet Connection**: Required for cloud generation (Replicate, Azure AI, Leonardo.ai)
+- **API Keys**: Required for cloud-based generation features
+  - Replicate API key for FLUX and SDXL models
+  - Azure AI key for FLUX-1.1-pro
+  - Leonardo.ai key for Phoenix models
 
 **Tested with GTX 1070 (8GB VRAM)** - Fully optimized for this GPU and similar 8GB cards.
 
@@ -107,13 +123,28 @@ python simple_desktop.py
 ## 🎮 Usage Guide
 
 ### **Getting Started**
-1. **Launch the application** using your preferred method
+1. **Launch application** using your preferred method
 2. **Select your generation method**:
-   - **Local Models**: Use your GPU for offline generation
+   - **Replicate API**: Premium FLUX and SDXL models
+   - **Azure AI**: Enterprise-grade FLUX-1.1-pro
    - **Leonardo.ai**: Cloud generation with professional models
+   - **Local Models**: Use your GPU for offline generation
 3. **Configure settings**: Model, aspect ratio, quality, etc.
 4. **Enter your prompt**: Describe the image you want to create
 5. **Generate**: Click the generate button and wait for results
+
+### **Replicate API Generation**
+- **API Key**: Set your Replicate API key in the GUI
+- **Model Selection**: FLUX.1 Schnell, FLUX.1.1 Pro, SDXL, SDXL Turbo, Kandinsky 2.2
+- **Aspect Ratios**: Automatic optimization for each model (1:1, 16:9, 9:16, 4:3, 3:4, 2:3, 3:2)
+- **Resolution**: 512x512 to 2048x2048 depending on model
+- **Advantages**: Highest quality, latest models, professional results
+
+### **Azure AI Generation**
+- **API Key**: Set your Azure AI key in the GUI
+- **Model**: FLUX-1.1-pro (1024x1024)
+- **Endpoint**: Azure OpenAI deployment endpoint
+- **Advantages**: Enterprise reliability, consistent quality
 
 ### **Local Generation (Stable Diffusion)**
 - **Model Selection**: Choose from available local models
@@ -121,13 +152,13 @@ python simple_desktop.py
 - **Settings**: Steps (15-50), Guidance (1-20), Seed control
 - **Advantages**: Free, offline, private generation
 
-### **Cloud Generation (Leonardo.ai)**
+### **Leonardo.ai Cloud Generation**
 - **API Key**: Set your Leonardo.ai API key in the GUI
 - **Model Selection**: Phoenix 1.0, Phoenix 0.9, Universal
 - **Aspect Ratios**: 1:1, 16:9, 9:16, 4:3, 3:4, 2:3, 3:2
 - **Style Presets**: Creative, Dynamic, Artistic, Photographic, etc.
 - **Quality Levels**: Standard, High, Ultra
-- **Advantages**: Higher quality, more models, professional results
+- **Advantages**: Professional models, style presets
 
 ### **Gallery Management**
 - **Automatic Saving**: All images saved to gallery
@@ -216,11 +247,14 @@ Pre-load a model into memory.
 - **Close other apps**: Free up VRAM by closing other GPU applications
 - **Restart app**: Clear cached memory
 
-#### **"Leonardo.ai generation failed"**
-- **Check API key**: Verify your Leonardo.ai API key is valid
+#### **"Cloud generation failed"**
+- **Check API keys**: Verify your Replicate, Azure AI, and Leonardo.ai API keys are valid
 - **Check internet**: Ensure stable internet connection
 - **Verify model**: Make sure selected model is available
-- **Check credits**: Ensure you have sufficient Leonardo.ai credits
+- **Check credits/balance**: Ensure you have sufficient credits or balance
+- **Replicate specific**: Check model availability and rate limits
+- **Azure AI specific**: Verify deployment endpoint and API version
+- **Leonardo.ai specific**: Check credit balance and model access
 
 #### **"Desktop app won't open"**
 - **Run as administrator**: May need elevated permissions
@@ -256,12 +290,23 @@ This application uses several advanced techniques to minimize VRAM usage:
 
 ## 🎯 Supported Models
 
+### **Replicate API Models**
+- **FLUX.1 Schnell**: Fast generation, 1-4 steps, $0.003/image
+- **FLUX.1.1 Pro**: Premium quality, professional grade, $0.015/image
+- **Stable Diffusion XL**: High-quality generation with version hash support
+- **SDXL Turbo**: Fast generation with jyoung105 model
+- **Kandinsky 2.2**: Artistic style generation
+
+### **Azure AI Models**
+- **FLUX-1.1-pro**: Enterprise-grade generation (1024x1024)
+- **Azure OpenAI Endpoint**: Reliable production deployment
+
 ### **Local Models (Stable Diffusion)**
 - **Stable Diffusion 1.5**: Default, most VRAM-efficient
 - **Custom Fine-tuned Models**: Any SD 1.5-based models
 - **Optimized for 8GB VRAM**: All models tested on GTX 1070
 
-### **Cloud Models (Leonardo.ai)**
+### **Leonardo.ai Models**
 - **Phoenix 1.0**: Universal model for all image types
 - **Phoenix 0.9**: Previous version, good for specific styles
 - **Universal**: General purpose model
@@ -277,11 +322,22 @@ This application uses several advanced techniques to minimize VRAM usage:
 
 ## 📊 Performance Benchmarks
 
-### **GTX 1070 (8GB VRAM) Performance**
+### **GTX 1070 (8GB VRAM) Local Performance**
 - **512x512**: ~8-12 seconds (20 steps)
 - **768x768**: ~15-20 seconds (20 steps)
 - **1024x1024**: ~25-30 seconds (20 steps)
 - **VRAM Usage**: 4-6GB typical, 7GB peak
+
+### **Replicate API Performance**
+- **FLUX.1 Schnell**: ~2-5 seconds (1-4 steps)
+- **FLUX.1.1 Pro**: ~8-15 seconds (25-50 steps)
+- **SDXL**: ~5-10 seconds (20-30 steps)
+- **Cost**: Most economical FLUX Schnell (~1,666 images/$5)
+
+### **Azure AI Performance**
+- **FLUX-1.1-pro**: ~10-20 seconds
+- **Quality**: Enterprise-grade, consistent results
+- **Reliability**: Production deployment with SLA
 
 ### **Leonardo.ai Performance**
 - **Generation Time**: 30-90 seconds (depends on queue)
