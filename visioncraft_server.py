@@ -89,9 +89,11 @@ class ImageGenerator:
         """Load a specific model or modern generator"""
         print(f"[RELOAD] Loading model: {model_key}")
         print(f"[SEARCH] Available modern generators: {list(self.modern_manager.available_generators.keys())}")
+        print(f"[SEARCH] Checking if '{model_key}' is in available generators...")
         
         # Check if this is a modern generator
         if model_key in self.modern_manager.available_generators:
+            print(f"[SEARCH] Found '{model_key}' in modern generators!")
             self.current_generator_type = "modern"
             self.current_model = model_key
             self.model_loaded = True
@@ -100,6 +102,8 @@ class ImageGenerator:
             print(f"[SEARCH] Model key: {model_key}")
             return True
         else:
+            print(f"[SEARCH] '{model_key}' NOT found in modern generators!")
+            print(f"[SEARCH] Available keys: {list(self.modern_manager.available_generators.keys())}")
             # Load local model
             print(f"[RELOAD] Attempting to load local model: {model_key}")
             self.current_generator_type = "local"
@@ -330,13 +334,16 @@ async def generate_image(request: GenerationRequest):
 @app.post("/load-model")
 async def load_model(model_name: str):
     """Load a specific model"""
+    print(f"[API] /load-model called with model_name: {model_name}")
     try:
         success = generator.load_model(model_name)
+        print(f"[API] load_model result: {success}")
         if success:
             return {"message": f"Model {model_name} loaded successfully"}
         else:
             raise HTTPException(status_code=400, detail=f"Failed to load model {model_name}")
     except Exception as e:
+        print(f"[API] load_model error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/gallery")
