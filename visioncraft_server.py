@@ -97,6 +97,7 @@ class ImageGenerator:
             self.model_loaded = True
             print(f"[OK] Modern generator selected: {self.modern_manager.available_generators[model_key]['name']}")
             print(f"[SEARCH] Generator type set to: {self.current_generator_type}")
+            print(f"[SEARCH] Model key: {model_key}")
             return True
         else:
             # Load local model
@@ -159,7 +160,12 @@ class ImageGenerator:
         
         start_time = time.time()
         
+        print(f"[DEBUG] Current generator type: {self.current_generator_type}")
+        print(f"[DEBUG] Current model: {self.current_model}")
+        print(f"[DEBUG] Request model: {request.model}")
+        
         if self.current_generator_type == "modern":
+            print(f"[DEBUG] Using modern generator: {self.current_model}")
             # Use modern generator
             kwargs = {
                 'width': request.width,
@@ -219,6 +225,7 @@ class ImageGenerator:
                 vram_used=vram_used
             )
         else:
+            print(f"[DEBUG] Using local generator: {self.current_model}")
             # Use local model
             if self.current_generator_type == "local":
                 # Set seed for reproducibility
