@@ -41,9 +41,9 @@ class ModernGeneratorManager:
         # Initialize available generators
         self.available_generators = {}
         self._setup_leonardo_ai()
-        if MODAL_AVAILABLE:
-            self._setup_modal()
+        self._setup_modal()  # Move this before Leonardo to ensure Modal is added
         print(f"Initialized {len(self.available_generators)} generator(s)")
+        print(f"[SETUP] Modal setup completed. Available generators: {list(self.available_generators.keys())}")
     
     def _setup_leonardo_ai(self):
         """Setup Leonardo.ai generator configuration"""
@@ -109,9 +109,14 @@ class ModernGeneratorManager:
     
     def _setup_modal(self):
         """Setup Modal generator configuration"""
+        print(f"[SETUP] Setting up Modal generator...")
+        print(f"[SETUP] MODAL_AVAILABLE: {MODAL_AVAILABLE}")
+        
         if not MODAL_AVAILABLE:
+            print("[SETUP] Modal not available - skipping setup")
             return
             
+        print("[SETUP] Adding Modal to available generators...")
         self.available_generators["modal"] = {
             "name": "Modal H100 GPU",
             "type": "modal",
