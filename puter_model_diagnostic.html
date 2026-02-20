@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puter.com Model Diagnostic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass rounded-lg p-8 max-w-4xl w-full">
+        <h1 class="text-3xl font-bold text-white mb-6 text-center">🔍 Puter.com Model Diagnostic</h1>
+        
+        <div class="space-y-4">
+            <!-- Status -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">📊 Status</h2>
+                <div id="status" class="text-gray-300">
+                    <p>🔄 Initializing...</p>
+                </div>
+            </div>
+
+            <!-- Test Controls -->
+            <div class="bg-green-900/50 rounded-lg p-4 border border-green-600">
+                <h2 class="text-xl font-semibold text-green-300 mb-2">🧪 Diagnostic Tests</h2>
+                <div class="space-y-3">
+                    <button onclick="testWorkingModel()" 
+                            class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
+                        ✅ Test Working DALL-E 3
+                    </button>
+                    <button onclick="testAlternativeModels()" 
+                            class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                        🔍 Test Alternative Model Names
+                    </button>
+                    <button onclick="testAllVariations()" 
+                            class="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
+                        🧪 Test All Model Variations
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">📋 Test Results</h2>
+                <div id="results" class="text-gray-300 max-h-96 overflow-y-auto">
+                    <p>Click test buttons to see results...</p>
+                </div>
+            </div>
+
+            <!-- Working Models -->
+            <div class="bg-green-900/50 rounded-lg p-4 border border-green-600">
+                <h2 class="text-xl font-semibold text-green-300 mb-2">✅ Confirmed Working Models</h2>
+                <div id="working-models" class="text-green-200">
+                    <p>Testing models...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆓 Puter.js -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script>
+        const testPrompt = "beautiful woman, high quality, detailed, photorealistic";
+        let workingModels = [];
+        let failedModels = [];
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            const colors = {
+                'info': 'text-gray-300',
+                'success': 'text-green-300',
+                'error': 'text-red-300',
+                'warning': 'text-yellow-300'
+            };
+            
+            status.innerHTML = `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        function updateResults(content) {
+            const results = document.getElementById('results');
+            results.innerHTML = content;
+        }
+
+        function updateWorkingModels() {
+            const workingDiv = document.getElementById('working-models');
+            
+            if (workingModels.length === 0) {
+                workingDiv.innerHTML = '<p class="text-yellow-200">No working models found yet...</p>';
+            } else {
+                workingDiv.innerHTML = `
+                    <div class="space-y-1">
+                        <p class="text-green-300 font-semibold">✅ ${workingModels.length} Working Models:</p>
+                        ${workingModels.map(model => `<p class="text-green-200">• ${model.name} (${model.model})</p>`).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        async function testSingleModel(modelName, modelId, options = {}) {
+            try {
+                updateStatus(`🔄 Testing ${modelName}...`, 'info');
+                
+                const testOptions = { model: modelId, ...options };
+                console.log(`🎨 Testing ${modelName}:`, testOptions);
+                
+                const startTime = Date.now();
+                const imageElement = await puter.ai.txt2img(testPrompt, testOptions);
+                const generationTime = (Date.now() - startTime) / 1000;
+                
+                console.log(`✅ ${modelName} successful! Time: ${generationTime}s`);
+                
+                workingModels.push({
+                    name: modelName,
+                    model: modelId,
+                    options: options,
+                    time: generationTime
+                });
+                
+                updateResults(`
+                    <div class="space-y-2">
+                        <div class="bg-green-900/50 rounded-lg p-3 border border-green-600">
+                            <p class="text-green-300 font-semibold">✅ ${modelName} WORKS!</p>
+                            <p class="text-green-200 text-sm">Model: ${modelId}</p>
+                            <p class="text-green-200 text-sm">Time: ${generationTime.toFixed(2)}s</p>
+                            ${Object.keys(options).length > 0 ? 
+                                `<p class="text-green-200 text-sm">Options: ${JSON.stringify(options)}</p>` : ''
+                            }
+                        </div>
+                    </div>
+                `, 'success');
+                
+                updateStatus(`✅ ${modelName} working!`, 'success');
+                updateWorkingModels();
+                
+                return { success: true, time: generationTime };
+                
+            } catch (error) {
+                console.log(`❌ ${modelName} failed:`, error.message);
+                failedModels.push({ name: modelName, model: modelId, error: error.message });
+                
+                updateResults(`
+                    <div class="bg-red-900/50 rounded-lg p-3 border border-red-600">
+                        <p class="text-red-300 font-semibold">❌ ${modelName} Failed</p>
+                        <p class="text-red-200 text-sm">Model: ${modelId}</p>
+                        <p class="text-red-200 text-sm">Error: ${error.message}</p>
+                    </div>
+                `, 'error');
+                
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testWorkingModel() {
+            updateStatus('🔄 Testing confirmed working DALL-E 3...', 'info');
+            
+            const result = await testSingleModel('DALL-E 3', 'dall-e-3', { quality: 'standard' });
+            
+            if (result.success) {
+                updateStatus('✅ DALL-E 3 confirmed working!', 'success');
+            } else {
+                updateStatus('❌ DALL-E 3 failed unexpectedly', 'error');
+            }
+        }
+
+        async function testAlternativeModels() {
+            updateStatus('🔄 Testing alternative model names...', 'info');
+            
+            const alternatives = [
+                { name: 'FLUX Schnell (short)', model: 'flux-1-schnell' },
+                { name: 'FLUX Dev (short)', model: 'flux-1-dev' },
+                { name: 'FLUX Pro (short)', model: 'flux-1-pro' },
+                { name: 'FLUX Schnell (no prefix)', model: 'FLUX.1-schnell' },
+                { name: 'FLUX Dev (no prefix)', model: 'FLUX.1-dev' },
+                { name: 'FLUX Pro (no prefix)', model: 'FLUX.1-pro' },
+                { name: 'GPT Image (short)', model: 'gpt-image' },
+                { name: 'Gemini Flash (short)', model: 'gemini-flash' },
+                { name: 'SDXL (short)', model: 'sdxl' },
+                { name: 'Stable Diffusion (full)', model: 'stable-diffusion' }
+            ];
+            
+            for (const alt of alternatives) {
+                await testSingleModel(alt.name, alt.model);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            updateStatus(`✅ Alternative tests complete! ${workingModels.length} working models found.`, 'success');
+        }
+
+        async function testAllVariations() {
+            updateStatus('🔄 Testing all model variations...', 'info');
+            
+            const variations = [
+                // DALL-E variations
+                { name: 'DALL-E 3 Standard', model: 'dall-e-3', options: { quality: 'standard' } },
+                { name: 'DALL-E 3 HD', model: 'dall-e-3', options: { quality: 'hd' } },
+                { name: 'DALL-E 3 No Quality', model: 'dall-e-3' },
+                
+                // FLUX variations
+                { name: 'FLUX Schnell (full path)', model: 'black-forest-labs/FLUX.1-schnell' },
+                { name: 'FLUX Dev (full path)', model: 'black-forest-labs/FLUX.1-dev' },
+                { name: 'FLUX Pro (full path)', model: 'black-forest-labs/FLUX.1-pro' },
+                { name: 'FLUX Schnell (short)', model: 'flux-1-schnell' },
+                { name: 'FLUX Dev (short)', model: 'flux-1-dev' },
+                { name: 'FLUX Schnell (camel)', model: 'fluxSchnell' },
+                { name: 'FLUX Dev (camel)', model: 'fluxDev' },
+                
+                // GPT Image variations
+                { name: 'GPT Image 1.5', model: 'gpt-image-1.5', options: { quality: 'medium' } },
+                { name: 'GPT Image 1.5 High', model: 'gpt-image-1.5', options: { quality: 'high' } },
+                { name: 'GPT Image 1.5 Low', model: 'gpt-image-1.5', options: { quality: 'low' } },
+                { name: 'GPT Image (short)', model: 'gpt-image' },
+                
+                // Gemini variations
+                { name: 'Gemini 2.5 Flash', model: 'gemini-2.5-flash-image-preview' },
+                { name: 'Gemini Flash (short)', model: 'gemini-flash' },
+                { name: 'Gemini Flash (no version)', model: 'gemini-flash-image-preview' },
+                
+                // SDXL variations
+                { name: 'Stable Diffusion XL', model: 'stabilityai/stable-diffusion-xl-base-1.0' },
+                { name: 'SDXL (short)', model: 'sdxl' },
+                { name: 'SDXL Base', model: 'stable-diffusion-xl' },
+                
+                // Seedream variations
+                { name: 'Seedream 4.0', model: 'ByteDance-Seed/Seedream-4.0' },
+                { name: 'Seedream (short)', model: 'seedream-4.0' },
+                { name: 'Seedream (no version)', model: 'seedream' },
+                
+                // Ideogram variations
+                { name: 'Ideogram 3.0', model: 'ideogram/ideogram-3.0' },
+                { name: 'Ideogram (short)', model: 'ideogram-3.0' },
+                { name: 'Ideogram (no version)', model: 'ideogram' }
+            ];
+            
+            for (const variation of variations) {
+                await testSingleModel(variation.name, variation.model, variation.options);
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+            
+            updateStatus(`🎉 All variations tested! ${workingModels.length} working models found.`, 'success');
+            
+            // Show summary
+            updateResults(`
+                <div class="space-y-3">
+                    <div class="bg-green-900/50 rounded-lg p-3 border border-green-600">
+                        <p class="text-green-300 font-semibold">🎉 Test Complete!</p>
+                        <p class="text-green-200">✅ ${workingModels.length} models working</p>
+                        <p class="text-red-200">❌ ${failedModels.length} models failed</p>
+                    </div>
+                    ${workingModels.map(model => `
+                        <div class="bg-green-800/50 rounded-lg p-2 border border-green-600">
+                            <p class="text-green-300 font-semibold">✅ ${model.name}</p>
+                            <p class="text-green-200 text-sm">Model: ${model.model}</p>
+                            <p class="text-green-200 text-sm">Time: ${model.time.toFixed(2)}s</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `);
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updateStatus('📋 Ready to test Puter.com models!', 'info');
+                console.log('🔍 Puter.com Model Diagnostic loaded');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

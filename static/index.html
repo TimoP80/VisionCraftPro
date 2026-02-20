@@ -968,9 +968,17 @@
                         name: 'Leonardo.ai API',
                         cost: 'Paid',
                         speed: 'Fast',
-                        max_resolution: [1024, 1024],
+                        quality: 'Professional',
                         description: 'Professional game asset generator with model selection',
-                        type: 'api'
+                        features: ['text-to-image', 'fine-tuned-models', 'texture-generation']
+                    },
+                    'modal': {
+                        name: 'Modal H100 GPU',
+                        cost: 'Pay-per-use',
+                        speed: 'Very Fast',
+                        quality: 'Professional',
+                        description: 'Remote H100 GPU generation via Modal platform',
+                        features: ['text-to-image', 'h100-gpu', 'fast-generation', 'scalable']
                     }
                 };
                 updateModelDropdown();
@@ -1078,6 +1086,18 @@
                     `;
                     // Update API key status when Leonardo.ai is selected
                     updateApiKeyStatus();
+                } else if (selectedModel === 'modal') {
+                    leonardoControls.classList.add('hidden');
+                    modelInfo.innerHTML = `
+                        <div class="text-xs space-y-1">
+                            <p>💰 Cost: ${generator.cost}</p>
+                            <p>⚡ Speed: ${generator.speed}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                            <p>📝 ${generator.description}</p>
+                            <p>🔧 Type: Modal H100 GPU</p>
+                            <p class="text-green-400">🚀 Remote H100 generation</p>
+                        </div>
+                    `;
                 } else {
                     leonardoControls.classList.add('hidden');
                     modelInfo.innerHTML = `
@@ -1281,30 +1301,50 @@
                     leonardoQuality
                 });
                 
-                // Keep the generator as 'leonardo-api' and pass the specific model as a parameter
+                Object.assign(data, {
+                    leonardo_model: leonardoModel || 'phoenix-1-0',
+                    aspect_ratio: leonardoAspect || '1:1',
+                    preset_style: leonardoStyle || 'LEONARDO',
+                    quality: leonardoQuality
+                });
+                
                 data.model = selectedModel; // Keep 'leonardo-api' as the generator
                 data.leonardo_model = leonardoModel || 'phoenix-1-0'; // Pass specific model
                 data.aspect_ratio = leonardoAspect || '1:1';
                 data.preset_style = leonardoStyle || 'LEONARDO';  // Default to LEONARDO for best quality
-                data.quality = leonardoQuality || 'high';  // Default to high quality instead of standard
+                data.quality = leonardoQuality;
+            }
+            
+            // Add Modal specific parameters if selected
+            if (selectedModel === 'modal') {
+                const modalModel = document.getElementById('modal-model')?.value || 'runwayml/stable-diffusion-v1-5';
+                Object.assign(data, {
+                    modal_model: modalModel
+                });
+                data.model = selectedModel; // Keep 'modal' as the generator
+                data.modal_model = modalModel; // Pass specific Modal model
+            }
                 
-                // Update width/height based on aspect ratio
-                const aspectRatios = {
-                    '1:1': [1024, 1024],
-                    '16:9': [1344, 768],
-                    '9:16': [768, 1344],
-                    '4:3': [1024, 768],
-                    '3:4': [768, 1024],
-                    '2:3': [832, 1216],
-                    '3:2': [1216, 832]
-                };
-                
-                const ratio = data.aspect_ratio;
-                if (aspectRatios[ratio]) {
-                    [data.width, data.height] = aspectRatios[ratio];
-                }
-                
+            // Update width/height based on aspect ratio
+            const aspectRatios = {
+                '1:1': [1024, 1024],
+                '16:9': [1344, 768],
+                '9:16': [768, 1344],
+                '4:3': [1024, 768],
+                '3:4': [768, 1024],
+                '2:3': [832, 1216],
+                '3:2': [1216, 832]
+            };
+            
+            const ratio = data.aspect_ratio;
+            if (aspectRatios[ratio]) {
+                [data.width, data.height] = aspectRatios[ratio];
+            }
+            
+            if (selectedModel === 'leonardo-api') {
                 console.log('🎨 Leonardo.ai generation with parameters:', data);
+            } else if (selectedModel === 'modal') {
+                console.log('🚀 Modal generation with parameters:', data);
             } else {
                 console.log('🏠 Local model generation with parameters:', data);
             }

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puter.com Models Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .model-card {
+            transition: all 0.3s ease;
+        }
+        .model-card:hover {
+            transform: translateY(-2px);
+        }
+        .loading {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass rounded-lg p-8 max-w-4xl w-full">
+        <h1 class="text-3xl font-bold text-white mb-6 text-center">🧪 Puter.com Models Test</h1>
+        
+        <div class="space-y-4">
+            <!-- Quick Test -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">🚀 Quick Test</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="testAllModels()" 
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
+                        🎨 Test All Models
+                    </button>
+                    <button onclick="testWorkingModels()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                        ⚡ Test Fast Models
+                    </button>
+                </div>
+            </div>
+
+            <!-- Model Results -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">📊 Model Results</h2>
+                <div id="model-results" class="grid grid-cols-2 gap-3">
+                    <p class="text-gray-300 col-span-2">Click "Test All Models" to see results...</p>
+                </div>
+            </div>
+
+            <!-- Working Models -->
+            <div class="bg-green-900/50 rounded-lg p-4 border border-green-600">
+                <h2 class="text-xl font-semibold text-green-300 mb-2">✅ Working Models</h2>
+                <div id="working-models" class="text-green-200">
+                    <p>Testing models...</p>
+                </div>
+            </div>
+
+            <!-- Test Image Display -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">🖼️ Test Images</h2>
+                <div id="test-images" class="grid grid-cols-3 gap-2">
+                    <p class="text-gray-300 col-span-3">Generated images will appear here...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆓 Puter.js -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script>
+        const testPrompt = "beautiful woman, high quality, detailed, photorealistic";
+        
+        const models = [
+            { name: "🔥 DALL-E 3", model: "dall-e-3", quality: "standard", speed: "medium" },
+            { name: "🚀 FLUX.1 Schnell", model: "black-forest-labs/FLUX.1-schnell", speed: "very fast" },
+            { name: "⚡ FLUX.1 Dev", model: "black-forest-labs/FLUX.1-dev", speed: "fast" },
+            { name: "🌟 FLUX.1 Pro", model: "black-forest-labs/FLUX.1-pro", speed: "medium" },
+            { name: "💎 GPT Image 1.5", model: "gpt-image-1.5", quality: "medium", speed: "medium" },
+            { name: "🧠 Gemini 2.5 Flash", model: "gemini-2.5-flash-image-preview", speed: "fast" },
+            { name: "🎯 Seedream 4.0", model: "ByteDance-Seed/Seedream-4.0", speed: "medium" },
+            { name: "🎪 DreamShaper", model: "Lykon/DreamShaper", speed: "medium" },
+            { name: "🌈 Ideogram 3.0", model: "ideogram/ideogram-3.0", speed: "medium" },
+            { name: "⚡ Juggernaut Lightning", model: "RunDiffusion/Juggernaut-Lightning-Flux", speed: "very fast" },
+            { name: "🖼️ Imagen 4.0", model: "google/imagen-4.0-fast", speed: "fast" },
+            { name: "🎨 HiDream I1", model: "HiDream-ai/HiDream-I1-Fast", speed: "fast" }
+        ];
+
+        const workingModels = [];
+        const failedModels = [];
+
+        function updateModelResults() {
+            const resultsDiv = document.getElementById('model-results');
+            resultsDiv.innerHTML = models.map(model => {
+                const status = workingModels.includes(model.name) ? '✅' : 
+                              failedModels.includes(model.name) ? '❌' : '⏳';
+                
+                const color = workingModels.includes(model.name) ? 'text-green-300' : 
+                             failedModels.includes(model.name) ? 'text-red-300' : 
+                             'text-yellow-300';
+                
+                return `
+                    <div class="model-card bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+                        <div class="text-sm font-semibold ${color}">${status} ${model.name}</div>
+                        <div class="text-xs text-gray-400">⚡ ${model.speed}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateWorkingModels() {
+            const workingDiv = document.getElementById('working-models');
+            
+            if (workingModels.length === 0) {
+                workingDiv.innerHTML = '<p class="text-yellow-200">No working models found yet...</p>';
+            } else {
+                workingDiv.innerHTML = `
+                    <div class="space-y-1">
+                        <p class="text-green-300 font-semibold">✅ ${workingModels.length} Working Models:</p>
+                        ${workingModels.map(model => `<p class="text-green-200">• ${model}</p>`).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        async function testModel(model, index) {
+            try {
+                console.log(`🎨 Testing ${model.name}...`);
+                
+                const options = { model: model.model };
+                if (model.quality) {
+                    options.quality = model.quality;
+                }
+                
+                const startTime = Date.now();
+                const imageElement = await puter.ai.txt2img(testPrompt, options);
+                const generationTime = (Date.now() - startTime) / 1000;
+                
+                console.log(`✅ ${model.name} successful! Time: ${generationTime}s`);
+                
+                // Add to working models
+                workingModels.push(model.name);
+                
+                // Display image
+                const testImages = document.getElementById('test-images');
+                if (testImages.querySelector('.text-gray-300')) {
+                    testImages.innerHTML = '';
+                }
+                
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'text-center';
+                imageContainer.innerHTML = `
+                    <div class="text-xs text-green-300 mb-1">${model.name}</div>
+                `;
+                imageContainer.appendChild(imageElement);
+                imageElement.className = 'w-full h-24 object-cover rounded border border-gray-600';
+                testImages.appendChild(imageContainer);
+                
+                return { success: true, time: generationTime };
+                
+            } catch (error) {
+                console.log(`❌ ${model.name} failed:`, error.message);
+                failedModels.push(model.name);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testAllModels() {
+            console.log('🧪 Testing all Puter.com models...');
+            
+            // Reset results
+            workingModels.length = 0;
+            failedModels.length = 0;
+            document.getElementById('test-images').innerHTML = '<p class="text-gray-300 col-span-3">Testing models...</p>';
+            
+            // Test all models
+            for (let i = 0; i < models.length; i++) {
+                const model = models[i];
+                await testModel(model, i);
+                updateModelResults();
+                updateWorkingModels();
+                
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            console.log('🎉 All models tested!');
+            console.log('✅ Working models:', workingModels);
+            console.log('❌ Failed models:', failedModels);
+            
+            // Show final results
+            const resultsDiv = document.getElementById('model-results');
+            resultsDiv.innerHTML = `
+                <div class="col-span-2 bg-gray-800/50 rounded-lg p-4 border border-gray-600">
+                    <h3 class="text-lg font-semibold text-white mb-2">📊 Test Complete!</h3>
+                    <p class="text-green-300">✅ ${workingModels.length} models working</p>
+                    <p class="text-red-300">❌ ${failedModels.length} models failed</p>
+                    <p class="text-gray-300 mt-2">Use working models in VisionCraft Pro!</p>
+                </div>
+            `;
+        }
+
+        async function testWorkingModels() {
+            console.log('⚡ Testing fast models only...');
+            
+            // Reset
+            workingModels.length = 0;
+            failedModels.length = 0;
+            
+            // Test only fast models
+            const fastModels = models.filter(m => m.speed.includes('fast') || m.speed.includes('very fast'));
+            
+            for (const model of fastModels) {
+                await testModel(model);
+                updateModelResults();
+                updateWorkingModels();
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+
+        // Auto-start testing on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('🚀 Puter.com Models Test loaded');
+                console.log('📋 Available models:', models.length);
+                updateModelResults();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

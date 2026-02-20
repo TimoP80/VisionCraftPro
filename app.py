@@ -41,6 +41,9 @@ class GenerationRequest(BaseModel):
     aspect_ratio: Optional[str] = None
     preset_style: Optional[str] = None
     quality: Optional[str] = None
+    
+    # Modal specific parameters
+    modal_model: Optional[str] = "runwayml/stable-diffusion-v1-5"  # Modal model selection
 
 class GenerationResponse(BaseModel):
     image: str
@@ -159,6 +162,10 @@ class ImageGenerator:
                 kwargs['quality'] = request.quality
             if hasattr(request, 'leonardo_model') and request.leonardo_model:
                 kwargs['model'] = request.leonardo_model  # Pass specific Leonardo model
+            
+            # Add Modal specific parameters if available
+            if hasattr(request, 'modal_model') and request.modal_model:
+                kwargs['model'] = request.modal_model  # Pass specific Modal model
             
             print(f"[SEARCH] Modern generator kwargs: {kwargs}")
             

@@ -14,3 +14,4 @@ safetensors>=0.3.1
 omegaconf>=2.3.0
 gradio>=4.0.0
 psutil>=5.9.0
+modal>=0.63.0

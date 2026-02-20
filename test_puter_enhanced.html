@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puter.com Enhanced Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .loading {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass rounded-lg p-8 max-w-3xl w-full">
+        <h1 class="text-3xl font-bold text-white mb-6 text-center">🧪 Puter.com Enhanced Test</h1>
+        
+        <div class="space-y-4">
+            <!-- Authentication Status -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">🔐 Authentication Status</h2>
+                <div id="auth-status" class="text-gray-300">
+                    <p>🔄 Checking authentication...</p>
+                </div>
+                <div class="mt-3 space-y-2">
+                    <button onclick="checkAuthentication()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        🔍 Check Authentication
+                    </button>
+                    <button onclick="triggerVerification()" 
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        📧 Trigger Email Verification
+                    </button>
+                    <button onclick="checkPuterAccount()" 
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        👤 Check Account Status
+                    </button>
+                </div>
+            </div>
+
+            <!-- Test Generation -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">🎨 Test Generation</h2>
+                <div class="space-y-3">
+                    <input type="text" id="test-prompt" value="beautiful woman, high quality, detailed, photorealistic" 
+                           class="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="testDALLE3()" 
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
+                            🔥 Test DALL-E 3
+                        </button>
+                        <button onclick="testFluxSchnell()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                            ⚡ Test FLUX Schnell
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">📋 Results</h2>
+                <div id="results" class="text-gray-300">
+                    <p>Click a test button to see results...</p>
+                </div>
+            </div>
+
+            <!-- Debug Info -->
+            <div class="bg-yellow-900/50 rounded-lg p-4 border border-yellow-600">
+                <h3 class="text-lg font-semibold text-yellow-300 mb-2">🐛 Debug Information</h3>
+                <div id="debug-info" class="text-yellow-200 text-sm font-mono">
+                    <p>Waiting for debug information...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆓 Puter.js -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script>
+        let authStatus = {
+            puterLoaded: false,
+            puterAiAvailable: false,
+            authenticated: false,
+            userEmail: null,
+            accountInfo: null
+        };
+
+        function updateResults(message, type = 'info') {
+            const results = document.getElementById('results');
+            const colors = {
+                'info': 'text-gray-300',
+                'success': 'text-green-300',
+                'error': 'text-red-300',
+                'warning': 'text-yellow-300'
+            };
+            
+            results.innerHTML = `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        function updateAuthStatus(message, type = 'info') {
+            const authStatus = document.getElementById('auth-status');
+            const colors = {
+                'info': 'text-gray-300',
+                'success': 'text-green-300',
+                'error': 'text-red-300',
+                'warning': 'text-yellow-300'
+            };
+            
+            authStatus.innerHTML = `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        function updateDebugInfo(info) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.innerHTML = `<pre>${JSON.stringify(info, null, 2)}</pre>`;
+        }
+
+        function checkAuthentication() {
+            console.log('🔍 Checking Puter authentication...');
+            
+            // Check if Puter.js loaded
+            if (typeof puter === 'undefined') {
+                updateAuthStatus('❌ Puter.js not loaded', 'error');
+                updateDebugInfo({ error: 'Puter.js not loaded' });
+                return;
+            }
+            
+            authStatus.puterLoaded = true;
+            
+            // Check if puter.ai is available
+            if (!puter.ai) {
+                updateAuthStatus('❌ puter.ai not available', 'error');
+                updateDebugInfo({ 
+                    puterLoaded: true, 
+                    puterAi: null,
+                    puterObject: Object.keys(puter)
+                });
+                return;
+            }
+            
+            authStatus.puterAiAvailable = true;
+            updateAuthStatus('✅ puter.ai available - checking authentication...', 'warning');
+            
+            // Try to access user info
+            try {
+                if (puter.auth) {
+                    console.log('🔍 Checking puter.auth...');
+                    updateDebugInfo({ 
+                        puterLoaded: true, 
+                        puterAiAvailable: true,
+                        puterAuth: typeof puter.auth,
+                        puterAuthKeys: puter.auth ? Object.keys(puter.auth) : null
+                    });
+                }
+                
+                // Try a simple API call to check authentication
+                testSimpleAuth();
+                
+            } catch (error) {
+                console.error('Auth check error:', error);
+                updateAuthStatus('❌ Authentication check failed', 'error');
+                updateDebugInfo({ 
+                    error: error.message,
+                    puterLoaded: true, 
+                    puterAiAvailable: true
+                });
+            }
+        }
+
+        async function testSimpleAuth() {
+            try {
+                updateAuthStatus('🔄 Testing authentication with simple call...', 'warning');
+                
+                // Try to get user info or make a simple call
+                if (puter.user) {
+                    const userInfo = await puter.user.get();
+                    authStatus.authenticated = true;
+                    authStatus.userEmail = userInfo.email;
+                    updateAuthStatus(`✅ Authenticated as: ${userInfo.email}`, 'success');
+                    updateDebugInfo(userInfo);
+                } else {
+                    // Try a simple generation to trigger auth
+                    await testMinimalGeneration();
+                }
+                
+            } catch (error) {
+                console.log('Auth test result:', error);
+                updateAuthStatus('⚠️ Authentication required - may need to visit puter.com', 'warning');
+                updateDebugInfo({ 
+                    authTest: 'failed',
+                    error: error.message,
+                    suggestion: 'Visit puter.com to authenticate'
+                });
+            }
+        }
+
+        async function testMinimalGeneration() {
+            try {
+                updateAuthStatus('🔄 Testing minimal generation to trigger auth...', 'warning');
+                
+                // Try a minimal generation
+                const result = await puter.ai.txt2img("test", {
+                    model: "dall-e-3"
+                });
+                
+                authStatus.authenticated = true;
+                updateAuthStatus('✅ Authentication successful!', 'success');
+                updateResults('🎉 Authentication successful! Puter.com is working!', 'success');
+                
+            } catch (error) {
+                if (error.message.includes('auth') || error.message.includes('login') || error.message.includes('verification')) {
+                    updateAuthStatus('📧 Email verification required - visit puter.com', 'warning');
+                    updateResults('📧 Please visit puter.com to complete email verification', 'warning');
+                } else {
+                    updateAuthStatus('⚠️ Unknown authentication issue', 'warning');
+                    updateResults(`⚠️ Authentication issue: ${error.message}`, 'warning');
+                }
+                
+                updateDebugInfo({ 
+                    minimalTest: 'failed',
+                    error: error.message,
+                    needsAuth: true
+                });
+            }
+        }
+
+        function triggerVerification() {
+            updateAuthStatus('📧 Attempting to trigger verification...', 'warning');
+            updateResults('📧 If verification is needed, a popup or redirect should appear...', 'info');
+            
+            // Try different methods to trigger verification
+            try {
+                // Method 1: Try to access puter.auth
+                if (puter.auth && puter.auth.signIn) {
+                    puter.auth.signIn();
+                }
+                
+                // Method 2: Open puter.com in new tab
+                setTimeout(() => {
+                    window.open('https://puter.com', '_blank');
+                    updateResults('📧 Opened puter.com in new tab - complete verification there', 'info');
+                }, 1000);
+                
+            } catch (error) {
+                console.log('Verification trigger:', error);
+                window.open('https://puter.com', '_blank');
+            }
+        }
+
+        async function checkPuterAccount() {
+            try {
+                updateAuthStatus('🔄 Checking account status...', 'warning');
+                
+                if (puter.user) {
+                    const userInfo = await puter.user.get();
+                    authStatus.accountInfo = userInfo;
+                    updateAuthStatus(`✅ Account: ${userInfo.email || 'Unknown'}`, 'success');
+                    updateDebugInfo(userInfo);
+                } else {
+                    updateAuthStatus('❌ User account info not available', 'error');
+                }
+                
+            } catch (error) {
+                updateAuthStatus('❌ Account check failed', 'error');
+                updateDebugInfo({ error: error.message });
+            }
+        }
+
+        async function testDALLE3() {
+            const prompt = document.getElementById('test-prompt').value;
+            updateResults('🔄 Testing DALL-E 3 generation...', 'info');
+            
+            try {
+                const startTime = Date.now();
+                const imageElement = await puter.ai.txt2img(prompt, {
+                    model: "dall-e-3",
+                    quality: "standard"
+                });
+                const generationTime = (Date.now() - startTime) / 1000;
+                
+                updateResults(`
+                    <div class="space-y-2">
+                        <p class="text-green-300">✅ DALL-E 3 generation successful!</p>
+                        <p class="text-gray-300">⏱️ Time: ${generationTime.toFixed(2)}s</p>
+                        <p class="text-gray-300">📝 Prompt: ${prompt}</p>
+                    </div>
+                `, 'success');
+                
+                // Display image
+                const results = document.getElementById('results');
+                results.innerHTML += '<div class="mt-3"></div>';
+                const imageContainer = results.querySelector('.mt-3');
+                imageContainer.appendChild(imageElement);
+                imageElement.className = 'max-w-full rounded-lg border border-gray-600';
+                
+            } catch (error) {
+                updateResults(`❌ DALL-E 3 failed: ${error.message}`, 'error');
+                updateDebugInfo({ error: error.message, model: 'dall-e-3' });
+            }
+        }
+
+        async function testFluxSchnell() {
+            const prompt = document.getElementById('test-prompt').value;
+            updateResults('🔄 Testing FLUX Schnell generation...', 'info');
+            
+            try {
+                const startTime = Date.now();
+                const imageElement = await puter.ai.txt2img(prompt, {
+                    model: "black-forest-labs/FLUX.1-schnell"
+                });
+                const generationTime = (Date.now() - startTime) / 1000;
+                
+                updateResults(`
+                    <div class="space-y-2">
+                        <p class="text-green-300">✅ FLUX Schnell generation successful!</p>
+                        <p class="text-gray-300">⏱️ Time: ${generationTime.toFixed(2)}s</p>
+                        <p class="text-gray-300">📝 Prompt: ${prompt}</p>
+                    </div>
+                `, 'success');
+                
+                // Display image
+                const results = document.getElementById('results');
+                results.innerHTML += '<div class="mt-3"></div>';
+                const imageContainer = results.querySelector('.mt-3');
+                imageContainer.appendChild(imageElement);
+                imageElement.className = 'max-w-full rounded-lg border border-gray-600';
+                
+            } catch (error) {
+                updateResults(`❌ FLUX Schnell failed: ${error.message}`, 'error');
+                updateDebugInfo({ error: error.message, model: 'flux-schnell' });
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkAuthentication();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

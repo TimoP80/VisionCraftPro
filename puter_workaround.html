@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionCraft Pro - Puter.com Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass rounded-lg p-8 max-w-4xl w-full">
+        <h1 class="text-3xl font-bold text-white mb-6 text-center">🎨 VisionCraft Pro - Puter.com Edition</h1>
+        
+        <div class="space-y-4">
+            <!-- Puter.com Integration -->
+            <div class="bg-green-900/50 rounded-lg p-4 border border-green-600">
+                <h2 class="text-xl font-semibold text-green-300 mb-2">🆓 Puter.com FREE Generation</h2>
+                <p class="text-green-200 text-sm mb-3">Since Puter.com website works, let's use it directly!</p>
+                
+                <!-- Model Selection -->
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-green-300 mb-2">🎭 Model</label>
+                    <select id="puter-model" class="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600">
+                        <option value="dall-e-3">🔥 DALL-E 3 (Best Quality)</option>
+                        <option value="black-forest-labs/FLUX.1-schnell">🚀 FLUX.1 Schnell (Fast)</option>
+                        <option value="black-forest-labs/FLUX.1-dev">⚡ FLUX.1 Dev (Balanced)</option>
+                        <option value="stabilityai/stable-diffusion-xl-base-1.0">🌟 Stable Diffusion XL</option>
+                        <option value="gpt-image-1.5">💎 GPT Image 1.5</option>
+                        <option value="gemini-2.5-flash-image-preview">🧠 Gemini 2.5 Flash</option>
+                        <option value="ByteDance-Seed/Seedream-4.0">🎯 Seedream 4.0</option>
+                        <option value="ideogram/ideogram-3.0">🌈 Ideogram 3.0</option>
+                    </select>
+                </div>
+                
+                <!-- Prompt Input -->
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-green-300 mb-2">💭 Prompt</label>
+                    <input type="text" id="puter-prompt" value="beautiful woman, high quality, detailed, photorealistic" 
+                           class="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600">
+                </div>
+                
+                <!-- Generate Button -->
+                <button onclick="generateWithPuter()" 
+                        class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
+                    🆓 Generate with Puter.com (FREE!)
+                </button>
+                
+                <div class="mt-3 p-3 bg-green-900/30 rounded-lg border border-green-600">
+                    <p class="text-xs text-green-300 font-semibold">✨ COMPLETELY FREE!</p>
+                    <p class="text-xs text-green-200">No API keys • No rate limits • Professional quality</p>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">🖼️ Generated Images</h2>
+                <div id="results" class="space-y-3">
+                    <p class="text-gray-300">Click "Generate with Puter.com" to create images...</p>
+                </div>
+            </div>
+
+            <!-- Puter.com Tools -->
+            <div class="bg-blue-900/50 rounded-lg p-4 border border-blue-600">
+                <h2 class="text-xl font-semibold text-blue-300 mb-2">🛠️ Puter.com Tools</h2>
+                <p class="text-blue-200 text-sm mb-3">Explore Puter.com's other tools:</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="openPuterAI()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        🤖 Puter AI Chat
+                    </button>
+                    <button onclick="openPuterDocs()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        📚 Puter Docs
+                    </button>
+                    <button onclick="openPuterPlayground()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        🎮 AI Playground
+                    </button>
+                    <button onclick="openPuterDashboard()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                        📊 Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="bg-yellow-900/50 rounded-lg p-4 border border-yellow-600">
+                <h3 class="text-lg font-semibold text-yellow-300 mb-2">📊 Status</h3>
+                <div id="status" class="text-yellow-200 text-sm">
+                    <p>✅ Puter.com website working</p>
+                    <p>🔄 Testing direct generation...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆓 Puter.js -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script>
+        let generationCount = 0;
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            const colors = {
+                'info': 'text-yellow-200',
+                'success': 'text-green-200',
+                'error': 'text-red-200',
+                'warning': 'text-orange-200'
+            };
+            
+            status.innerHTML = `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        function updateResults(content) {
+            const results = document.getElementById('results');
+            results.innerHTML = content;
+        }
+
+        async function generateWithPuter() {
+            const model = document.getElementById('puter-model').value;
+            const prompt = document.getElementById('puter-prompt').value;
+            
+            updateStatus('🔄 Generating with Puter.com...', 'info');
+            
+            try {
+                // Build options
+                const options = { model: model };
+                
+                // Add quality for DALL-E 3
+                if (model === 'dall-e-3') {
+                    options.quality = 'standard';
+                }
+                
+                console.log('🎨 Puter.com generation:', { model, prompt, options });
+                
+                const startTime = Date.now();
+                const imageElement = await puter.ai.txt2img(prompt, options);
+                const generationTime = (Date.now() - startTime) / 1000;
+                
+                generationCount++;
+                
+                // Display results
+                updateResults(`
+                    <div class="space-y-3">
+                        <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="text-green-300 font-semibold">✅ Generation #${generationCount} Successful!</p>
+                                    <p class="text-gray-300 text-sm">🎨 Model: ${model}</p>
+                                    <p class="text-gray-300 text-sm">⏱️ Time: ${generationTime.toFixed(2)}s</p>
+                                    <p class="text-gray-300 text-sm">📝 Prompt: ${prompt}</p>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-center">
+                                <img src="${imageElement.src}" class="max-w-full rounded-lg border border-gray-600 mx-auto" alt="Generated image">
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                updateStatus(`✅ Generation #${generationCount} successful! ${generationTime.toFixed(2)}s`, 'success');
+                
+                console.log('✅ Puter.com generation successful!', {
+                    generation: generationCount,
+                    model: model,
+                    time: generationTime
+                });
+                
+            } catch (error) {
+                console.error('❌ Puter.com generation failed:', error);
+                
+                updateResults(`
+                    <div class="bg-red-900/50 rounded-lg p-3 border border-red-600">
+                        <p class="text-red-300 font-semibold">❌ Generation Failed</p>
+                        <p class="text-red-200 text-sm">Error: ${error.message}</p>
+                        <p class="text-red-200 text-sm mt-2">Try a different model or check Puter.com status</p>
+                    </div>
+                `);
+                
+                updateStatus(`❌ Generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Puter.com Tools
+        function openPuterAI() {
+            window.open('https://puter.com/chat', '_blank');
+        }
+
+        function openPuterDocs() {
+            window.open('https://docs.puter.com', '_blank');
+        }
+
+        function openPuterPlayground() {
+            window.open('https://puter.com/playground', '_blank');
+        }
+
+        function openPuterDashboard() {
+            window.open('https://puter.com/dashboard', '_blank');
+        }
+
+        // Auto-check Puter status on load
+        window.addEventListener('load', async () => {
+            setTimeout(async () => {
+                updateStatus('🔄 Checking Puter.com status...', 'info');
+                
+                try {
+                    // Test if Puter.js is working
+                    if (typeof puter !== 'undefined' && puter.ai) {
+                        updateStatus('✅ Puter.js ready! Try generating images!', 'success');
+                    } else {
+                        updateStatus('⚠️ Puter.js loading... wait a moment', 'warning');
+                        // Retry after 2 seconds
+                        setTimeout(() => {
+                            if (typeof puter !== 'undefined' && puter.ai) {
+                                updateStatus('✅ Puter.js ready! Try generating images!', 'success');
+                            } else {
+                                updateStatus('❌ Puter.js not loading - refresh page', 'error');
+                            }
+                        }, 2000);
+                    }
+                } catch (error) {
+                    updateStatus(`❌ Status check failed: ${error.message}`, 'error');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionCraft Pro - Fixed Puter.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass rounded-lg p-8 max-w-4xl w-full">
+        <h1 class="text-3xl font-bold text-white mb-6 text-center">🔧 VisionCraft Pro - Fixed Puter.com</h1>
+        
+        <div class="space-y-4">
+            <!-- Debug Info -->
+            <div class="bg-yellow-900/50 rounded-lg p-4 border border-yellow-600">
+                <h2 class="text-xl font-semibold text-yellow-300 mb-2">🐛 Debug Information</h2>
+                <div id="debug-info" class="text-yellow-200 text-sm font-mono">
+                    <p>Initializing Puter.js with proper configuration...</p>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">📊 Status</h2>
+                <div id="status" class="text-gray-300">
+                    <p>🔄 Initializing...</p>
+                </div>
+            </div>
+
+            <!-- Test Controls -->
+            <div class="bg-green-900/50 rounded-lg p-4 border border-green-600">
+                <h2 class="text-xl font-semibold text-green-300 mb-2">🧪 Test Controls</h2>
+                <div class="space-y-3">
+                    <button onclick="initializePuter()" 
+                            class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
+                        🔄 Initialize Puter.js
+                    </button>
+                    <button onclick="testDirectAPI()" 
+                            class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                        🎨 Test Direct API
+                    </button>
+                    <button onclick="testWithAuth()" 
+                            class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
+                        🔐 Test With Authentication
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generation Test -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">🎨 Generation Test</h2>
+                <div class="space-y-3">
+                    <input type="text" id="test-prompt" value="beautiful woman, high quality, detailed" 
+                           class="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="testDALLE3()" 
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
+                            🔥 Test DALL-E 3
+                        </button>
+                        <button onclick="testFlux()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                            ⚡ Test FLUX Schnell
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="bg-black/50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold text-white mb-2">📋 Results</h2>
+                <div id="results" class="text-gray-300">
+                    <p>Click test buttons to see results...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆓 Puter.js with proper initialization -->
+    <script>
+        // Global variables
+        let puterInitialized = false;
+        let puterConfig = {
+            appInstanceID: 'visioncraft-pro-' + Math.random().toString(36).substr(2, 9),
+            domain: 'puter.com',
+            apiVersion: 'v2'
+        };
+
+        function updateDebugInfo(info) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.innerHTML = `<pre>${JSON.stringify(info, null, 2)}</pre>`;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            const colors = {
+                'info': 'text-gray-300',
+                'success': 'text-green-300',
+                'error': 'text-red-300',
+                'warning': 'text-yellow-300'
+            };
+            
+            status.innerHTML = `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        function updateResults(content) {
+            const results = document.getElementById('results');
+            results.innerHTML = content;
+        }
+
+        // Initialize Puter.js with proper configuration
+        async function initializePuter() {
+            updateStatus('🔄 Initializing Puter.js with proper config...', 'info');
+            
+            try {
+                // Load Puter.js script dynamically with proper config
+                if (typeof puter === 'undefined') {
+                    updateStatus('📦 Loading Puter.js...', 'info');
+                    
+                    const script = document.createElement('script');
+                    script.src = 'https://js.puter.com/v2/';
+                    script.onload = () => {
+                        console.log('✅ Puter.js loaded');
+                        setupPuterConfig();
+                    };
+                    script.onerror = () => {
+                        updateStatus('❌ Failed to load Puter.js', 'error');
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    setupPuterConfig();
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Initialization failed: ${error.message}`, 'error');
+                updateDebugInfo({ error: error.message, stack: error.stack });
+            }
+        }
+
+        function setupPuterConfig() {
+            updateStatus('⚙️ Setting up Puter.js configuration...', 'info');
+            
+            try {
+                // Set up Puter configuration
+                if (typeof puter !== 'undefined') {
+                    // Configure Puter.js with proper settings
+                    puter.setAppInstanceID?.(puterConfig.appInstanceID);
+                    
+                    updateDebugInfo({
+                        puterLoaded: true,
+                        puterAiAvailable: !!puter.ai,
+                        puterAuthAvailable: !!puter.auth,
+                        config: puterConfig,
+                        puterObject: Object.keys(puter)
+                    });
+                    
+                    if (puter.ai) {
+                        puterInitialized = true;
+                        updateStatus('✅ Puter.js initialized successfully!', 'success');
+                    } else {
+                        updateStatus('⚠️ Puter.js loaded but AI not available', 'warning');
+                    }
+                } else {
+                    updateStatus('❌ Puter.js not available', 'error');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Configuration failed: ${error.message}`, 'error');
+                updateDebugInfo({ error: error.message, config: puterConfig });
+            }
+        }
+
+        // Test direct API without authentication
+        async function testDirectAPI() {
+            updateStatus('🔄 Testing direct Puter.com API...', 'info');
+            
+            try {
+                if (!puterInitialized) {
+                    await initializePuter();
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                if (!puter.ai) {
+                    updateStatus('❌ puter.ai not available', 'error');
+                    return;
+                }
+                
+                updateStatus('🎨 Testing direct generation...', 'info');
+                
+                const imageElement = await puter.ai.txt2img("test image", {
+                    model: "black-forest-labs/FLUX.1-schnell"
+                });
+                
+                updateStatus('✅ Direct API working!', 'success');
+                updateResults(`
+                    <div class="space-y-2">
+                        <p class="text-green-300">✅ Direct Puter.com API working!</p>
+                        <p class="text-gray-300">🎉 FLUX Schnell generation successful!</p>
+                    </div>
+                `, 'success');
+                
+                // Display image
+                const results = document.getElementById('results');
+                results.innerHTML += '<div class="mt-3 text-center"></div>';
+                const imageContainer = results.querySelector('.mt-3');
+                imageContainer.appendChild(imageElement);
+                imageElement.className = 'max-w-xs rounded-lg border border-gray-600 mx-auto';
+                
+            } catch (error) {
+                updateStatus(`❌ Direct API failed: ${error.message}`, 'error');
+                updateResults(`❌ Error: ${error.message}`, 'error');
+                updateDebugInfo({ error: error.message, test: 'direct_api' });
+            }
+        }
+
+        // Test with authentication
+        async function testWithAuth() {
+            updateStatus('🔄 Testing with authentication...', 'info');
+            
+            try {
+                if (!puterInitialized) {
+                    await initializePuter();
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                // Try to authenticate
+                if (puter.auth) {
+                    updateStatus('🔐 Attempting authentication...', 'info');
+                    
+                    // Try different auth methods
+                    try {
+                        await puter.auth.signIn();
+                        updateStatus('✅ Authentication successful!', 'success');
+                    } catch (authError) {
+                        console.log('Auth method 1 failed:', authError);
+                        
+                        // Try alternative auth
+                        try {
+                            await puter.auth.signInWithPopup();
+                            updateStatus('✅ Authentication with popup successful!', 'success');
+                        } catch (popupError) {
+                            console.log('Auth method 2 failed:', popupError);
+                            updateStatus('⚠️ Authentication required - visit puter.com', 'warning');
+                        }
+                    }
+                } else {
+                    updateStatus('❌ puter.auth not available', 'error');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Auth test failed: ${error.message}`, 'error');
+                updateDebugInfo({ error: error.message, test: 'auth' });
+            }
+        }
+
+        // Test DALL-E 3
+        async function testDALLE3() {
+            const prompt = document.getElementById('test-prompt').value;
+            updateStatus('🔄 Testing DALL-E 3...', 'info');
+            
+            try {
+                if (!puterInitialized) {
+                    await initializePuter();
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                const imageElement = await puter.ai.txt2img(prompt, {
+                    model: "dall-e-3",
+                    quality: "standard"
+                });
+                
+                updateStatus('✅ DALL-E 3 working!', 'success');
+                updateResults(`
+                    <div class="space-y-2">
+                        <p class="text-green-300">✅ DALL-E 3 generation successful!</p>
+                        <p class="text-gray-300">🎉 FREE DALL-E 3 working!</p>
+                    </div>
+                `, 'success');
+                
+                // Display image
+                const results = document.getElementById('results');
+                results.innerHTML += '<div class="mt-3 text-center"></div>';
+                const imageContainer = results.querySelector('.mt-3');
+                imageContainer.appendChild(imageElement);
+                imageElement.className = 'max-w-xs rounded-lg border border-gray-600 mx-auto';
+                
+            } catch (error) {
+                updateStatus(`❌ DALL-E 3 failed: ${error.message}`, 'error');
+                updateResults(`❌ DALL-E 3 Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test FLUX
+        async function testFlux() {
+            const prompt = document.getElementById('test-prompt').value;
+            updateStatus('🔄 Testing FLUX Schnell...', 'info');
+            
+            try {
+                if (!puterInitialized) {
+                    await initializePuter();
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                const imageElement = await puter.ai.txt2img(prompt, {
+                    model: "black-forest-labs/FLUX.1-schnell"
+                });
+                
+                updateStatus('✅ FLUX Schnell working!', 'success');
+                updateResults(`
+                    <div class="space-y-2">
+                        <p class="text-green-300">✅ FLUX Schnell generation successful!</p>
+                        <p class="text-gray-300">🎉 FREE FLUX working!</p>
+                    </div>
+                `, 'success');
+                
+                // Display image
+                const results = document.getElementById('results');
+                results.innerHTML += '<div class="mt-3 text-center"></div>';
+                const imageContainer = results.querySelector('.mt-3');
+                imageContainer.appendChild(imageElement);
+                imageElement.className = 'max-w-xs rounded-lg border border-gray-600 mx-auto';
+                
+            } catch (error) {
+                updateStatus(`❌ FLUX Schnell failed: ${error.message}`, 'error');
+                updateResults(`❌ FLUX Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-initialize on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updateDebugInfo({ status: 'Page loaded, ready to initialize Puter.js' });
+                updateStatus('📋 Ready - click "Initialize Puter.js" to begin', 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 """
 Modern Commercial Image Generators
-Support for Nano Banana Pro, Seedream, Leonardo.ai API-based generators
+Support for Nano Banana Pro, Seedream, Leonardo.ai API-based generators, and Modal
 """
 
 import requests
@@ -13,6 +13,15 @@ import json
 import os
 import time
 import asyncio
+from datetime import datetime
+
+# Modal imports - will be imported conditionally
+try:
+    import modal
+    MODAL_AVAILABLE = True
+except ImportError:
+    MODAL_AVAILABLE = False
+    print("Modal not installed. Install with: pip install modal")
 
 class ModernGeneratorManager:
     """Manages modern commercial image generators"""
@@ -32,6 +41,8 @@ class ModernGeneratorManager:
         # Initialize available generators
         self.available_generators = {}
         self._setup_leonardo_ai()
+        if MODAL_AVAILABLE:
+            self._setup_modal()
         print(f"Initialized {len(self.available_generators)} generator(s)")
     
     def _setup_leonardo_ai(self):
@@ -93,6 +104,56 @@ class ModernGeneratorManager:
                 {"id": "3:4", "name": "Vertical", "resolution": (768, 1024)},
                 {"id": "2:3", "name": "Tall", "resolution": (832, 1216)},
                 {"id": "3:2", "name": "Wide", "resolution": (1216, 832)}
+            ]
+        }
+    
+    def _setup_modal(self):
+        """Setup Modal generator configuration"""
+        if not MODAL_AVAILABLE:
+            return
+            
+        self.available_generators["modal"] = {
+            "name": "Modal H100 GPU",
+            "type": "modal",
+            "description": "Remote H100 GPU generation via Modal platform",
+            "api_endpoint": "modal://remote",
+            "max_resolution": (1024, 1024),
+            "quality": "Professional",
+            "speed": "Very Fast",
+            "cost": "Pay-per-use",
+            "features": ["text-to-image", "h100-gpu", "fast-generation", "scalable"],
+            "models": {
+                "runwayml/stable-diffusion-v1-5": {
+                    "name": "Stable Diffusion v1.5",
+                    "description": "Classic Stable Diffusion model",
+                    "max_resolution": (512, 512),
+                    "aspect_ratios": ["1:1"],
+                    "note": "Fast generation on H100"
+                },
+                "stabilityai/stable-diffusion-xl-base-1.0": {
+                    "name": "Stable Diffusion XL",
+                    "description": "High-quality SDXL model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16"],
+                    "note": "Higher quality, longer generation"
+                },
+                "runwayml/stable-diffusion-v2-1": {
+                    "name": "Stable Diffusion v2.1",
+                    "description": "Improved Stable Diffusion v2",
+                    "max_resolution": (768, 768),
+                    "aspect_ratios": ["1:1", "9:16", "16:9"],
+                    "note": "Better composition and quality"
+                }
+            },
+            "aspect_ratios": [
+                {"id": "1:1", "name": "Square", "resolution": (512, 512)},
+                {"id": "16:9", "name": "Widescreen", "resolution": (768, 432)},
+                {"id": "9:16", "name": "Portrait", "resolution": (432, 768)}
+            ],
+            "quality_levels": [
+                {"id": "standard", "name": "Standard", "description": "20 steps, good quality"},
+                {"id": "high", "name": "High", "description": "30 steps, better quality"},
+                {"id": "ultra", "name": "Ultra", "description": "50 steps, best quality"}
             ]
         }
     
@@ -214,6 +275,56 @@ class ModernGeneratorManager:
             
         except Exception as e:
             print(f"[ERROR] Seedream generation failed: {e}")
+            raise
+    
+    async def generate_with_modal(self, prompt: str, **kwargs) -> Image.Image:
+        """Generate image using Modal H100 GPU"""
+        if not MODAL_AVAILABLE:
+            raise ValueError("Modal not installed. Install with: pip install modal")
+        
+        # Get model name from kwargs
+        model_name = kwargs.get("model", "runwayml/stable-diffusion-v1-5")
+        
+        # Create Modal function stub if not already created
+        try:
+            # Import your Modal function - adjust import path as needed
+            from modal_integration import generate_image
+        except ImportError:
+            # Fallback - create a stub for demonstration
+            # In production, replace this with your actual Modal function import
+            print("[ERROR] Modal function not found. Please update import path in generate_with_modal()")
+            raise ValueError("Modal function not properly imported")
+        
+        try:
+            # Call Modal function asynchronously
+            loop = asyncio.get_event_loop()
+            
+            # Run Modal function in thread pool to avoid blocking
+            image_bytes = await loop.run_in_executor(
+                None,
+                lambda: generate_image.remote(prompt, model_name)
+            )
+            
+            # Convert bytes to PIL Image
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            # Resize if target dimensions specified
+            target_width = kwargs.get("width", None)
+            target_height = kwargs.get("height", None)
+            
+            if target_width and target_height and image.size != (target_width, target_height):
+                try:
+                    resample = getattr(Image, "Resampling", Image).LANCZOS
+                except Exception:
+                    resample = Image.LANCZOS
+                image = ImageOps.fit(image, (target_width, target_height), method=resample)
+                print(f"[MODAL] Resized image to: {image.size}")
+            
+            print(f"[MODAL] Generated image: {image.size}")
+            return image
+            
+        except Exception as e:
+            print(f"[ERROR] Modal generation failed: {e}")
             raise
     
     async def generate_with_dall_e_3(self, prompt: str, **kwargs) -> Image.Image:
@@ -678,6 +789,8 @@ class ModernGeneratorManager:
                 return await self.generate_with_nano_banana(prompt, **kwargs)
             elif generator_name == "seedream":
                 return await self.generate_with_seedream(prompt, **kwargs)
+            elif generator_name == "modal":
+                return await self.generate_with_modal(prompt, **kwargs)
             elif generator_name == "midjourney-api":
                 return await self.generate_with_midjourney(prompt, **kwargs)
             elif generator_name == "dall-e-3":
