@@ -463,7 +463,7 @@
             <div id="loading" class="hidden mt-6">
                 <div class="flex items-center justify-center gap-4">
                     <div class="loading-spinner"></div>
-                    <span class="text-lg">Generating masterpiece...</span>
+                    <span id="loading-status" class="text-lg">Preparing request...</span>
                 </div>
                 <div class="mt-4">
                     <div class="bg-gray-700 rounded-full h-2">
@@ -1439,8 +1439,28 @@
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('result').classList.add('hidden');
             document.getElementById('generate-btn').disabled = true;
+            const statusEl = document.getElementById('loading-status');
+            const progressBar = document.getElementById('progress-bar');
+            statusEl.textContent = 'Preparing request...';
+            progressBar.style.width = '0%';
             
             const startTime = Date.now();
+            let progress = 0;
+            let stage = 0;
+            const stages = [
+                { pct: 10, text: 'Preparing request...' },
+                { pct: 25, text: 'Sending request to server...' },
+                { pct: 60, text: 'Generating image (this can take a while)...' },
+                { pct: 90, text: 'Finalizing...' },
+            ];
+            const advanceStage = () => {
+                const s = stages[Math.min(stage, stages.length - 1)];
+                statusEl.textContent = s.text;
+                progress = Math.max(progress, s.pct);
+                progressBar.style.width = `${Math.min(progress, 95)}%`;
+                stage += 1;
+            };
+            advanceStage();
             
             // Update generation time
             const timeInterval = setInterval(() => {
@@ -1448,7 +1468,19 @@
                 document.getElementById('generation-time').textContent = `Time: ${elapsed.toFixed(1)}s`;
             }, 100);
 
+            // Animate progress until request completes
+            const progressInterval = setInterval(() => {
+                // Slowly approach 95% while waiting
+                if (progress < 95) {
+                    progress = Math.min(95, progress + (progress < 60 ? 1.5 : 0.8));
+                    progressBar.style.width = `${progress.toFixed(0)}%`;
+                }
+            }, 500);
+
             try {
+                // Give user immediate feedback that we are sending
+                stage = 1;
+                advanceStage();
                 const response = await fetch(`${API_BASE}/generate`, {
                     method: 'POST',
                     headers: {
@@ -1456,6 +1488,9 @@
                     },
                     body: JSON.stringify(data),
                 });
+
+                stage = 2;
+                advanceStage();
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -1477,6 +1512,11 @@
                 }
 
                 const result = await response.json();
+
+                stage = 3;
+                advanceStage();
+                progressBar.style.width = '100%';
+                statusEl.textContent = 'Done!';
                 
                 // Display result
                 document.getElementById('generated-image').src = `data:image/png;base64,${result.image}`;
@@ -1509,6 +1549,7 @@
                 document.getElementById('loading').classList.add('hidden');
             } finally {
                 clearInterval(timeInterval);
+                clearInterval(progressInterval);
                 document.getElementById('generate-btn').disabled = false;
                 updateStatus();
             }
