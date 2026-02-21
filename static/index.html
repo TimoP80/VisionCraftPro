@@ -526,6 +526,13 @@
                         <span>🔄</span>
                         <span>Refresh</span>
                     </button>
+                    <button 
+                        id="clear-gallery-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <span>🧹</span>
+                        <span>Clear</span>
+                    </button>
                 </div>
             </div>
             
@@ -764,6 +771,21 @@
 
         // Refresh gallery
         document.getElementById('refresh-gallery-btn').addEventListener('click', loadGallery);
+
+        // Clear gallery
+        document.getElementById('clear-gallery-btn').addEventListener('click', async () => {
+            if (!confirm('Clear the entire gallery? This will delete all saved images.')) {
+                return;
+            }
+
+            try {
+                await fetch(`${API_BASE}/gallery`, { method: 'DELETE' });
+                await loadGallery();
+            } catch (error) {
+                console.error('Failed to clear gallery:', error);
+                alert('Failed to clear gallery');
+            }
+        });
 
         // Search on Enter key
         document.getElementById('search-input').addEventListener('keypress', (e) => {

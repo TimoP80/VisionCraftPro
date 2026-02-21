@@ -376,6 +376,12 @@ async def delete_gallery_image(image_id: str):
         raise HTTPException(status_code=404, detail="Image not found")
     return {"message": "deleted"}
 
+@app.delete("/gallery")
+async def clear_gallery():
+    """Clear the entire gallery"""
+    generator.gallery.clear_gallery()
+    return {"message": "cleared"}
+
 @app.get("/debug-state")
 async def debug_state():
     """Debug endpoint to check current server state"""
