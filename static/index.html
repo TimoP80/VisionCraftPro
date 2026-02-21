@@ -1192,6 +1192,90 @@
             const modelInfo = document.getElementById('model-info');
             const leonardoControls = document.getElementById('leonardo-controls');
             const modalControls = document.getElementById('modal-controls');
+
+            function populateLeonardoControls(generator) {
+                const modelSelectEl = document.getElementById('leonardo-model');
+                const aspectSelectEl = document.getElementById('leonardo-aspect');
+                const styleSelectEl = document.getElementById('leonardo-style');
+                const qualitySelectEl = document.getElementById('leonardo-quality');
+
+                if (!modelSelectEl || !aspectSelectEl || !styleSelectEl || !qualitySelectEl) {
+                    return;
+                }
+
+                // Models
+                const models = generator?.models || {};
+                modelSelectEl.innerHTML = '';
+                const modelEntries = Object.entries(models);
+                if (modelEntries.length > 0) {
+                    for (const [key, info] of modelEntries) {
+                        const option = document.createElement('option');
+                        option.value = key;
+                        option.textContent = info?.name ? info.name : key;
+                        modelSelectEl.appendChild(option);
+                    }
+                } else {
+                    const option = document.createElement('option');
+                    option.value = 'phoenix-1-0';
+                    option.textContent = 'Leonardo Phoenix Enhanced (Default)';
+                    modelSelectEl.appendChild(option);
+                }
+
+                // Aspect ratios
+                const aspectRatios = generator?.aspect_ratios || [];
+                aspectSelectEl.innerHTML = '';
+                if (aspectRatios.length > 0) {
+                    for (const ar of aspectRatios) {
+                        const option = document.createElement('option');
+                        option.value = ar.id;
+                        option.textContent = `${ar.name} (${ar.resolution[0]}x${ar.resolution[1]})`;
+                        aspectSelectEl.appendChild(option);
+                    }
+                }
+
+                // Preset styles
+                const presetStyles = generator?.preset_styles || [];
+                styleSelectEl.innerHTML = '';
+                if (presetStyles.length > 0) {
+                    const leonardoDefault = document.createElement('option');
+                    leonardoDefault.value = 'LEONARDO';
+                    leonardoDefault.textContent = 'Leonardo (Best Quality)';
+                    styleSelectEl.appendChild(leonardoDefault);
+
+                    for (const st of presetStyles) {
+                        const option = document.createElement('option');
+                        option.value = st.id;
+                        option.textContent = st.name;
+                        styleSelectEl.appendChild(option);
+                    }
+                }
+
+                // Quality levels
+                const qualityLevels = generator?.quality_levels || [];
+                qualitySelectEl.innerHTML = '';
+                if (qualityLevels.length > 0) {
+                    for (const q of qualityLevels) {
+                        const option = document.createElement('option');
+                        option.value = q.id;
+                        option.textContent = q.name;
+                        qualitySelectEl.appendChild(option);
+                    }
+                }
+
+                // Defaults
+                if (modelSelectEl.options.length > 0) {
+                    modelSelectEl.value = modelSelectEl.options[0].value;
+                }
+                if (aspectSelectEl.options.length > 0) {
+                    aspectSelectEl.value = '1:1';
+                }
+                if (styleSelectEl.options.length > 0) {
+                    styleSelectEl.value = 'LEONARDO';
+                }
+                if (qualitySelectEl.options.length > 0) {
+                    qualitySelectEl.value = 'high';
+                }
+            }
             
             // Check if it's a local model
             if (availableModels[selectedModel]) {
@@ -1216,6 +1300,9 @@
                 if (selectedModel === 'leonardo-api') {
                     leonardoControls.classList.remove('hidden');
                     modalControls.classList.add('hidden');
+
+                    populateLeonardoControls(generator);
+
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>

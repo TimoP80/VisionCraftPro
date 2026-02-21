@@ -155,6 +155,12 @@ class ImageGenerator:
     
     async def generate_image(self, request: GenerationRequest) -> GenerationResponse:
         """Generate image using current model"""
+        # Ensure the correct generator is selected for this request.
+        # The UI attempts to call /load-model on selection changes, but we also enforce it here
+        # so API clients (or failed /load-model calls) can't accidentally fall back to local generation.
+        if request.model and request.model != self.current_model:
+            self.load_model(request.model)
+
         if not self.model_loaded:
             raise HTTPException(status_code=400, detail="No model loaded")
         
