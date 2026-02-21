@@ -85,6 +85,24 @@ def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-
     return img_bytes.getvalue()
 
 if __name__ == "__main__":
-    print("[MODAL-REMOTE] This is a Modal integration module.")
-    print("[MODAL-REMOTE] To use Modal generation, run: modal run modal_integration.py")
-    print("[MODAL-REMOTE] Then start VisionCraft server and select 'Modal H100 GPU'")
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "serve":
+        print("[MODAL-SERVE] Starting Modal app in server mode...")
+        app.serve()
+    elif len(sys.argv) > 1:
+        # Test locally (for development)
+        prompt = sys.argv[1]
+        model = sys.argv[2] if len(sys.argv) > 2 else "runwayml/stable-diffusion-v1-5"
+        
+        print(f"Testing Modal generation locally...")
+        print(f"Prompt: {prompt}")
+        print(f"Model: {model}")
+        
+        # This would normally be called via Modal API
+        # result = generate_image.remote(prompt, model)
+        # print(f"Generated {len(result)} bytes")
+    else:
+        print("[MODAL-REMOTE] This is a Modal integration module.")
+        print("[MODAL-REMOTE] To use Modal generation, run: modal run modal_integration.py serve")
+        print("[MODAL-REMOTE] Then start VisionCraft server and select 'Modal H100 GPU'")
