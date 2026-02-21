@@ -1124,7 +1124,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(selectedModel)
+                    body: JSON.stringify({ model_name: selectedModel })
                 })
                 .then(response => response.json())
                 .then(data => {

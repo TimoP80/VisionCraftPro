@@ -331,17 +331,20 @@ async def generate_image(request: GenerationRequest):
         print(f"[ERROR] Generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class LoadModelRequest(BaseModel):
+    model_name: str
+
 @app.post("/load-model")
-async def load_model(model_name: str):
+async def load_model(request: LoadModelRequest):
     """Load a specific model"""
-    print(f"[API] /load-model called with model_name: {model_name}")
+    print(f"[API] /load-model called with model_name: {request.model_name}")
     try:
-        success = generator.load_model(model_name)
+        success = generator.load_model(request.model_name)
         print(f"[API] load_model result: {success}")
         if success:
-            return {"message": f"Model {model_name} loaded successfully"}
+            return {"message": f"Model {request.model_name} loaded successfully"}
         else:
-            raise HTTPException(status_code=400, detail=f"Failed to load model {model_name}")
+            raise HTTPException(status_code=400, detail=f"Failed to load model {request.model_name}")
     except Exception as e:
         print(f"[API] load_model error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
