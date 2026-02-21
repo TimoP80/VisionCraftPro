@@ -142,13 +142,6 @@ class ModernGeneratorManager:
                     "aspect_ratios": ["1:1", "16:9", "9:16"],
                     "note": "Higher quality, longer generation"
                 },
-                "runwayml/stable-diffusion-v2-1": {
-                    "name": "Stable Diffusion v2.1",
-                    "description": "Improved Stable Diffusion v2",
-                    "max_resolution": (768, 768),
-                    "aspect_ratios": ["1:1", "9:16", "16:9"],
-                    "note": "Better composition and quality"
-                },
                 "stabilityai/sdxl-turbo": {
                     "name": "SDXL Turbo",
                     "description": "Ultra-fast SDXL variant",
@@ -157,8 +150,8 @@ class ModernGeneratorManager:
                     "note": "Very fast, fewer steps recommended"
                 },
                 "stabilityai/stable-diffusion-2-1-base": {
-                    "name": "Stable Diffusion 2.1 Base",
-                    "description": "Base SD 2.1 checkpoint",
+                    "name": "Stable Diffusion v2.1",
+                    "description": "Stable Diffusion 2.1 (base checkpoint)",
                     "max_resolution": (768, 768),
                     "aspect_ratios": ["1:1", "9:16", "16:9"],
                     "note": "Good general-purpose model"

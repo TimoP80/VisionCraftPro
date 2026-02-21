@@ -91,6 +91,14 @@ def generate_image_internal(
             )
         pipe = pipe.to("cuda")
         _PIPELINE_CACHE[model_name] = pipe
+
+    # Ensure safety checker is disabled (avoids black/blank images on some prompts)
+    if hasattr(pipe, "safety_checker"):
+        pipe.safety_checker = None
+    if hasattr(pipe, "requires_safety_checker"):
+        pipe.requires_safety_checker = False
+    if hasattr(pipe, "watermark"):
+        pipe.watermark = None
     
     print(f"[MODAL-REMOTE] Model loaded on Modal GPU")
     
@@ -110,6 +118,14 @@ def generate_image_internal(
     # Convert to bytes
     import io
     from PIL import Image
+    import numpy as np
+
+    try:
+        arr = np.array(image)
+        print(f"[MODAL-REMOTE] Image stats: shape={arr.shape} min={arr.min()} max={arr.max()}")
+    except Exception as _e:
+        pass
+
     img_bytes = io.BytesIO()
     image.save(img_bytes, format="PNG")
     img_bytes.seek(0)
