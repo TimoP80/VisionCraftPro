@@ -291,6 +291,27 @@
                     <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
                         <h3 class="text-sm font-semibold mb-3 text-green-300">🚀 Modal Controls</h3>
 
+                        <div class="mb-4">
+                            <label for="hf-model-search" class="block text-sm font-medium mb-2 text-purple-300">🔎 Find Hugging Face Models</label>
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="hf-model-search"
+                                    placeholder="Search diffusers text-to-image models (e.g. sdxl, dreamshaper)"
+                                    class="flex-1 px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                                >
+                                <button
+                                    type="button"
+                                    id="hf-model-search-btn"
+                                    class="px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg text-sm font-medium transition-all duration-200"
+                                >
+                                    Search
+                                </button>
+                            </div>
+                            <div id="hf-model-search-status" class="mt-2 text-xs text-gray-400"></div>
+                            <div id="hf-model-results" class="mt-3 max-h-56 overflow-auto space-y-2"></div>
+                        </div>
+
                         <!-- Model Selection -->
                         <div class="mb-4">
                             <label for="modal-model" class="block text-sm font-medium mb-2 text-purple-300">🎭 Model</label>
@@ -791,6 +812,83 @@
         document.getElementById('search-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('search-btn').click();
+            }
+        });
+
+        async function searchHuggingFaceModels() {
+            const query = (document.getElementById('hf-model-search')?.value || '').trim();
+            const statusEl = document.getElementById('hf-model-search-status');
+            const resultsEl = document.getElementById('hf-model-results');
+
+            if (!statusEl || !resultsEl) {
+                return;
+            }
+
+            statusEl.textContent = 'Searching Hugging Face...';
+            resultsEl.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/hf/models?q=${encodeURIComponent(query)}&limit=20`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                const models = data.models || [];
+
+                if (models.length === 0) {
+                    statusEl.textContent = 'No models found.';
+                    return;
+                }
+
+                statusEl.textContent = `Found ${models.length} models. Click one to select it.`;
+
+                models.forEach(m => {
+                    const row = document.createElement('button');
+                    row.type = 'button';
+                    row.className = 'w-full text-left px-3 py-2 rounded-lg bg-gray-700/40 hover:bg-gray-700/70 border border-gray-600/40 transition-colors';
+                    row.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-white font-medium">${m.id}</span>
+                            <span class="text-xs text-gray-300">⬇️ ${m.downloads || 0} | ❤️ ${m.likes || 0}</span>
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">${(m.gated ? '⚠️ gated ' : '')}${(m.private ? '🔒 private ' : '')}</div>
+                    `;
+
+                    row.addEventListener('click', () => {
+                        const modalModelSelect = document.getElementById('modal-model');
+                        if (!modalModelSelect) {
+                            return;
+                        }
+
+                        let option = Array.from(modalModelSelect.options).find(o => o.value === m.id);
+                        if (!option) {
+                            option = document.createElement('option');
+                            option.value = m.id;
+                            option.textContent = m.id;
+                            modalModelSelect.appendChild(option);
+                        }
+
+                        modalModelSelect.value = m.id;
+                        statusEl.textContent = `Selected: ${m.id}`;
+                    });
+
+                    resultsEl.appendChild(row);
+                });
+            } catch (error) {
+                console.error('HF model search failed:', error);
+                statusEl.textContent = 'Search failed. Check server logs and connection.';
+            }
+        }
+
+        document.getElementById('hf-model-search-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            searchHuggingFaceModels();
+        });
+
+        document.getElementById('hf-model-search')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchHuggingFaceModels();
             }
         });
 

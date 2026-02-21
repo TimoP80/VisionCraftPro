@@ -17,6 +17,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
+import os
+import json
+import urllib.parse
+import urllib.request
 import uvicorn
 import psutil
 import threading
@@ -381,6 +385,57 @@ async def clear_gallery():
     """Clear the entire gallery"""
     generator.gallery.clear_gallery()
     return {"message": "cleared"}
+
+@app.get("/hf/models")
+async def hf_search_models(q: str = "", limit: int = 20):
+    """Search Hugging Face for Stable Diffusion / diffusers-compatible text-to-image models"""
+    try:
+        limit = max(1, min(int(limit), 50))
+    except Exception:
+        limit = 20
+
+    params = {
+        "search": q or "stable diffusion",
+        "limit": str(limit),
+        "pipeline_tag": "text-to-image",
+        "library": "diffusers",
+        "sort": "downloads",
+        "direction": "-1",
+    }
+    url = "https://huggingface.co/api/models?" + urllib.parse.urlencode(params)
+
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "VisionCraftPro/1.0",
+    }
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    if hf_token:
+        headers["Authorization"] = f"Bearer {hf_token}"
+
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        raw = resp.read().decode("utf-8")
+    data = json.loads(raw)
+
+    results = []
+    for item in data or []:
+        model_id = item.get("modelId") or item.get("id")
+        if not model_id:
+            continue
+        results.append(
+            {
+                "id": model_id,
+                "likes": item.get("likes", 0),
+                "downloads": item.get("downloads", 0),
+                "pipeline_tag": item.get("pipeline_tag"),
+                "library_name": item.get("library_name"),
+                "tags": item.get("tags", []),
+                "private": item.get("private", False),
+                "gated": item.get("gated", False),
+            }
+        )
+
+    return {"models": results}
 
 @app.get("/debug-state")
 async def debug_state():
