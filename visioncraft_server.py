@@ -52,7 +52,7 @@ class GenerationRequest(BaseModel):
     quality: Optional[str] = None
     
     # Modal specific parameters
-    modal_model: Optional[str] = "runwayml/stable-diffusion-v1-5"  # Modal model selection
+    modal_model: Optional[str] = None  # Modal model selection
 
 class GenerationResponse(BaseModel):
     image: str
@@ -181,18 +181,20 @@ class ImageGenerator:
             }
             
             # Add Leonardo.ai specific parameters if available
-            if hasattr(request, 'aspect_ratio'):
-                kwargs['aspect_ratio'] = request.aspect_ratio
-            if hasattr(request, 'preset_style'):
-                kwargs['preset_style'] = request.preset_style
-            if hasattr(request, 'quality'):
-                kwargs['quality'] = request.quality
-            if hasattr(request, 'leonardo_model') and request.leonardo_model:
-                kwargs['model'] = request.leonardo_model  # Pass specific Leonardo model
-            
+            if self.current_model == 'leonardo-api':
+                if hasattr(request, 'aspect_ratio'):
+                    kwargs['aspect_ratio'] = request.aspect_ratio
+                if hasattr(request, 'preset_style'):
+                    kwargs['preset_style'] = request.preset_style
+                if hasattr(request, 'quality'):
+                    kwargs['quality'] = request.quality
+                if hasattr(request, 'leonardo_model') and request.leonardo_model:
+                    kwargs['model'] = request.leonardo_model  # Pass specific Leonardo model
+
             # Add Modal specific parameters if available
-            if hasattr(request, 'modal_model') and request.modal_model:
-                kwargs['model'] = request.modal_model  # Pass specific Modal model
+            if self.current_model == 'modal':
+                if hasattr(request, 'modal_model') and request.modal_model:
+                    kwargs['model'] = request.modal_model  # Pass specific Modal model
             
             print(f"[SEARCH] Modern generator kwargs: {kwargs}")
             
