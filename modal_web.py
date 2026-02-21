@@ -60,17 +60,19 @@ def generate_image_internal(
     print(f"[MODAL-REMOTE] Using GPU: {torch.cuda.get_device_name(0)}")
     print(f"[MODAL-REMOTE] CUDA Version: {torch.version.cuda}")
     
+    # Basic validation: most diffusion models expect dimensions divisible by 8
+    if width % 8 != 0 or height % 8 != 0:
+        raise ValueError("width and height must be divisible by 8")
+
     # Load model on Modal's GPU
-    from diffusers import StableDiffusionPipeline
+    from diffusers import AutoPipelineForText2Image
     import os
     pipe = _PIPELINE_CACHE.get(model_name)
     if pipe is None:
         hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
-        pipe = StableDiffusionPipeline.from_pretrained(
+        pipe = AutoPipelineForText2Image.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
-            safety_checker=None,
-            requires_safety_checker=False,
             token=hf_token,
         )
         pipe = pipe.to("cuda")
