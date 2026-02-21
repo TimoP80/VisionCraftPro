@@ -283,59 +283,51 @@ class ModernGeneratorManager:
             raise
     
     async def generate_with_modal(self, prompt: str, **kwargs) -> Image.Image:
-        """Generate image using Modal H100 GPU"""
-        if not MODAL_AVAILABLE:
-            raise ValueError("Modal not installed. Install with: pip install modal")
-        
+        """Generate image using Modal H100 GPU via web endpoint"""
         # Get model name from kwargs
         model_name = kwargs.get("model", "runwayml/stable-diffusion-v1-5")
-        
-        # Create Modal function stub if not already created
+
+        # Prefer env var so you can paste the URL that `modal serve modal_web.py` prints.
+        # Example: https://timop80--visioncraft-modal-fastapi-app-dev.modal.run
+        base_url = os.environ.get(
+            "VISIONCRAFT_MODAL_ENDPOINT",
+            "https://timop80--visioncraft-modal-fastapi-app-dev.modal.run",
+        ).rstrip("/")
+        url = f"{base_url}/generate"
+
         try:
-            # Import Modal app and function from persistent server
-            import modal_persistent
-            from modal_persistent import generate_image
-            
-            print(f"[MODAL] Modal function imported successfully")
-            print(f"[MODAL] Function object: {generate_image}")
-            
-        except ImportError:
-            print("[ERROR] Modal persistent server module not found")
-            raise ValueError("Modal persistent server not properly imported")
-        
-        try:
-            # Call Modal function remotely# Use Modal's remote execution - this runs on Modal's servers, not local GPU
-            print(f"[MODAL] Calling remote Modal function...")
+            import httpx
+            import io
+            from PIL import Image
+
+            print(f"[MODAL] Calling Modal web endpoint...")
+            print(f"[MODAL] Endpoint: {url}")
             print(f"[MODAL] Model: {model_name}")
             print(f"[MODAL] Prompt: {prompt[:100]}...")
-            
-            # Use Modal's async interface for better performance
-            image_bytes = await generate_image.remote.aio(prompt, model_name)
-            
-            print(f"[MODAL] Received {len(image_bytes)} bytes from remote Modal GPU")
-            
-            # Convert bytes to PIL Image
-            image = Image.open(io.BytesIO(image_bytes))
-            
-            # Resize if target dimensions specified
-            target_width = kwargs.get("width", None)
-            target_height = kwargs.get("height", None)
-            
-            if target_width and target_height and image.size != (target_width, target_height):
-                try:
-                    resample = getattr(Image, "Resampling", Image).LANCZOS
-                except Exception:
-                    resample = Image.LANCZOS
-                image = ImageOps.fit(image, (target_width, target_height), method=resample)
-                print(f"[MODAL] Resized image to: {image.size}")
-            
-            print(f"[MODAL] Generated image: {image.size}")
-            return image
-            
+
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(
+                    url,
+                    params={
+                        "prompt": prompt,
+                        "model_name": model_name,
+                    },
+                )
+
+            if response.status_code == 200:
+                print(f"[MODAL] Received {len(response.content)} bytes from Modal")
+                image = Image.open(io.BytesIO(response.content))
+                print(f"[MODAL] Image loaded: {image.size}")
+                return image
+
+            # Non-200
+            print(f"[MODAL] Error: HTTP {response.status_code}")
+            print(f"[MODAL] Response: {response.text}")
+            raise ValueError(f"Modal web endpoint error: {response.status_code} {response.text}")
+
         except Exception as e:
             print(f"[ERROR] Modal generation failed: {e}")
             print(f"[ERROR] Error type: {type(e).__name__}")
-            print(f"[ERROR] Error details: {str(e)}")
             import traceback
             print(f"[ERROR] Traceback: {traceback.format_exc()}")
             raise

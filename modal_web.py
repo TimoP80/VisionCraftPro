@@ -1,0 +1,115 @@
+"""
+Modal web endpoint for VisionCraft - accessible via HTTP
+"""
+
+import modal
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi.responses import Response
+
+# Create Modal app
+app = modal.App("visioncraft-modal")
+
+# Create FastAPI web app
+web_app = FastAPI()
+
+# Modal image with GPU
+image = modal.Image.debian_slim().pip_install(
+    "torch",
+    "torchvision", 
+    "diffusers",
+    "transformers",
+    "accelerate",
+    "pillow",
+    "numpy",
+    "fastapi",
+    "uvicorn"
+)
+
+# Modal function for image generation
+@app.function(
+    image=image,
+    gpu="A100-40GB",
+    timeout=300,
+    secrets=[
+        modal.Secret.from_name("huggingface-token"),
+    ]
+)
+def generate_image_internal(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
+    """
+    Generate image using Modal H100 GPU (INTERNAL FUNCTION)
+    """
+    print(f"[MODAL-REMOTE] Generating with {model_name}: {prompt[:100]}...")
+    print(f"[MODAL-REMOTE] Running on Modal cloud GPU (NOT local GPU)")
+    
+    # Check if we're running on Modal infrastructure
+    import torch
+    if not torch.cuda.is_available():
+        print("[MODAL-REMOTE] ERROR: CUDA not available on Modal infrastructure")
+        raise RuntimeError("CUDA not available on Modal infrastructure")
+    
+    print(f"[MODAL-REMOTE] Using GPU: {torch.cuda.get_device_name(0)}")
+    print(f"[MODAL-REMOTE] CUDA Version: {torch.version.cuda}")
+    
+    # Load model on Modal's GPU
+    from diffusers import StableDiffusionPipeline
+    pipe = StableDiffusionPipeline.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16,
+        safety_checker=None,
+        requires_safety_checker=False
+    )
+    pipe = pipe.to("cuda")  # This is Modal's CUDA, not local
+    
+    print(f"[MODAL-REMOTE] Model loaded on Modal GPU")
+    
+    # Generate image on Modal's GPU
+    with torch.autocast("cuda"):
+        result = pipe(prompt, num_inference_steps=20, guidance_scale=7.5)
+        image = result.images[0]
+    
+    print(f"[MODAL-REMOTE] Generated image: {image.size}")
+    
+    # Convert to bytes
+    import io
+    from PIL import Image
+    img_bytes = io.BytesIO()
+    image.save(img_bytes, format="PNG")
+    img_bytes.seek(0)
+    
+    print(f"[MODAL-REMOTE] Returning {len(img_bytes.getvalue())} bytes")
+    return img_bytes.getvalue()
+
+# Web endpoint for image generation
+@web_app.post("/generate")
+async def generate_endpoint(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5"):
+    """Web endpoint for image generation"""
+    try:
+        image_bytes = await generate_image_internal.remote.aio(prompt, model_name)
+        return Response(content=image_bytes, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Health check endpoint
+@web_app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "visioncraft-modal"}
+
+# Deploy web app
+@app.function(image=image)
+@modal.asgi_app()
+def fastapi_app():
+    return web_app
+
+if __name__ == "__main__":
+    print("[MODAL-WEB] Starting Modal web server...")
+    print("[MODAL-WEB] This will deploy a web endpoint for VisionCraft")
+    
+    # Deploy web app
+    try:
+        app.serve()
+    except KeyboardInterrupt:
+        print("\n[MODAL-WEB] Stopping Modal web server...")
+    except Exception as e:
+        print(f"[MODAL-WEB] Error: {e}")
