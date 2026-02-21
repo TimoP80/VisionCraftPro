@@ -286,6 +286,25 @@
                     </div>
                 </div>
 
+                <!-- Modal Specific Controls -->
+                <div id="modal-controls" class="hidden mb-6 space-y-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                        <h3 class="text-sm font-semibold mb-3 text-green-300">🚀 Modal Controls</h3>
+
+                        <!-- Model Selection -->
+                        <div class="mb-4">
+                            <label for="modal-model" class="block text-sm font-medium mb-2 text-purple-300">🎭 Model</label>
+                            <select id="modal-model" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none"></select>
+                        </div>
+
+                        <!-- Aspect Ratio -->
+                        <div>
+                            <label for="modal-aspect" class="block text-sm font-medium mb-2 text-purple-300">📐 Aspect Ratio</label>
+                            <select id="modal-aspect" class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none"></select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <label for="prompt" class="text-sm font-medium text-purple-300">💭 Prompt *</label>
@@ -1052,6 +1071,7 @@
             const selectedModel = modelSelect.value;
             const modelInfo = document.getElementById('model-info');
             const leonardoControls = document.getElementById('leonardo-controls');
+            const modalControls = document.getElementById('modal-controls');
             
             // Check if it's a local model
             if (availableModels[selectedModel]) {
@@ -1066,6 +1086,7 @@
                     </div>
                 `;
                 leonardoControls.classList.add('hidden');
+                modalControls.classList.add('hidden');
             }
             // Check if it's a modern generator
             else if (modernGenerators[selectedModel]) {
@@ -1074,6 +1095,7 @@
                 // Show Leonardo controls if it's Leonardo.ai
                 if (selectedModel === 'leonardo-api') {
                     leonardoControls.classList.remove('hidden');
+                    modalControls.classList.add('hidden');
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>
@@ -1088,6 +1110,29 @@
                     updateApiKeyStatus();
                 } else if (selectedModel === 'modal') {
                     leonardoControls.classList.add('hidden');
+                    modalControls.classList.remove('hidden');
+
+                    const modalModelSelect = document.getElementById('modal-model');
+                    const modalAspectSelect = document.getElementById('modal-aspect');
+                    modalModelSelect.innerHTML = '';
+                    modalAspectSelect.innerHTML = '';
+
+                    const models = generator.models || {};
+                    for (const [key, info] of Object.entries(models)) {
+                        const option = document.createElement('option');
+                        option.value = key;
+                        option.textContent = info.name || key;
+                        modalModelSelect.appendChild(option);
+                    }
+
+                    const aspectRatios = generator.aspect_ratios || [];
+                    for (const ar of aspectRatios) {
+                        const option = document.createElement('option');
+                        option.value = ar.id;
+                        option.textContent = `${ar.name} (${ar.resolution[0]}x${ar.resolution[1]})`;
+                        modalAspectSelect.appendChild(option);
+                    }
+
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>
@@ -1100,6 +1145,7 @@
                     `;
                 } else {
                     leonardoControls.classList.add('hidden');
+                    modalControls.classList.add('hidden');
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>
@@ -1114,6 +1160,7 @@
             else {
                 modelInfo.innerHTML = '<p class="text-xs text-gray-400">Select a model to see details</p>';
                 leonardoControls.classList.add('hidden');
+                modalControls.classList.add('hidden');
             }
             
             // Load the selected model on the server
@@ -1343,11 +1390,13 @@
             // Add Modal specific parameters if selected
             if (selectedModel === 'modal') {
                 const modalModel = document.getElementById('modal-model')?.value || 'runwayml/stable-diffusion-v1-5';
+                const modalAspect = document.getElementById('modal-aspect')?.value || '1:1';
                 Object.assign(data, {
                     modal_model: modalModel
                 });
                 data.model = selectedModel; // Keep 'modal' as the generator
                 data.modal_model = modalModel; // Pass specific Modal model
+                data.aspect_ratio = modalAspect;
             }
                 
             // Update width/height based on aspect ratio
@@ -1360,9 +1409,21 @@
                 '2:3': [832, 1216],
                 '3:2': [1216, 832]
             };
+
+            const modalAspectRatios = {
+                '1:1': [768, 768],
+                '16:9': [1024, 576],
+                '9:16': [576, 1024],
+                '4:3': [896, 672],
+                '3:4': [672, 896]
+            };
             
             const ratio = data.aspect_ratio;
-            if (aspectRatios[ratio]) {
+            if (selectedModel === 'modal') {
+                if (modalAspectRatios[ratio]) {
+                    [data.width, data.height] = modalAspectRatios[ratio];
+                }
+            } else if (aspectRatios[ratio]) {
                 [data.width, data.height] = aspectRatios[ratio];
             }
             

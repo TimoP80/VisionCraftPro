@@ -13,6 +13,8 @@ app = modal.App("visioncraft-modal")
 # Create FastAPI web app
 web_app = FastAPI()
 
+_PIPELINE_CACHE = {}
+
 # Modal image with GPU
 image = modal.Image.debian_slim().pip_install(
     "torch",
@@ -35,7 +37,14 @@ image = modal.Image.debian_slim().pip_install(
         modal.Secret.from_name("huggingface-token"),
     ]
 )
-def generate_image_internal(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
+def generate_image_internal(
+    prompt: str,
+    model_name: str = "runwayml/stable-diffusion-v1-5",
+    width: int = 512,
+    height: int = 512,
+    num_inference_steps: int = 20,
+    guidance_scale: float = 7.5,
+) -> bytes:
     """
     Generate image using Modal H100 GPU (INTERNAL FUNCTION)
     """
@@ -53,19 +62,28 @@ def generate_image_internal(prompt: str, model_name: str = "runwayml/stable-diff
     
     # Load model on Modal's GPU
     from diffusers import StableDiffusionPipeline
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_name,
-        torch_dtype=torch.float16,
-        safety_checker=None,
-        requires_safety_checker=False
-    )
-    pipe = pipe.to("cuda")  # This is Modal's CUDA, not local
+    pipe = _PIPELINE_CACHE.get(model_name)
+    if pipe is None:
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,
+            safety_checker=None,
+            requires_safety_checker=False,
+        )
+        pipe = pipe.to("cuda")
+        _PIPELINE_CACHE[model_name] = pipe
     
     print(f"[MODAL-REMOTE] Model loaded on Modal GPU")
     
     # Generate image on Modal's GPU
     with torch.autocast("cuda"):
-        result = pipe(prompt, num_inference_steps=20, guidance_scale=7.5)
+        result = pipe(
+            prompt,
+            width=width,
+            height=height,
+            num_inference_steps=num_inference_steps,
+            guidance_scale=guidance_scale,
+        )
         image = result.images[0]
     
     print(f"[MODAL-REMOTE] Generated image: {image.size}")
@@ -82,10 +100,24 @@ def generate_image_internal(prompt: str, model_name: str = "runwayml/stable-diff
 
 # Web endpoint for image generation
 @web_app.post("/generate")
-async def generate_endpoint(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5"):
+async def generate_endpoint(
+    prompt: str,
+    model_name: str = "runwayml/stable-diffusion-v1-5",
+    width: int = 512,
+    height: int = 512,
+    num_inference_steps: int = 20,
+    guidance_scale: float = 7.5,
+):
     """Web endpoint for image generation"""
     try:
-        image_bytes = await generate_image_internal.remote.aio(prompt, model_name)
+        image_bytes = await generate_image_internal.remote.aio(
+            prompt,
+            model_name,
+            width,
+            height,
+            num_inference_steps,
+            guidance_scale,
+        )
         return Response(content=image_bytes, media_type="image/png")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

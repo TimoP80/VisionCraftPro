@@ -131,8 +131,8 @@ class ModernGeneratorManager:
                 "runwayml/stable-diffusion-v1-5": {
                     "name": "Stable Diffusion v1.5",
                     "description": "Classic Stable Diffusion model",
-                    "max_resolution": (512, 512),
-                    "aspect_ratios": ["1:1"],
+                    "max_resolution": (768, 768),
+                    "aspect_ratios": ["1:1", "16:9", "9:16"],
                     "note": "Fast generation on H100"
                 },
                 "stabilityai/stable-diffusion-xl-base-1.0": {
@@ -148,12 +148,28 @@ class ModernGeneratorManager:
                     "max_resolution": (768, 768),
                     "aspect_ratios": ["1:1", "9:16", "16:9"],
                     "note": "Better composition and quality"
+                },
+                "stabilityai/sdxl-turbo": {
+                    "name": "SDXL Turbo",
+                    "description": "Ultra-fast SDXL variant",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["1:1", "16:9", "9:16"],
+                    "note": "Very fast, fewer steps recommended"
+                },
+                "stabilityai/stable-diffusion-2-1-base": {
+                    "name": "Stable Diffusion 2.1 Base",
+                    "description": "Base SD 2.1 checkpoint",
+                    "max_resolution": (768, 768),
+                    "aspect_ratios": ["1:1", "9:16", "16:9"],
+                    "note": "Good general-purpose model"
                 }
             },
             "aspect_ratios": [
-                {"id": "1:1", "name": "Square", "resolution": (512, 512)},
-                {"id": "16:9", "name": "Widescreen", "resolution": (768, 432)},
-                {"id": "9:16", "name": "Portrait", "resolution": (432, 768)}
+                {"id": "1:1", "name": "Square", "resolution": (768, 768)},
+                {"id": "16:9", "name": "Widescreen", "resolution": (1024, 576)},
+                {"id": "9:16", "name": "Portrait", "resolution": (576, 1024)},
+                {"id": "4:3", "name": "Standard", "resolution": (896, 672)},
+                {"id": "3:4", "name": "Vertical", "resolution": (672, 896)}
             ],
             "quality_levels": [
                 {"id": "standard", "name": "Standard", "description": "20 steps, good quality"},
@@ -287,6 +303,11 @@ class ModernGeneratorManager:
         # Get model name from kwargs
         model_name = kwargs.get("model", "runwayml/stable-diffusion-v1-5")
 
+        width = int(kwargs.get("width", 512) or 512)
+        height = int(kwargs.get("height", 512) or 512)
+        num_inference_steps = int(kwargs.get("num_inference_steps", 20) or 20)
+        guidance_scale = float(kwargs.get("guidance_scale", 7.5) or 7.5)
+
         # Prefer env var so you can paste the URL that `modal serve modal_web.py` prints.
         # Example: https://timop80--visioncraft-modal-fastapi-app-dev.modal.run
         base_url = os.environ.get(
@@ -311,6 +332,10 @@ class ModernGeneratorManager:
                     params={
                         "prompt": prompt,
                         "model_name": model_name,
+                        "width": width,
+                        "height": height,
+                        "num_inference_steps": num_inference_steps,
+                        "guidance_scale": guidance_scale,
                     },
                 )
 
