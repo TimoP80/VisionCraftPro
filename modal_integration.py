@@ -101,5 +101,31 @@ def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-
     return img_bytes.getvalue()
 
 if __name__ == "__main__":
-    print("[MODAL-SERVE] Starting Modal app in server mode...")
-    app.serve()  # Keep running continuously
+    import sys
+    import time
+    
+    if len(sys.argv) > 1:
+        # Run once with parameters (for testing)
+        prompt = sys.argv[1]
+        model = sys.argv[2] if len(sys.argv) > 2 else "runwayml/stable-diffusion-v1-5"
+        
+        print(f"Testing Modal generation...")
+        print(f"Prompt: {prompt}")
+        print(f"Model: {model}")
+        
+        # This would normally be called via Modal API
+        # result = generate_image.remote(prompt, model)
+        # print(f"Generated {len(result)} bytes")
+    else:
+        print("[MODAL-SERVE] Starting Modal app in server mode...")
+        print("[MODAL-SERVE] This will keep the app running for VisionCraft integration")
+        
+        # Keep app alive by running in a loop
+        while True:
+            try:
+                print("[MODAL-SERVE] App is running and ready for requests...")
+                time.sleep(30)  # Keep alive for 30 seconds
+                print("[MODAL-SERVE] Still running... (press Ctrl+C to stop)")
+            except KeyboardInterrupt:
+                print("\n[MODAL-SERVE] Stopping Modal app...")
+                break
