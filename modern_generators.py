@@ -335,6 +335,10 @@ class ModernGeneratorManager:
             
         except Exception as e:
             print(f"[ERROR] Modal generation failed: {e}")
+            print(f"[ERROR] Error type: {type(e).__name__}")
+            print(f"[ERROR] Error details: {str(e)}")
+            import traceback
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
             raise
     
     async def generate_with_dall_e_3(self, prompt: str, **kwargs) -> Image.Image:
