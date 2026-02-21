@@ -354,6 +354,17 @@ async def get_gallery():
     """Get image gallery"""
     return generator.gallery.get_images()
 
+@app.get("/debug-state")
+async def debug_state():
+    """Debug endpoint to check current server state"""
+    return {
+        "current_generator_type": generator.current_generator_type,
+        "current_model": generator.current_model,
+        "model_loaded": generator.model_loaded,
+        "available_modern_generators": list(generator.modern_manager.available_generators.keys()),
+        "available_local_models": list(generator.model_manager.get_available_models().keys())
+    }
+
 @app.post("/enhance-prompt")
 async def enhance_prompt(request: dict):
     """Enhance prompt using AI"""
