@@ -69,6 +69,7 @@ def generate_image_internal(
     # and can crash if the environment is missing niche transformer tokenizers.
     from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
     import os
+    import torch
     pipe = _PIPELINE_CACHE.get(model_name)
     if pipe is None:
         hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
@@ -77,9 +78,10 @@ def generate_image_internal(
         is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
 
         if is_sdxl:
+            # SDXL on A100 tends to be more stable in bf16 than fp16 (avoids NaNs/black outputs)
             pipe = StableDiffusionXLPipeline.from_pretrained(
                 model_name,
-                torch_dtype=torch.float16,
+                torch_dtype=torch.bfloat16,
                 **({"token": hf_token} if hf_token else {}),
             )
         else:
@@ -117,9 +119,16 @@ def generate_image_internal(
     print(f"[MODAL-REMOTE] Model loaded on Modal GPU")
     
     # Generate image on Modal's GPU
-    with torch.autocast("cuda"):
+    model_name_lower = (model_name or "").lower()
+    is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
+
+    # Allow TF32 for better stability/perf on Ampere
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
+    autocast_dtype = torch.bfloat16 if is_sdxl else torch.float16
+    with torch.autocast("cuda", dtype=autocast_dtype):
         # SDXL Turbo typically expects very few steps and guidance ~0
-        model_name_lower = (model_name or "").lower()
         if "turbo" in model_name_lower:
             if num_inference_steps > 8:
                 num_inference_steps = 4
