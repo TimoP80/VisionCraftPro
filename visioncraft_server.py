@@ -351,6 +351,31 @@ async def get_gallery():
         "stats": stats
     }
 
+@app.get("/gallery/search")
+async def search_gallery(q: str = ""):
+    """Search gallery images by prompt text"""
+    images = generator.gallery.search_images(query=q, limit=50)
+    return {"images": images}
+
+@app.get("/gallery/{image_id}")
+async def get_gallery_image(image_id: str):
+    """Get a single gallery image as base64 plus metadata"""
+    image_b64 = generator.gallery.get_image_data(image_id)
+    metadata = generator.gallery.get_image_by_id(image_id)
+
+    if not image_b64 or not metadata:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return {"image": image_b64, "metadata": metadata}
+
+@app.delete("/gallery/{image_id}")
+async def delete_gallery_image(image_id: str):
+    """Delete a single gallery image"""
+    ok = generator.gallery.delete_image(image_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return {"message": "deleted"}
+
 @app.get("/debug-state")
 async def debug_state():
     """Debug endpoint to check current server state"""
