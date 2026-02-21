@@ -313,7 +313,6 @@ class ModernGeneratorManager:
             import httpx
             import io
             from PIL import Image
-            from urllib.parse import urljoin
 
             print(f"[MODAL] Calling Modal web endpoint...")
             print(f"[MODAL] Endpoint: {url}")
@@ -329,17 +328,13 @@ class ModernGeneratorManager:
                 "guidance_scale": guidance_scale,
             }
 
-            async with httpx.AsyncClient(timeout=300.0) as client:
+            async with httpx.AsyncClient(timeout=300.0, follow_redirects=True) as client:
                 response = await client.post(url, params=request_params)
 
-                # Modal can respond with 303/307 redirects (e.g. http->https or /generate -> /generate/).
-                # For POST requests, we want to re-POST to the redirected location.
-                if response.status_code in (301, 302, 303, 307, 308):
-                    location = response.headers.get("location")
-                    if location:
-                        redirected_url = urljoin(str(response.url), location)
-                        print(f"[MODAL] Redirect {response.status_code} -> {redirected_url}")
-                        response = await client.post(redirected_url, params=request_params)
+            if getattr(response, "history", None):
+                for r in response.history:
+                    loc = r.headers.get("location")
+                    print(f"[MODAL] Redirect {r.status_code} {r.url} -> {loc}")
 
             if response.status_code == 200:
                 print(f"[MODAL] Received {len(response.content)} bytes from Modal")
