@@ -104,17 +104,9 @@ class ImageGenerator:
         else:
             print(f"[SEARCH] '{model_key}' NOT found in modern generators!")
             print(f"[SEARCH] Available keys: {list(self.modern_manager.available_generators.keys())}")
-            # Load local model
-            print(f"[RELOAD] Attempting to load local model: {model_key}")
-            self.current_generator_type = "local"
-            if self.model_manager.load_model(model_key):
-                self.model_loaded = True
-                self.current_model = model_key
-                print(f"[OK] Local model loaded: {model_key}")
-                return True
-            else:
-                print(f"[ERROR] Failed to load model: {model_key}")
-                return False
+            # Don't try to load as local model if it's not a valid local model
+            print(f"[ERROR] Unknown model: {model_key}")
+            return False
     
     def get_status(self):
         """Get current system status"""
@@ -352,7 +344,12 @@ async def load_model(request: LoadModelRequest):
 @app.get("/gallery")
 async def get_gallery():
     """Get image gallery"""
-    return generator.gallery.get_images()
+    images = generator.gallery.get_images()
+    stats = generator.gallery.get_stats()
+    return {
+        "images": images,
+        "stats": stats
+    }
 
 @app.get("/debug-state")
 async def debug_state():
