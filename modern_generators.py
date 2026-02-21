@@ -294,9 +294,10 @@ class ModernGeneratorManager:
         try:
             # Import Modal app and function
             import modal_integration
+            from modal_integration import app as modal_app
             
             # Check if Modal app is running
-            if not hasattr(modal_integration, 'app'):
+            if not hasattr(modal_app, 'generate_image'):
                 print("[ERROR] Modal app not found. Make sure Modal is properly configured.")
                 raise ValueError("Modal app not properly configured")
                 
@@ -311,7 +312,7 @@ class ModernGeneratorManager:
             print(f"[MODAL] Prompt: {prompt[:100]}...")
             
             # Use Modal's remote execution - this runs on Modal's servers, not local GPU
-            image_bytes = modal_integration.generate_image.remote(prompt, model_name)
+            image_bytes = modal_app.generate_image.remote(prompt, model_name)
             
             print(f"[MODAL] Received {len(image_bytes)} bytes from remote Modal GPU")
             
