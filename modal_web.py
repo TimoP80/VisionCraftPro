@@ -77,6 +77,7 @@ def generate_image_internal(
         model_name_lower = (model_name or "").lower()
         is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
         is_flux = "flux" in model_name_lower
+        is_sd3 = ("stable-diffusion-3" in model_name_lower) or ("sd3" in model_name_lower)
 
         if is_sdxl:
             # SDXL on A100 tends to be more stable in bf16 than fp16 (avoids NaNs/black outputs)
@@ -85,6 +86,22 @@ def generate_image_internal(
                 torch_dtype=torch.bfloat16,
                 **({"token": hf_token} if hf_token else {}),
             )
+        elif is_sd3:
+            # SD3/SD3.5 are different pipelines than SD1/2 (not StableDiffusionPipeline)
+            try:
+                from diffusers import StableDiffusion3Pipeline
+
+                pipe = StableDiffusion3Pipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.bfloat16,
+                    **({"token": hf_token} if hf_token else {}),
+                )
+            except Exception:
+                pipe = DiffusionPipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.bfloat16,
+                    **({"token": hf_token} if hf_token else {}),
+                )
         elif is_flux:
             # FLUX models are not Stable Diffusion pipelines (no UNet). Use the correct pipeline class.
             try:
@@ -139,12 +156,13 @@ def generate_image_internal(
     model_name_lower = (model_name or "").lower()
     is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
     is_flux = "flux" in model_name_lower
+    is_sd3 = ("stable-diffusion-3" in model_name_lower) or ("sd3" in model_name_lower)
 
     # Allow TF32 for better stability/perf on Ampere
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
-    autocast_dtype = torch.bfloat16 if (is_sdxl or is_flux) else torch.float16
+    autocast_dtype = torch.bfloat16 if (is_sdxl or is_flux or is_sd3) else torch.float16
     with torch.autocast("cuda", dtype=autocast_dtype):
         # SDXL Turbo typically expects very few steps and guidance ~0
         if "turbo" in model_name_lower:
