@@ -296,11 +296,10 @@ class ModernGeneratorManager:
             import modal_integration
             from modal_integration import app as modal_app
             
-            # Check if Modal app is running
-            if not hasattr(modal_app, 'generate_image'):
-                print("[ERROR] Modal app not found. Make sure Modal is properly configured.")
-                raise ValueError("Modal app not properly configured")
-                
+            print(f"[MODAL] Modal app imported successfully")
+            print(f"[MODAL] App object: {modal_app}")
+            print(f"[MODAL] App attributes: {dir(modal_app)}")
+            
         except ImportError:
             print("[ERROR] Modal integration module not found")
             raise ValueError("Modal integration not properly imported")
