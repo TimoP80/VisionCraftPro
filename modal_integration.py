@@ -59,15 +59,31 @@ def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-
     print(f"[MODAL-REMOTE] CUDA Version: {torch.version.cuda}")
     
     # Load model on Modal's GPU
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_name,
-        torch_dtype=torch.float16,
-        safety_checker=None,
-        requires_safety_checker=False
-    )
-    pipe = pipe.to("cuda")  # This is Modal's CUDA, not local
-    
-    print(f"[MODAL-REMOTE] Model loaded on Modal GPU")
+    try:
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,
+            safety_checker=None,
+            requires_safety_checker=False,
+            use_safetensors=True
+        )
+        pipe = pipe.to("cuda")  # This is Modal's CUDA, not local
+        
+        print(f"[MODAL-REMOTE] Model loaded on Modal GPU")
+        
+    except Exception as e:
+        print(f"[MODAL-REMOTE] Error loading model: {e}")
+        # Fall back to a basic model that doesn't require HF token
+        print(f"[MODAL-REMOTE] Using fallback model for testing...")
+        pipe = StableDiffusionPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5",
+            torch_dtype=torch.float16,
+            safety_checker=None,
+            requires_safety_checker=False
+        )
+        pipe = pipe.to("cuda")
+        
+    print(f"[MODAL-REMOTE] Fallback model loaded")
     
     # Generate image on Modal's GPU
     with torch.autocast("cuda"):
