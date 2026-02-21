@@ -294,11 +294,10 @@ class ModernGeneratorManager:
         try:
             # Import Modal app and function
             import modal_integration
-            from modal_integration import app as modal_app
+            from modal_integration import generate_image
             
-            print(f"[MODAL] Modal app imported successfully")
-            print(f"[MODAL] App object: {modal_app}")
-            print(f"[MODAL] App attributes: {dir(modal_app)}")
+            print(f"[MODAL] Modal function imported successfully")
+            print(f"[MODAL] Function object: {generate_image}")
             
         except ImportError:
             print("[ERROR] Modal integration module not found")
@@ -311,7 +310,7 @@ class ModernGeneratorManager:
             print(f"[MODAL] Prompt: {prompt[:100]}...")
             
             # Use Modal's remote execution - this runs on Modal's servers, not local GPU
-            image_bytes = modal_app.generate_image.remote(prompt, model_name)
+            image_bytes = generate_image.remote(prompt, model_name)
             
             print(f"[MODAL] Received {len(image_bytes)} bytes from remote Modal GPU")
             
