@@ -32,7 +32,7 @@ app = modal.App("visioncraft-modal")
     gpu=modal.gpu.A100(),  # This runs on Modal's A100/H100 GPUs in the cloud
     timeout=300,
     secrets=[
-        modal.Secret.from_name("huggingface-token", optional=True),
+        modal.Secret.from_name("huggingface-token"),
     ]
 )
 def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
