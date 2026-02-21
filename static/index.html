@@ -1115,6 +1115,25 @@
                 modelInfo.innerHTML = '<p class="text-xs text-gray-400">Select a model to see details</p>';
                 leonardoControls.classList.add('hidden');
             }
+            
+            // Load the selected model on the server
+            if (selectedModel) {
+                console.log(`🔄 Loading model: ${selectedModel}`);
+                fetch('/load-model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(selectedModel)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('✅ Model loaded:', data.message);
+                })
+                .catch(error => {
+                    console.error('❌ Failed to load model:', error);
+                });
+            }
         }
         
         // Show API key dialog
