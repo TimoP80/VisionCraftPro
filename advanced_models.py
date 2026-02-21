@@ -502,6 +502,16 @@ class AdvancedModelManager:
         if model_key is None:
             model_key = self.current_model
         
+        # Handle case where no model is loaded
+        if model_key is None:
+            return {
+                "default_steps": 25,
+                "max_steps": 50,
+                "default_guidance": 7.5,
+                "default_resolution": (512, 512),
+                "note": "No model loaded"
+            }
+        
         base_settings = {
             "default_steps": 25,  # Increased from 20 for better quality
             "max_steps": 50,      # Increased from 30
@@ -509,7 +519,7 @@ class AdvancedModelManager:
             "default_resolution": (512, 512)
         }
         
-        if "turbo" in model_key.lower():
+        if model_key and "turbo" in model_key.lower():
             return {
                 **base_settings,
                 "default_steps": 2,  # Changed from 1 to 2 for better quality
