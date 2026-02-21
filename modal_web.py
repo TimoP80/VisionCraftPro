@@ -67,7 +67,7 @@ def generate_image_internal(
     # Load model on Modal's GPU
     # Avoid AutoPipelineForText2Image here: it eagerly imports many optional pipelines
     # and can crash if the environment is missing niche transformer tokenizers.
-    from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
+    from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionXLPipeline
     import os
     import torch
     pipe = _PIPELINE_CACHE.get(model_name)
@@ -76,6 +76,7 @@ def generate_image_internal(
         print(f"[MODAL-REMOTE] HF token detected: {bool(hf_token)}")
         model_name_lower = (model_name or "").lower()
         is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
+        is_flux = "flux" in model_name_lower
 
         if is_sdxl:
             # SDXL on A100 tends to be more stable in bf16 than fp16 (avoids NaNs/black outputs)
@@ -84,6 +85,22 @@ def generate_image_internal(
                 torch_dtype=torch.bfloat16,
                 **({"token": hf_token} if hf_token else {}),
             )
+        elif is_flux:
+            # FLUX models are not Stable Diffusion pipelines (no UNet). Use the correct pipeline class.
+            try:
+                from diffusers import FluxPipeline
+
+                pipe = FluxPipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.bfloat16,
+                    **({"token": hf_token} if hf_token else {}),
+                )
+            except Exception:
+                pipe = DiffusionPipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.bfloat16,
+                    **({"token": hf_token} if hf_token else {}),
+                )
         else:
             pipe = StableDiffusionPipeline.from_pretrained(
                 model_name,
@@ -121,12 +138,13 @@ def generate_image_internal(
     # Generate image on Modal's GPU
     model_name_lower = (model_name or "").lower()
     is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
+    is_flux = "flux" in model_name_lower
 
     # Allow TF32 for better stability/perf on Ampere
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
-    autocast_dtype = torch.bfloat16 if is_sdxl else torch.float16
+    autocast_dtype = torch.bfloat16 if (is_sdxl or is_flux) else torch.float16
     with torch.autocast("cuda", dtype=autocast_dtype):
         # SDXL Turbo typically expects very few steps and guidance ~0
         if "turbo" in model_name_lower:
@@ -135,13 +153,31 @@ def generate_image_internal(
             if guidance_scale > 1.0:
                 guidance_scale = 0.0
 
-        result = pipe(
-            prompt,
-            width=width,
-            height=height,
-            num_inference_steps=num_inference_steps,
-            guidance_scale=guidance_scale,
-        )
+        try:
+            result = pipe(
+                prompt,
+                width=width,
+                height=height,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+            )
+        except TypeError:
+            try:
+                result = pipe(
+                    prompt,
+                    width=width,
+                    height=height,
+                    num_inference_steps=num_inference_steps,
+                )
+            except TypeError:
+                try:
+                    result = pipe(
+                        prompt,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                    )
+                except TypeError:
+                    result = pipe(prompt)
         image = result.images[0]
     
     print(f"[MODAL-REMOTE] Generated image: {image.size}")
