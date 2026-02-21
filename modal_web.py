@@ -65,16 +65,30 @@ def generate_image_internal(
         raise ValueError("width and height must be divisible by 8")
 
     # Load model on Modal's GPU
-    from diffusers import AutoPipelineForText2Image
+    # Avoid AutoPipelineForText2Image here: it eagerly imports many optional pipelines
+    # and can crash if the environment is missing niche transformer tokenizers.
+    from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
     import os
     pipe = _PIPELINE_CACHE.get(model_name)
     if pipe is None:
         hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
-        pipe = AutoPipelineForText2Image.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16,
-            token=hf_token,
-        )
+        model_name_lower = (model_name or "").lower()
+        is_sdxl = ("sdxl" in model_name_lower) or ("xl" in model_name_lower)
+
+        if is_sdxl:
+            pipe = StableDiffusionXLPipeline.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16,
+                token=hf_token,
+            )
+        else:
+            pipe = StableDiffusionPipeline.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16,
+                safety_checker=None,
+                requires_safety_checker=False,
+                token=hf_token,
+            )
         pipe = pipe.to("cuda")
         _PIPELINE_CACHE[model_name] = pipe
     
