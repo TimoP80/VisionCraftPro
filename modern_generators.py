@@ -292,16 +292,16 @@ class ModernGeneratorManager:
         
         # Create Modal function stub if not already created
         try:
-            # Import Modal app and function
-            import modal_integration
-            from modal_integration import generate_image
+            # Import Modal app and function from running server
+            import modal_server
+            from modal_server import generate_image
             
             print(f"[MODAL] Modal function imported successfully")
             print(f"[MODAL] Function object: {generate_image}")
             
         except ImportError:
-            print("[ERROR] Modal integration module not found")
-            raise ValueError("Modal integration not properly imported")
+            print("[ERROR] Modal server module not found")
+            raise ValueError("Modal server not properly imported")
         
         try:
             # Call Modal function remotely# Use Modal's remote execution - this runs on Modal's servers, not local GPU

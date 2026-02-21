@@ -1,13 +1,14 @@
 """
-Minimal Modal server for VisionCraft integration
+Modal server for VisionCraft - keeps app running without requiring arguments
 """
 
 import modal
+import time
 
 # Create Modal app
 app = modal.App("visioncraft-modal")
 
-# Modal image with GPU - this runs on Modal's infrastructure
+# Modal image with GPU
 @app.function(
     image=modal.Image.debian_slim().pip_install(
         "torch",
@@ -27,16 +28,6 @@ app = modal.App("visioncraft-modal")
 def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
     """
     Generate image using Modal H100 GPU (REMOTE EXECUTION)
-    
-    This function runs entirely on Modal's cloud infrastructure,
-    NOT on your local machine or local GPU.
-    
-    Args:
-        prompt: Text prompt for image generation
-        model_name: Model to use (default: runwayml/stable-diffusion-v1-5)
-        
-    Returns:
-        PNG image bytes
     """
     print(f"[MODAL-REMOTE] Generating with {model_name}: {prompt[:100]}...")
     print(f"[MODAL-REMOTE] Running on Modal cloud GPU (NOT local GPU)")
@@ -79,6 +70,20 @@ def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-
     print(f"[MODAL-REMOTE] Returning {len(img_bytes.getvalue())} bytes")
     return img_bytes.getvalue()
 
+# Server entrypoint - doesn't require function arguments
+@app.function()
+def server_status() -> str:
+    """Keep server alive status check"""
+    return "Modal server is running and ready for VisionCraft requests"
+
 if __name__ == "__main__":
     print("[MODAL-SERVER] Starting Modal server...")
-    app.serve()
+    print("[MODAL-SERVER] This keeps Modal app running for VisionCraft")
+    
+    # Start server mode - this keeps app running
+    try:
+        app.serve()
+    except KeyboardInterrupt:
+        print("\n[MODAL-SERVER] Stopping Modal server...")
+    except Exception as e:
+        print(f"[MODAL-SERVER] Error: {e}")
