@@ -93,6 +93,19 @@ def generate_image_internal(
         pipe = pipe.to("cuda")
         _PIPELINE_CACHE[model_name] = pipe
 
+    # SDXL can produce black/blank images if the VAE runs in fp16. Upcast VAE to fp32.
+    try:
+        if isinstance(pipe, StableDiffusionXLPipeline):
+            if hasattr(pipe, "upcast_vae"):
+                pipe.upcast_vae()
+            elif hasattr(pipe, "vae"):
+                import torch
+                pipe.vae.to(dtype=torch.float32)
+            if hasattr(pipe, "enable_vae_slicing"):
+                pipe.enable_vae_slicing()
+    except Exception as _e:
+        pass
+
     # Ensure safety checker is disabled (avoids black/blank images on some prompts)
     if hasattr(pipe, "safety_checker"):
         pipe.safety_checker = None
@@ -105,6 +118,14 @@ def generate_image_internal(
     
     # Generate image on Modal's GPU
     with torch.autocast("cuda"):
+        # SDXL Turbo typically expects very few steps and guidance ~0
+        model_name_lower = (model_name or "").lower()
+        if "turbo" in model_name_lower:
+            if num_inference_steps > 8:
+                num_inference_steps = 4
+            if guidance_scale > 1.0:
+                guidance_scale = 0.0
+
         result = pipe(
             prompt,
             width=width,
