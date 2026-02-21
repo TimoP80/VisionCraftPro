@@ -304,13 +304,13 @@ class ModernGeneratorManager:
             raise ValueError("Modal integration not properly imported")
         
         try:
-            # Call Modal function remotely - this will execute on Modal's infrastructure
+            # Call Modal function remotely# Use Modal's remote execution - this runs on Modal's servers, not local GPU
             print(f"[MODAL] Calling remote Modal function...")
             print(f"[MODAL] Model: {model_name}")
             print(f"[MODAL] Prompt: {prompt[:100]}...")
             
-            # Use Modal's remote execution - this runs on Modal's servers, not local GPU
-            image_bytes = generate_image.remote(prompt, model_name)
+            # Use Modal's async interface for better performance
+            image_bytes = await generate_image.remote.aio(prompt, model_name)
             
             print(f"[MODAL] Received {len(image_bytes)} bytes from remote Modal GPU")
             
