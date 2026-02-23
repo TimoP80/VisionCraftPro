@@ -58,11 +58,16 @@ def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-
                 
         # Load model on Modal's GPU
         from diffusers import StableDiffusionPipeline
+        import os
+        hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+        print(f"[MODAL-REMOTE] HF token detected: {bool(hf_token)}")
+
         pipe = StableDiffusionPipeline.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
             safety_checker=None,
-            requires_safety_checker=False
+            requires_safety_checker=False,
+            **({"token": hf_token} if hf_token else {}),
         )
         pipe = pipe.to("cuda")  # This is Modal's CUDA, not local
         _PIPELINE_CACHE[model_name] = pipe
