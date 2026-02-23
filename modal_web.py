@@ -72,6 +72,14 @@ def generate_image_internal(
     import torch
     pipe = _PIPELINE_CACHE.get(model_name)
     if pipe is None:
+        if _PIPELINE_CACHE:
+            print(f"[MODAL-REMOTE] Unloading previous models to free VRAM before loading {model_name}...")
+            _PIPELINE_CACHE.clear()
+            import gc
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
         hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
         print(f"[MODAL-REMOTE] HF token detected: {bool(hf_token)}")
         model_name_lower = (model_name or "").lower()

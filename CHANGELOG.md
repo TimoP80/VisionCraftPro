@@ -7,6 +7,24 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-23
+
+### 🐛 Fixed
+- **Modal GPU Memory Leaks** - Implemented a strict single-model VRAM cache across all Modal endpoint scripts (`modal_web.py`, `modal_integration.py`, `modal_server.py`, `modal_persistent.py`). This prevents out-of-memory (OOM) errors during rapid model switching by explicitly clearing the GPU cache and triggering garbage collection before loading new models.
+
+---
+
+## [1.1.0] - 2026-02-21
+
+### ✨ Added
+- **Extensive Leonardo.ai Model Support** - Added configuration mapping for all 33+ available Leonardo custom platform models. Now users can select from specialized models like FLUX variations, Anime XL, Pixel Art, RPG, and more.
+- **Improved Error Logging** - Added detailed console logging for remote generation failures to capture the exact payload and endpoint details when a 500 error occurs.
+
+### 🐛 Fixed
+- **Leonardo API 500 Error Resolution** - Corrected a critical bug where human-readable model keys (e.g., `phoenix-1-0`) were transmitted instead of valid Leonardo.ai UUIDs, which previously caused image generations to fail with 500 Internal Server Errors.
+
+---
+
 ## [1.0.0] - 2026-02-07
 
 ### 🎉 Initial Release

@@ -59,7 +59,7 @@ Root endpoint - returns basic API information.
 {
   "message": "VisionCraft Pro API",
   "status": "running",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
 ```
 
@@ -230,14 +230,15 @@ Get list of available models and their specifications.
       "models": {
         "phoenix-1-0": {
           "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",
-          "name": "Phoenix 1.0",
-          "description": "Universal model for all types of images"
+          "name": "Leonardo Phoenix Enhanced",
+          "description": "Optimized SD 1.5 with LEONARDO preset"
         },
-        "phoenix-0-9": {
-          "id": "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
-          "name": "Phoenix 0.9",
-          "description": "Previous version of Phoenix model"
-        }
+        "lucid-origin": {
+          "id": "7b592283-e8a7-4c5a-9ba6-d18c31f258b9",
+          "name": "Lucid Origin",
+          "description": "Your go-to model for vibrant, diverse imagery in HD output."
+        },
+        "...": "And 30+ other dynamically added platform models"
       },
       "aspect_ratios": [
         {"id": "1:1", "name": "Square", "resolution": [1024, 1024]},
@@ -581,4 +582,4 @@ For API-related questions:
 
 **VisionCraft Pro API** - Professional Image Generation at Your Fingertips
 
-*Version 1.0.0 - Complete API Reference*
+*Version 1.1.0 - Complete API Reference*

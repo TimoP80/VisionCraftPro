@@ -214,26 +214,27 @@
                     <div id="model-info" class="mt-2 text-xs text-gray-400"></div>
                 </div>
 
+                <div id="modern-api-key-controls" class="hidden mb-6 space-y-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                        <div class="flex justify-between items-center">
+                            <span id="modern-api-key-title" class="text-sm font-medium text-purple-300">🔑 API Key</span>
+                            <button 
+                                id="set-modern-api-key-btn"
+                                class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs font-medium transition-all duration-200"
+                            >
+                                Set API Key
+                            </button>
+                        </div>
+                        <div id="modern-api-key-display" class="text-xs text-gray-400 mt-2">
+                            Select a generator to see API key status
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Leonardo.ai Specific Controls -->
                 <div id="leonardo-controls" class="hidden mb-6 space-y-4">
                     <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
                         <h3 class="text-sm font-semibold mb-3 text-blue-300">🚀 Leonardo.ai Controls</h3>
-                        
-                        <!-- API Key Status -->
-                        <div id="api-key-status" class="mb-4 p-3 bg-gray-700/50 rounded border border-gray-600">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium text-purple-300">🔑 API Key Status</span>
-                                <button 
-                                    id="set-api-key-btn"
-                                    class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs font-medium transition-all duration-200"
-                                >
-                                    Set API Key
-                                </button>
-                            </div>
-                            <div id="api-key-display" class="text-xs text-gray-400 mt-2">
-                                No API key set
-                            </div>
-                        </div>
                         
                         <!-- Model Selection -->
                         <div>
@@ -1300,6 +1301,7 @@
                 if (selectedModel === 'leonardo-api') {
                     leonardoControls.classList.remove('hidden');
                     modalControls.classList.add('hidden');
+                    document.getElementById('modern-api-key-controls')?.classList.remove('hidden');
 
                     populateLeonardoControls(generator);
 
@@ -1313,11 +1315,11 @@
                             <p class="text-blue-400">✅ Advanced controls available</p>
                         </div>
                     `;
-                    // Update API key status when Leonardo.ai is selected
-                    updateApiKeyStatus();
+                    updateApiKeyStatus('leonardo-api');
                 } else if (selectedModel === 'modal') {
                     leonardoControls.classList.add('hidden');
                     modalControls.classList.remove('hidden');
+                    document.getElementById('modern-api-key-controls')?.classList.add('hidden');
 
                     const modalModelSelect = document.getElementById('modal-model');
                     const modalAspectSelect = document.getElementById('modal-aspect');
@@ -1353,6 +1355,12 @@
                 } else {
                     leonardoControls.classList.add('hidden');
                     modalControls.classList.add('hidden');
+                    if (generator?.type === 'api') {
+                        document.getElementById('modern-api-key-controls')?.classList.remove('hidden');
+                        updateApiKeyStatus(selectedModel);
+                    } else {
+                        document.getElementById('modern-api-key-controls')?.classList.add('hidden');
+                    }
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
                             <p>💰 Cost: ${generator.cost}</p>
@@ -1368,6 +1376,7 @@
                 modelInfo.innerHTML = '<p class="text-xs text-gray-400">Select a model to see details</p>';
                 leonardoControls.classList.add('hidden');
                 modalControls.classList.add('hidden');
+                document.getElementById('modern-api-key-controls')?.classList.add('hidden');
             }
             
             // Load the selected model on the server
@@ -1416,7 +1425,7 @@
                 .then(data => {
                     alert(data.message);
                     updateModelInfo(); // Refresh the model info to show API key status
-                    updateApiKeyStatus();
+                    updateApiKeyStatus(generatorName);
                 })
                 .catch(error => {
                     console.error('Failed to set API key:', error);
@@ -1426,50 +1435,58 @@
         }
 
         // Update API key status display
-        function updateApiKeyStatus() {
-            const apiKeyDisplay = document.getElementById('api-key-display');
-            const setApiKeyBtn = document.getElementById('set-api-key-btn');
-            const selectedModel = document.getElementById('model').value;
-            
-            if (selectedModel === 'leonardo-api' && modernGenerators[selectedModel]) {
-                // Check if API key is set by calling the backend
-                fetch(`${API_BASE}/modern-generators`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const hasApiKey = data.api_keys_set && data.api_keys_set.includes('leonardo-api');
-                        if (hasApiKey) {
-                            apiKeyDisplay.textContent = '✅ API key configured';
-                            apiKeyDisplay.className = 'text-xs text-green-400';
-                            setApiKeyBtn.textContent = 'Update API Key';
-                            setApiKeyBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-                            setApiKeyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
-                        } else {
-                            apiKeyDisplay.textContent = '❌ No API key set';
-                            apiKeyDisplay.className = 'text-xs text-red-400';
-                            setApiKeyBtn.textContent = 'Set API Key';
-                            setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
-                            setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Failed to check API key status:', error);
-                        apiKeyDisplay.textContent = '❌ Could not check status';
-                        apiKeyDisplay.className = 'text-xs text-red-400';
-                    });
-            } else {
-                apiKeyDisplay.textContent = 'Select Leonardo.ai to see API key status';
-                apiKeyDisplay.className = 'text-xs text-gray-400';
+        function updateApiKeyStatus(generatorName) {
+            const apiKeyDisplay = document.getElementById('modern-api-key-display');
+            const setApiKeyBtn = document.getElementById('set-modern-api-key-btn');
+            const titleEl = document.getElementById('modern-api-key-title');
+
+            if (!apiKeyDisplay || !setApiKeyBtn) return;
+
+            if (!generatorName || !modernGenerators[generatorName]) {
+                apiKeyDisplay.textContent = 'Select a generator to see API key status';
+                apiKeyDisplay.className = 'text-xs text-gray-400 mt-2';
                 setApiKeyBtn.textContent = 'Set API Key';
                 setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
                 setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                if (titleEl) titleEl.textContent = '🔑 API Key';
+                return;
             }
+
+            const generator = modernGenerators[generatorName];
+            if (titleEl) titleEl.textContent = `🔑 API Key (${generator.name || generatorName})`;
+
+            fetch(`${API_BASE}/modern-generators`)
+                .then(response => response.json())
+                .then(data => {
+                    const hasApiKey = data.api_keys_set && data.api_keys_set.includes(generatorName);
+                    if (hasApiKey) {
+                        apiKeyDisplay.textContent = '✅ API key configured';
+                        apiKeyDisplay.className = 'text-xs text-green-400 mt-2';
+                        setApiKeyBtn.textContent = 'Update API Key';
+                        setApiKeyBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                        setApiKeyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    } else {
+                        apiKeyDisplay.textContent = '❌ No API key set';
+                        apiKeyDisplay.className = 'text-xs text-red-400 mt-2';
+                        setApiKeyBtn.textContent = 'Set API Key';
+                        setApiKeyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                        setApiKeyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to check API key status:', error);
+                    apiKeyDisplay.textContent = '❌ Could not check status';
+                    apiKeyDisplay.className = 'text-xs text-red-400 mt-2';
+                });
         }
-        
-        // Add event listener for API key button
-        document.getElementById('set-api-key-btn').addEventListener('click', (e) => {
+
+        document.getElementById('set-modern-api-key-btn')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            showApiKeyDialog('leonardo-api');
+            const selectedModel = document.getElementById('model').value;
+            if (modernGenerators[selectedModel]) {
+                showApiKeyDialog(selectedModel);
+            }
         });
 
         // Update status
