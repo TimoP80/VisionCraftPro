@@ -8,6 +8,9 @@ This document provides comprehensive information about the VisionCraft Pro Windo
 - `installer.nsi` - NSIS installer script
 - `build_installer.bat` - Build script to compile the installer
 - `installer_config.json` - Configuration file for installer settings
+- `vcp_setup.py` - Unified cross-platform setup script
+- `setup.bat` / `setup.sh` - Platform-specific setup launchers
+- `run.bat` / `run.sh` - Platform-specific application launchers
 
 ## Prerequisites for Building
 1. **NSIS (Nullsoft Scriptable Install System)** 3.0 or later

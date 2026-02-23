@@ -66,12 +66,18 @@ A powerful desktop application for AI-powered image generation featuring multipl
 
 ## 🚀 Quick Start
 
-### **Method 1: Desktop Application (Recommended)**
-1. Double-click `Launch_VisionCraft_Pro.bat`
-2. Wait for the desktop window to open
-3. Start generating images immediately!
+### **Method 1: Automated Setup (Recommended)**
+**For Windows:**
+1. Double-click `setup.bat` to install all dependencies and create the environment.
+2. Double-click `run.bat` to launch the application.
 
-### **Method 2: Command Line**
+**For Linux:**
+1. Open a terminal in the project directory.
+2. Run `chmod +x setup.sh run.sh`.
+3. Run `./setup.sh` to install everything.
+4. Run `./run.sh` to launch the application.
+
+### **Method 2: Command Line (Manual)**
 ```bash
 # Activate virtual environment
 venv_gtx1070\Scripts\activate.bat
@@ -93,12 +99,13 @@ python app.py
 
 ## 📦 Installation
 
-### **Windows Installation**
-1. **Download the application files**
-2. **Run the setup** (if included) or extract to folder
-3. **Double-click** `Launch_VisionCraft_Pro.bat`
-4. **Wait** for automatic dependency installation
-5. **Enjoy** your desktop app!
+### **Automated Installation**
+1. **Download/Clone** the repository.
+2. **Launch Setup**:
+   - **Windows**: Run `setup.bat`
+   - **Linux**: Run `./setup.sh`
+3. **Follow the prompts** in the console.
+4. **Launch the App** using `run.bat` or `./run.sh`.
 
 ### **Manual Installation**
 ```bash
