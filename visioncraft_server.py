@@ -59,6 +59,26 @@ class GenerationResponse(BaseModel):
     generation_time: float
     vram_used: float
 
+def get_public_ip():
+    """Get the public IP address of the server"""
+    services = [
+        'https://api.ipify.org',
+        'https://ifconfig.me/ip',
+        'https://icanhazip.com',
+        'https://ident.me'
+    ]
+    
+    print("[SERVER] Detecting public IP address...")
+    for service in services:
+        try:
+            with urllib.request.urlopen(service, timeout=5) as response:
+                ip = response.read().decode('utf-8').strip()
+                if ip:
+                    return ip
+        except Exception:
+            continue
+    return "Unknown"
+
 class ImageGenerator:
     """Main image generation class with both local and modern generators"""
     
@@ -88,6 +108,11 @@ class ImageGenerator:
             print(f"[CUDA] CUDA Version: {torch.version.cuda}")
         else:
             print("[CUDA] Using CPU (CUDA not available or GPU PyTorch not installed)")
+        
+        # Log Public IP
+        public_ip = get_public_ip()
+        print(f"[SERVER] Public IP: {public_ip}")
+        print(f"[SERVER] Access URL: http://{public_ip}:8000")
         
     def load_model(self, model_key: str = "stable-diffusion-1.5"):
         """Load a specific model or modern generator"""
