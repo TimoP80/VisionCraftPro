@@ -10,6 +10,9 @@ from fastapi.responses import Response
 # Create Modal app
 app = modal.App("visioncraft-modal")
 
+# Persistent volume for model caching
+volume = modal.Volume.from_name("visioncraft-model-cache", create_if_missing=True)
+
 # Create FastAPI web app
 web_app = FastAPI()
 
@@ -33,6 +36,12 @@ image = modal.Image.debian_slim().pip_install(
     image=image,
     gpu="A100-40GB",
     timeout=300,
+    volumes={
+        "/cache": volume
+    },
+    env={
+        "HF_HOME": "/cache",
+    },
     secrets=[
         modal.Secret.from_name("huggingface-token"),
     ]

@@ -7,6 +7,17 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-02-25
+
+### ✨ Added
+- **External IP Monitoring** - Implemented real-time external IP detection and display in the System Status dashboard, facilitating easier remote management.
+
+### 🐛 Fixed
+- **Hugging Face Model Search (404)** - Resolved a critical issue where the HF model search API was missing from the backend server (`app.py`), causing 404 errors during model discovery.
+- **Backend Consistency** - Synchronized API endpoints and status monitoring across both `visioncraft_server.py` and `app.py`.
+
+---
+
 ## [1.1.3] - 2026-02-23
 
 ### ✨ Added

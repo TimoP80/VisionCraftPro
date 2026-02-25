@@ -159,6 +159,7 @@ class ImageGenerator:
                 "gpu_name": torch.cuda.get_device_name(0),
                 "cuda_version": torch.version.cuda,
                 "torch_version": torch.__version__,
+                "public_ip": get_public_ip(),
                 "optimal_settings": self.model_manager.get_optimal_settings() if self.current_generator_type == "local" else None
             }
         else:
@@ -175,6 +176,7 @@ class ImageGenerator:
                 "gpu_name": "CPU",
                 "cuda_version": "N/A",
                 "torch_version": torch.__version__,
+                "public_ip": get_public_ip(),
                 "optimal_settings": None
             }
     

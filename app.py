@@ -25,6 +25,10 @@ from image_gallery import ImageGallery
 from prompt_enhancer import PromptEnhancer
 from modern_generators import ModernGeneratorManager
 from cuda_checker import CudaChecker
+import urllib.parse
+import urllib.request
+import json
+import os
 
 class GenerationRequest(BaseModel):
     prompt: str
@@ -49,6 +53,26 @@ class GenerationResponse(BaseModel):
     image: str
     generation_time: float
     vram_used: float
+
+def get_public_ip():
+    """Get the public IP address of the server"""
+    services = [
+        'https://api.ipify.org',
+        'https://ifconfig.me/ip',
+        'https://icanhazip.com',
+        'https://ident.me'
+    ]
+    
+    print("[SERVER] Detecting public IP address...")
+    for service in services:
+        try:
+            with urllib.request.urlopen(service, timeout=5) as response:
+                ip = response.read().decode('utf-8').strip()
+                if ip:
+                    return ip
+        except Exception:
+            continue
+    return "Unknown"
 
 class ImageGenerator:
     """Main image generation class with both local and modern generators"""
@@ -386,7 +410,8 @@ async def get_status():
         "vram_used_percent": (reserved / total * 100) if total > 0 else 0,
         "cpu_percent": psutil.cpu_percent(),
         "memory_percent": psutil.virtual_memory().percent,
-        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"
+        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A",
+        "public_ip": get_public_ip()
     }
     return status
 
@@ -542,6 +567,57 @@ async def get_gallery():
         "images": generator.gallery.get_recent_images(limit=50),
         "stats": generator.gallery.get_stats()
     }
+
+@app.get("/hf/models")
+async def hf_search_models(q: str = "", limit: int = 20):
+    """Search Hugging Face for Stable Diffusion / diffusers-compatible text-to-image models"""
+    try:
+        limit = max(1, min(int(limit), 50))
+    except Exception:
+        limit = 20
+
+    params = {
+        "search": q or "stable diffusion",
+        "limit": str(limit),
+        "pipeline_tag": "text-to-image",
+        "library": "diffusers",
+        "sort": "downloads",
+        "direction": "-1",
+    }
+    url = "https://huggingface.co/api/models?" + urllib.parse.urlencode(params)
+
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "VisionCraftPro/1.0",
+    }
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    if hf_token:
+        headers["Authorization"] = f"Bearer {hf_token}"
+
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        raw = resp.read().decode("utf-8")
+    data = json.loads(raw)
+
+    results = []
+    for item in data or []:
+        model_id = item.get("modelId") or item.get("id")
+        if not model_id:
+            continue
+        results.append(
+            {
+                "id": model_id,
+                "likes": item.get("likes", 0),
+                "downloads": item.get("downloads", 0),
+                "pipeline_tag": item.get("pipeline_tag"),
+                "library_name": item.get("library_name"),
+                "tags": item.get("tags", []),
+                "private": item.get("private", False),
+                "gated": item.get("gated", False),
+            }
+        )
+
+    return {"models": results}
 
 @app.get("/gallery/{image_id}")
 async def get_gallery_image(image_id: str):

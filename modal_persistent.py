@@ -9,6 +9,9 @@ import asyncio
 # Create Modal app
 app = modal.App("visioncraft-modal")
 
+# Persistent volume for model caching
+volume = modal.Volume.from_name("visioncraft-model-cache", create_if_missing=True)
+
 _PIPELINE_CACHE = {}
 
 # Modal image with GPU
@@ -24,6 +27,12 @@ _PIPELINE_CACHE = {}
     ),
     gpu=modal.gpu.A100(),
     timeout=300,
+    volumes={
+        "/cache": volume
+    },
+    env={
+        "HF_HOME": "/cache",
+    },
     secrets=[
         modal.Secret.from_name("huggingface-token"),
     ],

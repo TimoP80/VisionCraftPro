@@ -69,13 +69,15 @@ A powerful desktop application for AI-powered image generation featuring multipl
 ### **Method 1: Automated Setup (Recommended)**
 **For Windows:**
 1. Double-click `setup.bat` to install all dependencies and create the environment.
-2. Double-click `run.bat` to launch the application.
+2. Double-click `run_server.bat` to start the backend server.
+3. Double-click `run.bat` to launch the desktop application.
 
 **For Linux:**
 1. Open a terminal in the project directory.
-2. Run `chmod +x setup.sh run.sh`.
+2. Run `chmod +x setup.sh run.sh run_server.sh`.
 3. Run `./setup.sh` to install everything.
-4. Run `./run.sh` to launch the application.
+4. Run `./run_server.sh` to start the backend server.
+5. Run `./run.sh` to launch the desktop application.
 
 ### **Method 2: Command Line (Manual)**
 ```bash
@@ -105,7 +107,8 @@ python app.py
    - **Windows**: Run `setup.bat`
    - **Linux**: Run `./setup.sh`
 3. **Follow the prompts** in the console.
-4. **Launch the App** using `run.bat` or `./run.sh`.
+4. **Launch the Server**: Run `run_server.bat` (Windows) or `./run_server.sh` (Linux).
+5. **Launch the App**: Run `run.bat` (Windows) or `./run.sh` (Linux).
 
 ### **Manual Installation**
 ```bash

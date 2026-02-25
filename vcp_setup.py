@@ -104,12 +104,31 @@ def install_dependencies():
     run_command(f'"{venv_python}" -m pip install pywebview')
 
 def init_directories():
-    """Create necessary directories"""
+    """Create necessary directories and Fix permissions on Linux"""
     dirs = ["generated_images", "generated_images/images", "static"]
     for d in dirs:
         if not os.path.exists(d):
             os.makedirs(d)
             print(f"[FILE] Created directory: {d}")
+        
+        # On Linux, ensure the directory is writable
+        if platform.system() != "Windows":
+            try:
+                # Grant read/write/execute permissions to current user
+                os.chmod(d, 0o775)
+                print(f"[FILE] Set permissions for: {d}")
+            except Exception as e:
+                print(f"[WARN] Could not set permissions for {d}: {e}")
+
+    # Explicitly check/fix database file if it exists
+    db_path = os.path.join("generated_images", "gallery.db")
+    if os.path.exists(db_path) and platform.system() != "Windows":
+        try:
+            os.chmod(db_path, 0o664)
+            print(f"[FILE] Set permissions for: {db_path}")
+        except Exception as e:
+            print(f"[WARN] Could not set permissions for {db_path}: {e}")
+
     print("[PASS] Directory initialization complete.")
 
 def verify_installation():
