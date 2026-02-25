@@ -466,24 +466,22 @@ async def debug_state():
 
 @app.post("/enhance-prompt")
 async def enhance_prompt(request: dict):
-    """Enhance prompt using AI"""
+    """Enhance prompt using AI-powered templates"""
     try:
         prompt = request.get("prompt", "")
         style = request.get("style", "cinematic")
         detail_level = request.get("detail_level", "medium")
         
-        # Use prompt enhancer
-        enhancer = PromptEnhancer()
-        enhanced = enhancer.enhance_prompt(prompt, style, detail_level)
+        if not prompt:
+            raise HTTPException(status_code=400, detail="Prompt is required")
         
-        return {
-            "original_prompt": prompt,
-            "enhanced_prompt": enhanced["prompt"],
-            "style": style,
-            "detail_level": detail_level,
-            "all_enhancements": enhanced["all_enhancements"]
-        }
+        # Use prompt enhancer instance
+        enhancer = PromptEnhancer()
+        result = enhancer.enhance_prompt(prompt, style, detail_level)
+        
+        return result
     except Exception as e:
+        print(f"[ERROR] Prompt enhancement failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/modern-generators")

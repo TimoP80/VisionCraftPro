@@ -27,6 +27,11 @@ class PromptEnhancer:
                 "suffix": ", highly detailed, accurate, lifelike, professional photography",
                 "quality_terms": ["realistic", "photorealistic", "lifelike", "detailed"]
             },
+            "photorealistic": {
+                "prefix": "photorealistic, high resolution, professional photography, ",
+                "suffix": ", sharp focus, 8k, highly detailed, realistic textures",
+                "quality_terms": ["photorealistic", "realistic", "professional", "8k"]
+            },
             "fantasy": {
                 "prefix": "fantasy art, magical, ethereal, ",
                 "suffix": ", enchanting, mystical, detailed fantasy elements",
@@ -36,6 +41,11 @@ class PromptEnhancer:
                 "prefix": "sci-fi, futuristic, high-tech, ",
                 "suffix": ", advanced technology, sleek design, detailed sci-fi elements",
                 "quality_terms": ["futuristic", "high-tech", "advanced", "sleek"]
+            },
+            "anime": {
+                "prefix": "anime style, vibrant colors, clean lines, ",
+                "suffix": ", detailed background, expressive characters, high quality anime art",
+                "quality_terms": ["anime", "manga", "vibrant", "expressive"]
             }
         }
         

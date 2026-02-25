@@ -493,40 +493,23 @@ async def generate_image(request: GenerationRequest):
 
 @app.post("/enhance-prompt")
 async def enhance_prompt(request: dict):
-    """Advanced AI-powered prompt enhancement"""
-    prompt = request.get("prompt", "")
-    style = request.get("style", "photorealistic")
-    detail_level = request.get("detail_level", "medium")
-    
-    if not prompt:
-        raise HTTPException(status_code=400, detail="Prompt is required")
-    
-    # Use the advanced prompt enhancer
-    enhanced_prompt = PromptEnhancer.enhance_prompt(prompt, style, detail_level)
-    
-    # Also create multiple options for comparison
-    all_enhancements = PromptEnhancer.create_multiple_enhancements(prompt)
-    
-    return {
-        "original_prompt": prompt,
-        "enhanced_prompt": enhanced_prompt,
-        "style": style,
-        "detail_level": detail_level,
-        "all_enhancements": all_enhancements,
-        "available_styles": PromptEnhancer.get_enhancement_options()
-    }
-
-@app.get("/enhance-styles")
-async def get_enhance_styles():
-    """Get available prompt enhancement styles"""
-    return {
-        "styles": PromptEnhancer.get_enhancement_options(),
-        "detail_levels": {
-            "low": "Minimal enhancement - adds basic quality terms",
-            "medium": "Balanced enhancement - adds style and quality elements",
-            "high": "Maximum enhancement - adds all professional details"
-        }
-    }
+    """Enhance prompt using AI-powered templates"""
+    try:
+        prompt = request.get("prompt", "")
+        style = request.get("style", "cinematic")
+        detail_level = request.get("detail_level", "medium")
+        
+        if not prompt:
+            raise HTTPException(status_code=400, detail="Prompt is required")
+        
+        # Use prompt enhancer instance
+        enhancer = PromptEnhancer()
+        result = enhancer.enhance_prompt(prompt, style, detail_level)
+        
+        return result
+    except Exception as e:
+        print(f"[ERROR] Prompt enhancement failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/models")
 async def get_available_models():
