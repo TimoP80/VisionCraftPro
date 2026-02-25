@@ -1992,7 +1992,11 @@
         async function downloadModel(repoId) {
             try {
                 const response = await fetch(`${API_BASE}/local/download/${encodeURIComponent(repoId)}`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer YOUR_API_KEY',
+                        'Content-Type': 'application/json'
+                    }
                 });
                 const result = await response.json();
                 
