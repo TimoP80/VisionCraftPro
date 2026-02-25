@@ -790,15 +790,15 @@ class ModernGeneratorManager:
             
         print("[SETUP] Adding Modal to available generators...")
         self.available_generators["modal"] = {
-            "name": "Modal (gpu selectable)",
+            "name": "Modal Cloud GPU",
             "type": "modal",
-            "description": "Remote H100 GPU generation via Modal platform",
+            "description": "Infinite scalability with selectable NVIDIA GPUs (T4 to H200/B200).",
             "api_endpoint": "modal://remote",
             "max_resolution": (1024, 1024),
             "quality": "Professional",
-            "speed": "Very Fast",
-            "cost": "Pay-per-use",
-            "features": ["text-to-image", "h100-gpu", "fast-generation", "scalable"],
+            "speed": "Configurable (Fast to Ultra)",
+            "cost": "Pay-per-use (Modal Credit)",
+            "features": ["text-to-image", "cloud-rendering", "multi-gpu-support", "fast-generation"],
             "models": {
                 "runwayml/stable-diffusion-v1-5": {
                     "name": "Stable Diffusion v1.5",

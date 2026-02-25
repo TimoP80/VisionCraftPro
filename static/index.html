@@ -1233,12 +1233,12 @@
                         features: ['text-to-image', 'fine-tuned-models', 'texture-generation']
                     },
                     'modal': {
-                        name: 'Modal (gpu selectable)',
-                        cost: 'Pay-per-use',
-                        speed: 'Very Fast',
+                        name: 'Modal Cloud GPU',
+                        cost: 'Pay-per-use (Modal Credit)',
+                        speed: 'Configurable (Fast to Ultra)',
                         quality: 'Professional',
-                        description: 'Remote H100 GPU generation via Modal platform',
-                        features: ['text-to-image', 'h100-gpu', 'fast-generation', 'scalable']
+                        description: 'Infinite scalability with selectable NVIDIA GPUs (T4 to H200/B200).',
+                        features: ['text-to-image', 'cloud-rendering', 'multi-gpu-support', 'fast-generation']
                     }
                 };
                 updateModelDropdown();
@@ -1440,9 +1440,12 @@
 
                     const modalModelSelect = document.getElementById('modal-model');
                     const modalAspectSelect = document.getElementById('modal-aspect');
+                    const modalGpuSelect = document.getElementById('modal-gpu');
+
                     modalModelSelect.innerHTML = '';
                     modalAspectSelect.innerHTML = '';
 
+                    // Populate Modal Models
                     const models = generator.models || {};
                     for (const [key, info] of Object.entries(models)) {
                         const option = document.createElement('option');
@@ -1451,6 +1454,7 @@
                         modalModelSelect.appendChild(option);
                     }
 
+                    // Populate Aspect Ratios
                     const aspectRatios = generator.aspect_ratios || [];
                     for (const ar of aspectRatios) {
                         const option = document.createElement('option');
@@ -1459,16 +1463,38 @@
                         modalAspectSelect.appendChild(option);
                     }
 
-                    modelInfo.innerHTML = `
-                        <div class="text-xs space-y-1">
-                            <p>💰 Cost: ${generator.cost}</p>
-                            <p>⚡ Speed: ${generator.speed}</p>
-                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                            <p>📝 ${generator.description}</p>
-                            <p>🔧 Type: Modal (gpu selectable)</p>
-                            <p class="text-green-400">🚀 Remote H100 generation</p>
-                        </div>
-                    `;
+                    // Populate GPUs dynamically if not already populated
+                    if (generator.gpus && modalGpuSelect.options.length <= 1) {
+                        modalGpuSelect.innerHTML = '';
+                        generator.gpus.forEach(gpu => {
+                            const option = document.createElement('option');
+                            option.value = gpu.id;
+                            option.textContent = gpu.name;
+                            if (gpu.id === 'L4') option.selected = true; // Default to L4
+                            modalGpuSelect.appendChild(option);
+                        });
+                    }
+
+                    // Update Info Display
+                    const updateModalInfoDisplay = () => {
+                        const selectedGpuName = modalGpuSelect.options[modalGpuSelect.selectedIndex]?.text || 'NVIDIA GPU';
+                        modelInfo.innerHTML = `
+                            <div class="text-xs space-y-1">
+                                <p>💰 Cost: ${generator.cost}</p>
+                                <p>⚡ Speed: ${generator.speed}</p>
+                                <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
+                                <p>📝 ${generator.description}</p>
+                                <p>🔧 Type: Modal Cloud</p>
+                                <p class="text-green-400">🚀 Running on ${selectedGpuName}</p>
+                            </div>
+                        `;
+                    };
+
+                    // Add listener for GPU change to update label
+                    modalGpuSelect.removeEventListener('change', updateModalInfoDisplay);
+                    modalGpuSelect.addEventListener('change', updateModalInfoDisplay);
+
+                    updateModalInfoDisplay();
                 } else {
                     leonardoControls.classList.add('hidden');
                     modalControls.classList.add('hidden');
