@@ -969,7 +969,7 @@
         });
 
         async function downloadLocalModel(repoId) {
-            const statusEl = document.getElementById('hf-search-status');
+            const statusEl = document.getElementById('hf-model-search-status');
             statusEl.textContent = `Starting download of ${repoId}...`;
 
             try {
@@ -999,11 +999,11 @@
                     const data = await response.json();
                     if (data.status === 'completed') {
                         clearInterval(interval);
-                        document.getElementById('hf-search-status').innerHTML = `<span class="text-green-400">✅ Download complete!</span> ${repoId} is now available in Local Models.`;
+                        document.getElementById('hf-model-search-status').innerHTML = `<span class="text-green-400">✅ Download complete!</span> ${repoId} is now available in Local Models.`;
                         loadModels(); // Refresh the list
                     } else if (data.status && data.status.startsWith('failed')) {
                         clearInterval(interval);
-                        document.getElementById('hf-search-status').innerHTML = `<span class="text-red-400">❌ Download failed:</span> ${data.status}`;
+                        document.getElementById('hf-model-search-status').innerHTML = `<span class="text-red-400">❌ Download failed:</span> ${data.status}`;
                     }
                 } catch (e) {
                     console.error('Polling error:', e);
