@@ -7,6 +7,24 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-26
+
+### ✨ Added
+- **Dynamic Local Model Downloader** - Users can now discover and download any Stable Diffusion / Diffusers compatible model directly from Hugging Face within the UI. Features background downloading via `snapshot_download`.
+- **CPU-Optimized Local Generation** - Implemented automatic fallback for local generation on non-GPU systems, utilizing professional memory optimizations like Attention Slicing and Sequential CPU Offloading to make local AI accessible on standard hardware.
+- **Robust GPU Hardware Detection** - Enhanced scanning logic for both **Windows and Linux**. The system now searches multiple common paths for `nvidia-smi` and uses `lspci` and `/proc` fallbacks to ensure GPUs are detected even if not in the system's `PATH`.
+- **Modern PyTorch Standard** - Standardized automatic installation logic on **PyTorch with CUDA 12.1 (`cu121`)**, providing better compatibility with RTX 30/40-series cards.
+
+### 🚀 Improved
+- **Hardware Awareness** - The application now proactively detects if a system GPU is present but currently unused (CPU-only PyTorch installed) and offers to install the optimized library automatically.
+- **Backend Refactoring** - Completely redesigned the internal model management system to be dynamic, replacing hardcoded paths with a flexible `LocalModelManager`.
+
+### 🐛 Fixed
+- **NameError in Server Initialization** - Resolved a critical bug where essential classes were missing from imports after refactoring.
+- **Windows Console Compatibility** - Fixed `UnicodeEncodeError` on standard Windows consoles by removing emojis from server-side logging statements.
+
+---
+
 ## [1.1.5] - 2026-02-25
 
 ### ✨ Added
@@ -175,6 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 4. **Cloud Integration** - Leonardo.ai support
 5. **Desktop Application** - Native desktop experience
 6. **Professional Polish** - Branding, documentation, launcher
+7. **Dynamic Model Downloader** - On-demand local models & CPU optimization
 
 ---
 
@@ -197,13 +216,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Roadmap
 
-### v1.1.0 (Planned)
+### v1.3.0 (Planned)
 - **Additional Cloud Providers** - More API integrations
-- **Model Management** - Download and manage custom models
 - **Batch Generation** - Generate multiple images simultaneously
 - **Advanced Settings** - More granular control options
 
-### v1.2.0 (Planned)
+### v1.4.0 (Planned)
 - **Image Editing** - Basic editing tools
 - **Prompt History** - Save and reuse prompts
 - **Export Options** - More format choices
