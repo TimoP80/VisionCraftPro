@@ -33,6 +33,7 @@ class CudaChecker:
             "gpu_count": 0,
             "gpu_names": [],
             "pytorch_version": None,
+            "system_gpu_available": False,
             "recommendations": []
         }
         
@@ -55,9 +56,13 @@ class CudaChecker:
                 cuda_version = self._check_system_cuda()
                 if cuda_version:
                     results["cuda_version"] = cuda_version
+                    results["system_gpu_available"] = True
                     results["recommendations"].append("CUDA detected but PyTorch GPU version not installed")
                 else:
                     results["recommendations"].append("CUDA not detected on system")
+            
+            if results["gpu_torch_available"]:
+                results["system_gpu_available"] = True
             
         except ImportError:
             results["recommendations"].append("PyTorch not installed")
@@ -68,13 +73,28 @@ class CudaChecker:
         """Check if CUDA is installed on system"""
         try:
             if self.system_info["platform"] == "Windows":
-                # Check nvidia-smi on Windows
-                result = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=10)
-                if result.returncode == 0:
-                    # Parse CUDA version from nvidia-smi output
-                    for line in result.stdout.split('\n'):
-                        if "CUDA Version:" in line:
-                            return line.split("CUDA Version:")[1].strip().split()[0]
+                # Check for nvidia-smi in PATH
+                try:
+                    result = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        return self._parse_smi_output(result.stdout)
+                except FileNotFoundError:
+                    pass
+
+                # Check common installation paths
+                common_paths = [
+                    os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "System32", "nvidia-smi.exe"),
+                    os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "NVIDIA Corporation", "NVSMI", "nvidia-smi.exe"),
+                ]
+                
+                for path in common_paths:
+                    if os.path.exists(path):
+                        try:
+                            result = subprocess.run([path], capture_output=True, text=True, timeout=10)
+                            if result.returncode == 0:
+                                return self._parse_smi_output(result.stdout)
+                        except:
+                            pass
             else:
                 # Check nvcc on Linux/Mac
                 result = subprocess.run(["nvcc", "--version"], capture_output=True, text=True, timeout=10)
@@ -87,6 +107,13 @@ class CudaChecker:
             pass
         
         return None
+
+    def _parse_smi_output(self, stdout: str) -> Optional[str]:
+        """Parse CUDA version from nvidia-smi output"""
+        for line in stdout.split('\n'):
+            if "CUDA Version:" in line:
+                return line.split("CUDA Version:")[1].strip().split()[0]
+        return "Unknown"
     
     def install_gpu_pytorch(self) -> bool:
         """Attempt to install GPU PyTorch"""
@@ -95,9 +122,9 @@ class CudaChecker:
             
             # Determine the appropriate command based on system
             if self.system_info["platform"] == "Windows":
-                cmd = [sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu118"]
+                cmd = [sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121"]
             else:
-                cmd = [sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu118"]
+                cmd = [sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121"]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             

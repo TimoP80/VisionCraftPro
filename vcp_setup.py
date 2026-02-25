@@ -64,14 +64,21 @@ def install_dependencies():
     # Check for NVIDIA GPU
     has_gpu = False
     try:
-        if platform.system() == "Windows":
-            res = subprocess.run(["nvidia-smi"], capture_output=True, text=True)
-            if res.returncode == 0:
-                has_gpu = True
-        else:
-            # Simple check for nvidia-smi in PATH on Linux
-            if shutil.which("nvidia-smi"):
-                has_gpu = True
+        # 1. Check if nvidia-smi is in PATH
+        res = subprocess.run(["nvidia-smi"], capture_output=True, text=True)
+        if res.returncode == 0:
+            has_gpu = True
+        
+        # 2. Check common installation paths on Windows if not in PATH
+        if not has_gpu and platform.system() == "Windows":
+            common_paths = [
+                os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "System32", "nvidia-smi.exe"),
+                os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "NVIDIA Corporation", "NVSMI", "nvidia-smi.exe"),
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    has_gpu = True
+                    break
     except:
         pass
 

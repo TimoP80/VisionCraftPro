@@ -88,8 +88,8 @@ class ImageGenerator:
         self.cuda_checker = CudaChecker()
         cuda_results = self.cuda_checker.check_cuda_availability()
         
-        if cuda_results['cuda_available'] and not cuda_results['gpu_torch_available']:
-            print("[CUDA] CUDA detected but GPU PyTorch not available")
+        if cuda_results['system_gpu_available'] and not cuda_results['gpu_torch_available']:
+            print("[CUDA] NVIDIA GPU detected but GPU PyTorch not available")
             print("[CUDA] Attempting to install GPU PyTorch...")
             self.cuda_checker.install_gpu_pytorch()
             print("[CUDA] Please restart the application after GPU PyTorch installation")
