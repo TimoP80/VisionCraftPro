@@ -96,13 +96,47 @@ class CudaChecker:
                         except:
                             pass
             else:
-                # Check nvcc on Linux/Mac
-                result = subprocess.run(["nvcc", "--version"], capture_output=True, text=True, timeout=10)
-                if result.returncode == 0:
-                    # Parse CUDA version
-                    for line in result.stdout.split('\n'):
-                        if "release" in line:
-                            return line.split("release")[-1].strip().split(",")[0]
+                # 1. Check if nvcc is in PATH
+                try:
+                    result = subprocess.run(["nvcc", "--version"], capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        for line in result.stdout.split('\n'):
+                            if "release" in line:
+                                return line.split("release")[-1].strip().split(",")[0]
+                except FileNotFoundError:
+                    pass
+
+                # 2. Check if nvidia-smi is in PATH
+                try:
+                    result = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        return self._parse_smi_output(result.stdout)
+                except FileNotFoundError:
+                    pass
+
+                # 3. Check common Linux paths for nvidia-smi
+                linux_paths = ["/usr/bin/nvidia-smi", "/usr/local/nvidia/bin/nvidia-smi", "/usr/local/cuda/bin/nvidia-smi"]
+                for path in linux_paths:
+                    if os.path.exists(path):
+                        try:
+                            result = subprocess.run([path], capture_output=True, text=True, timeout=10)
+                            if result.returncode == 0:
+                                return self._parse_smi_output(result.stdout)
+                        except:
+                            pass
+
+                # 4. Fallback: check lspci for NVIDIA hardware
+                try:
+                    result = subprocess.run(["lspci"], capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        if "NVIDIA" in result.stdout.upper():
+                            return "Unknown (Hardware Detected via lspci)"
+                except FileNotFoundError:
+                    pass
+
+                # 5. Check /proc/driver/nvidia/version
+                if os.path.exists("/proc/driver/nvidia/version"):
+                    return "Detected via /proc"
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
         

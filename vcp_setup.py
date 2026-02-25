@@ -79,6 +79,28 @@ def install_dependencies():
                 if os.path.exists(path):
                     has_gpu = True
                     break
+        
+        # 3. Check Linux specific fallbacks
+        if not has_gpu and platform.system() == "Linux":
+            # Check for nvidia-smi in common paths
+            linux_paths = ["/usr/bin/nvidia-smi", "/usr/local/nvidia/bin/nvidia-smi"]
+            for path in linux_paths:
+                if os.path.exists(path):
+                    has_gpu = True
+                    break
+            
+            # Check lspci if still not found
+            if not has_gpu:
+                try:
+                    res = subprocess.run(["lspci"], capture_output=True, text=True)
+                    if res.returncode == 0 and "NVIDIA" in res.stdout.upper():
+                        has_gpu = True
+                except:
+                    pass
+            
+            # Check /proc
+            if not has_gpu and os.path.exists("/proc/driver/nvidia/version"):
+                has_gpu = True
     except:
         pass
 
