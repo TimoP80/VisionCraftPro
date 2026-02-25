@@ -35,7 +35,7 @@ class LocalModelManager:
             
         print(f"[LOCAL-MANAGER] Initialized on {self.device}")
         if self.device == "cpu":
-            print("[LOCAL-MANAGER] ⚠️ Running in CPU mode. Generation will be slower.")
+            print("[LOCAL-MANAGER] Warning: Running in CPU mode. Generation will be slower.")
 
     def get_downloaded_models(self) -> List[Dict[str, Any]]:
         """List all models currently downloaded in the local directory"""
@@ -105,10 +105,10 @@ class LocalModelManager:
         target_model = next((m for m in local_models if m["id"] == model_id), None)
         
         if not target_model:
-            print(f"[LOCAL-MANAGER] ❌ Model {model_id} not found locally.")
+            print(f"[LOCAL-MANAGER] Error: Model {model_id} not found locally.")
             return False
             
-        print(f"[LOCAL-MANAGER] 🔄 Loading {model_id} from {target_model['path']}...")
+        print(f"[LOCAL-MANAGER] Reloading: Loading {model_id} from {target_model['path']}...")
         
         try:
             # Unload current
@@ -142,16 +142,16 @@ class LocalModelManager:
             
             self.models[model_id] = pipe
             self.current_model_id = model_id
-            print(f"[LOCAL-MANAGER] ✅ Model {model_id} loaded successfully.")
+            print(f"[LOCAL-MANAGER] Model {model_id} loaded successfully.")
             return True
         except Exception as e:
-            print(f"[LOCAL-MANAGER] ❌ Error loading model: {e}")
+            print(f"[LOCAL-MANAGER] Error loading model: {e}")
             return False
 
     def unload_model(self):
         """Free up memory by unloading the current model"""
         if self.current_model_id and self.current_model_id in self.models:
-            print(f"[LOCAL-MANAGER] 🗑️ Unloading {self.current_model_id}...")
+            print(f"[LOCAL-MANAGER] Unloading {self.current_model_id}...")
             del self.models[self.current_model_id]
             self.current_model_id = None
             gc.collect()
@@ -170,7 +170,7 @@ class LocalModelManager:
         if self.device == "cpu":
             steps = min(steps, 15) # Cap steps on CPU for usability
             
-        print(f"[LOCAL-MANAGER] 🎨 Generating with {self.current_model_id} on {self.device}")
+        print(f"[LOCAL-MANAGER] Generating with {self.current_model_id} on {self.device}")
         
         try:
             with torch.no_grad():
@@ -185,5 +185,5 @@ class LocalModelManager:
                 
             return result.images[0]
         except Exception as e:
-            print(f"[LOCAL-MANAGER] ❌ Generation failed: {e}")
+            print(f"[LOCAL-MANAGER] Error: Generation failed: {e}")
             raise e

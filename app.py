@@ -20,6 +20,9 @@ import asyncio
 import io
 import base64
 from local_model_manager import LocalModelManager
+from modern_generators import ModernGeneratorManager
+from image_gallery import ImageGallery
+from prompt_enhancer import PromptEnhancer
 from cuda_checker import CudaChecker
 import urllib.parse
 import urllib.request
