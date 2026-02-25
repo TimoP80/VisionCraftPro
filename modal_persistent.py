@@ -40,7 +40,7 @@ _PIPELINE_CACHE = {}
 )
 def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
     """
-    Generate image using Modal H100 GPU (REMOTE EXECUTION)
+    Generate image using Modal (gpu selectable) (REMOTE EXECUTION)
     """
     print(f"[MODAL-REMOTE] Generating with {model_name}: {prompt[:100]}...")
     print(f"[MODAL-REMOTE] Running on Modal cloud GPU (NOT local GPU)")

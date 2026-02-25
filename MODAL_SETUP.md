@@ -32,7 +32,7 @@ python visioncraft_server.py
 
 ### 5. Use Modal Generator
 1. Open http://localhost:8000
-2. Select "Modal H100 GPU" from the model dropdown
+2. Select "Modal (gpu selectable)" from the model dropdown
 3. Enter a prompt and generate
 
 ## How It Works

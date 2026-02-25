@@ -55,7 +55,7 @@ def generate_image_internal(
     guidance_scale: float = 7.5,
 ) -> bytes:
     """
-    Generate image using Modal H100 GPU (INTERNAL FUNCTION)
+    Generate image using Modal (gpu selectable) (INTERNAL FUNCTION)
     """
     print(f"[MODAL-REMOTE] Generating with {model_name}: {prompt[:100]}...")
     print(f"[MODAL-REMOTE] Running on Modal cloud GPU (NOT local GPU)")

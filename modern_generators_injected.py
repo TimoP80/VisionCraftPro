@@ -129,105 +129,24 @@ class ModernGeneratorManager:
         # Explicit mappings from Leonardo docs
         # These map both UUIDs and human-readable internal keys to their config
         mapping = {
-            "lucid-origin": {"name": "Lucid Origin", "id": "7b592283-e8a7-4c5a-9ba6-d18c31f258b9", "api_version": "v1", "endpoint": "generations"},
-            "7b592283-e8a7-4c5a-9ba6-d18c31f258b9": {"name": "Lucid Origin", "id": "7b592283-e8a7-4c5a-9ba6-d18c31f258b9", "api_version": "v1", "endpoint": "generations"},
-            "flux-1-kontext": {"name": "FLUX.1 Kontext", "id": "28aeddf8-bd19-4803-80fc-79602d1a9989", "api_version": "v1", "endpoint": "generations"},
-            "28aeddf8-bd19-4803-80fc-79602d1a9989": {"name": "FLUX.1 Kontext", "id": "28aeddf8-bd19-4803-80fc-79602d1a9989", "api_version": "v1", "endpoint": "generations"},
-            "lucid-realism": {"name": "Lucid Realism", "id": "05ce0082-2d80-4a2d-8653-4d1c85e2418e", "api_version": "v1", "endpoint": "generations"},
-            "05ce0082-2d80-4a2d-8653-4d1c85e2418e": {"name": "Lucid Realism", "id": "05ce0082-2d80-4a2d-8653-4d1c85e2418e", "api_version": "v1", "endpoint": "generations"},
+            # Leonardo Phoenix (V1)
             "phoenix-1-0": {"name": "Phoenix 1.0", "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3", "api_version": "v1", "endpoint": "generations"},
             "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3": {"name": "Phoenix 1.0", "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3", "api_version": "v1", "endpoint": "generations"},
-            "flux-dev": {"name": "Flux Dev", "id": "b2614463-296c-462a-9586-aafdb8f00e36", "api_version": "v1", "endpoint": "generations"},
-            "b2614463-296c-462a-9586-aafdb8f00e36": {"name": "Flux Dev", "id": "b2614463-296c-462a-9586-aafdb8f00e36", "api_version": "v1", "endpoint": "generations"},
-            "flux-schnell": {"name": "Flux Schnell", "id": "1dd50843-d653-4516-a8e3-f0238ee453ff", "api_version": "v1", "endpoint": "generations"},
-            "1dd50843-d653-4516-a8e3-f0238ee453ff": {"name": "Flux Schnell", "id": "1dd50843-d653-4516-a8e3-f0238ee453ff", "api_version": "v1", "endpoint": "generations"},
+            
+            # Leonardo Legacy / Phoenix 0.9 (V1)
             "phoenix-0-9": {"name": "Phoenix 0.9", "id": "6b645e3a-d64f-4341-a6d8-7a3690fbf042", "api_version": "v1", "endpoint": "generations"},
             "6b645e3a-d64f-4341-a6d8-7a3690fbf042": {"name": "Phoenix 0.9", "id": "6b645e3a-d64f-4341-a6d8-7a3690fbf042", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-anime-xl": {"name": "Leonardo Anime XL", "id": "e71a1c2f-4f80-4800-934f-2c68979d8cc8", "api_version": "v1", "endpoint": "generations"},
-            "e71a1c2f-4f80-4800-934f-2c68979d8cc8": {"name": "Leonardo Anime XL", "id": "e71a1c2f-4f80-4800-934f-2c68979d8cc8", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-lightning-xl": {"name": "Leonardo Lightning XL", "id": "b24e16ff-06e3-43eb-8d33-4416c2d75876", "api_version": "v1", "endpoint": "generations"},
-            "b24e16ff-06e3-43eb-8d33-4416c2d75876": {"name": "Leonardo Lightning XL", "id": "b24e16ff-06e3-43eb-8d33-4416c2d75876", "api_version": "v1", "endpoint": "generations"},
-            "sdxl-1-0": {"name": "SDXL 1.0", "id": "16e7060a-803e-4df3-97ee-edcfa5dc9cc8", "api_version": "v1", "endpoint": "generations"},
-            "16e7060a-803e-4df3-97ee-edcfa5dc9cc8": {"name": "SDXL 1.0", "id": "16e7060a-803e-4df3-97ee-edcfa5dc9cc8", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-kino-xl": {"name": "Leonardo Kino XL", "id": "aa77f04e-3eec-4034-9c07-d0f619684628", "api_version": "v1", "endpoint": "generations"},
-            "aa77f04e-3eec-4034-9c07-d0f619684628": {"name": "Leonardo Kino XL", "id": "aa77f04e-3eec-4034-9c07-d0f619684628", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-vision-xl": {"name": "Leonardo Vision XL", "id": "5c232a9e-9061-4777-980a-ddc8e65647c6", "api_version": "v1", "endpoint": "generations"},
-            "5c232a9e-9061-4777-980a-ddc8e65647c6": {"name": "Leonardo Vision XL", "id": "5c232a9e-9061-4777-980a-ddc8e65647c6", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-diffusion-xl": {"name": "Leonardo Diffusion XL", "id": "1e60896f-3c26-4296-8ecc-53e2afecc132", "api_version": "v1", "endpoint": "generations"},
-            "1e60896f-3c26-4296-8ecc-53e2afecc132": {"name": "Leonardo Diffusion XL", "id": "1e60896f-3c26-4296-8ecc-53e2afecc132", "api_version": "v1", "endpoint": "generations"},
-            "albedobase-xl": {"name": "AlbedoBase XL", "id": "2067ae52-33fd-4a82-bb92-c2c55e7d2786", "api_version": "v1", "endpoint": "generations"},
-            "2067ae52-33fd-4a82-bb92-c2c55e7d2786": {"name": "AlbedoBase XL", "id": "2067ae52-33fd-4a82-bb92-c2c55e7d2786", "api_version": "v1", "endpoint": "generations"},
-            "rpg-v5": {"name": "RPG v5", "id": "f1929ea3-b169-4c18-a16c-5d58b4292c69", "api_version": "v1", "endpoint": "generations"},
-            "f1929ea3-b169-4c18-a16c-5d58b4292c69": {"name": "RPG v5", "id": "f1929ea3-b169-4c18-a16c-5d58b4292c69", "api_version": "v1", "endpoint": "generations"},
-            "sdxl-0-9": {"name": "SDXL 0.9", "id": "b63f7119-31dc-4540-969b-2a9df997e173", "api_version": "v1", "endpoint": "generations"},
-            "b63f7119-31dc-4540-969b-2a9df997e173": {"name": "SDXL 0.9", "id": "b63f7119-31dc-4540-969b-2a9df997e173", "api_version": "v1", "endpoint": "generations"},
-            "3d-animation-style": {"name": "3D Animation Style", "id": "d69c8273-6b17-4a30-a13e-d6637ae1c644", "api_version": "v1", "endpoint": "generations"},
-            "d69c8273-6b17-4a30-a13e-d6637ae1c644": {"name": "3D Animation Style", "id": "d69c8273-6b17-4a30-a13e-d6637ae1c644", "api_version": "v1", "endpoint": "generations"},
-            "dreamshaper-v7": {"name": "DreamShaper v7", "id": "ac614f96-1082-45bf-be9d-757f2d31c174", "api_version": "v1", "endpoint": "generations"},
-            "ac614f96-1082-45bf-be9d-757f2d31c174": {"name": "DreamShaper v7", "id": "ac614f96-1082-45bf-be9d-757f2d31c174", "api_version": "v1", "endpoint": "generations"},
-            "absolute-reality-v1-6": {"name": "Absolute Reality v1.6", "id": "e316348f-7773-490e-adcd-46757c738eb7", "api_version": "v1", "endpoint": "generations"},
-            "e316348f-7773-490e-adcd-46757c738eb7": {"name": "Absolute Reality v1.6", "id": "e316348f-7773-490e-adcd-46757c738eb7", "api_version": "v1", "endpoint": "generations"},
-            "anime-pastel-dream": {"name": "Anime Pastel Dream", "id": "1aa0f478-51be-4efd-94e8-76bfc8f533af", "api_version": "v1", "endpoint": "generations"},
-            "1aa0f478-51be-4efd-94e8-76bfc8f533af": {"name": "Anime Pastel Dream", "id": "1aa0f478-51be-4efd-94e8-76bfc8f533af", "api_version": "v1", "endpoint": "generations"},
-            "dreamshaper-v6": {"name": "DreamShaper v6", "id": "b7aa9939-abed-4d4e-96c4-140b8c65dd92", "api_version": "v1", "endpoint": "generations"},
-            "b7aa9939-abed-4d4e-96c4-140b8c65dd92": {"name": "DreamShaper v6", "id": "b7aa9939-abed-4d4e-96c4-140b8c65dd92", "api_version": "v1", "endpoint": "generations"},
-            "dreamshaper-v5": {"name": "DreamShaper v5", "id": "d2fb9cf9-7999-4ae5-8bfe-f0df2d32abf8", "api_version": "v1", "endpoint": "generations"},
-            "d2fb9cf9-7999-4ae5-8bfe-f0df2d32abf8": {"name": "DreamShaper v5", "id": "d2fb9cf9-7999-4ae5-8bfe-f0df2d32abf8", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-diffusion": {"name": "Leonardo Diffusion", "id": "b820ea11-02bf-4652-97ae-9ac0cc00593d", "api_version": "v1", "endpoint": "generations"},
-            "b820ea11-02bf-4652-97ae-9ac0cc00593d": {"name": "Leonardo Diffusion", "id": "b820ea11-02bf-4652-97ae-9ac0cc00593d", "api_version": "v1", "endpoint": "generations"},
-            "rpg-4-0": {"name": "RPG 4.0", "id": "a097c2df-8f0c-4029-ae0f-8fd349055e61", "api_version": "v1", "endpoint": "generations"},
-            "a097c2df-8f0c-4029-ae0f-8fd349055e61": {"name": "RPG 4.0", "id": "a097c2df-8f0c-4029-ae0f-8fd349055e61", "api_version": "v1", "endpoint": "generations"},
-            "deliberate-1-1": {"name": "Deliberate 1.1", "id": "458ecfff-f76c-402c-8b85-f09f6fb198de", "api_version": "v1", "endpoint": "generations"},
-            "458ecfff-f76c-402c-8b85-f09f6fb198de": {"name": "Deliberate 1.1", "id": "458ecfff-f76c-402c-8b85-f09f6fb198de", "api_version": "v1", "endpoint": "generations"},
-            "vintage-style-photography": {"name": "Vintage Style Photography", "id": "17e4edbf-690b-425d-a466-53c816f0de8a", "api_version": "v1", "endpoint": "generations"},
-            "17e4edbf-690b-425d-a466-53c816f0de8a": {"name": "Vintage Style Photography", "id": "17e4edbf-690b-425d-a466-53c816f0de8a", "api_version": "v1", "endpoint": "generations"},
-            "dreamshaper-3-2": {"name": "DreamShaper 3.2", "id": "f3296a34-9aef-4370-ad18-88daf26862c3", "api_version": "v1", "endpoint": "generations"},
-            "f3296a34-9aef-4370-ad18-88daf26862c3": {"name": "DreamShaper 3.2", "id": "f3296a34-9aef-4370-ad18-88daf26862c3", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-select": {"name": "Leonardo Select", "id": "cd2b2a15-9760-4174-a5ff-4d2925057376", "api_version": "v1", "endpoint": "generations"},
-            "cd2b2a15-9760-4174-a5ff-4d2925057376": {"name": "Leonardo Select", "id": "cd2b2a15-9760-4174-a5ff-4d2925057376", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-creative": {"name": "Leonardo Creative", "id": "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3", "api_version": "v1", "endpoint": "generations"},
-            "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3": {"name": "Leonardo Creative", "id": "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3", "api_version": "v1", "endpoint": "generations"},
-            "battle-axes": {"name": "Battle Axes", "id": "47a6232a-1d49-4c95-83c3-2cc5342f82c7", "api_version": "v1", "endpoint": "generations"},
-            "47a6232a-1d49-4c95-83c3-2cc5342f82c7": {"name": "Battle Axes", "id": "47a6232a-1d49-4c95-83c3-2cc5342f82c7", "api_version": "v1", "endpoint": "generations"},
-            "pixel-art": {"name": "Pixel Art", "id": "e5a291b6-3990-495a-b1fa-7bd1864510a6", "api_version": "v1", "endpoint": "generations"},
-            "e5a291b6-3990-495a-b1fa-7bd1864510a6": {"name": "Pixel Art", "id": "e5a291b6-3990-495a-b1fa-7bd1864510a6", "api_version": "v1", "endpoint": "generations"},
-            "magic-potions": {"name": "Magic Potions", "id": "45ab2421-87de-44c8-a07c-3b87e3bfdf84", "api_version": "v1", "endpoint": "generations"},
-            "45ab2421-87de-44c8-a07c-3b87e3bfdf84": {"name": "Magic Potions", "id": "45ab2421-87de-44c8-a07c-3b87e3bfdf84", "api_version": "v1", "endpoint": "generations"},
-            "chest-armor": {"name": "Chest Armor", "id": "302e258f-29b5-4dd8-9a7c-0cd898cb2143", "api_version": "v1", "endpoint": "generations"},
-            "302e258f-29b5-4dd8-9a7c-0cd898cb2143": {"name": "Chest Armor", "id": "302e258f-29b5-4dd8-9a7c-0cd898cb2143", "api_version": "v1", "endpoint": "generations"},
-            "crystal-deposits": {"name": "Crystal Deposits", "id": "102a8ee0-cf16-477c-8477-c76963a0d766", "api_version": "v1", "endpoint": "generations"},
-            "102a8ee0-cf16-477c-8477-c76963a0d766": {"name": "Crystal Deposits", "id": "102a8ee0-cf16-477c-8477-c76963a0d766", "api_version": "v1", "endpoint": "generations"},
-            "character-portraits": {"name": "Character Portraits", "id": "6c95de60-a0bc-4f90-b637-ee8971caf3b0", "api_version": "v1", "endpoint": "generations"},
-            "6c95de60-a0bc-4f90-b637-ee8971caf3b0": {"name": "Character Portraits", "id": "6c95de60-a0bc-4f90-b637-ee8971caf3b0", "api_version": "v1", "endpoint": "generations"},
-            "magic-items": {"name": "Magic Items", "id": "2d18c0af-374e-4391-9ca2-639f59837c85", "api_version": "v1", "endpoint": "generations"},
-            "2d18c0af-374e-4391-9ca2-639f59837c85": {"name": "Magic Items", "id": "2d18c0af-374e-4391-9ca2-639f59837c85", "api_version": "v1", "endpoint": "generations"},
-            "shields": {"name": "Shields", "id": "ee0fc1a3-aacb-48bf-9234-ada3cc02748f", "api_version": "v1", "endpoint": "generations"},
-            "ee0fc1a3-aacb-48bf-9234-ada3cc02748f": {"name": "Shields", "id": "ee0fc1a3-aacb-48bf-9234-ada3cc02748f", "api_version": "v1", "endpoint": "generations"},
-            "spirit-creatures": {"name": "Spirit Creatures", "id": "5fdadebb-17ae-472c-bf76-877e657f97de", "api_version": "v1", "endpoint": "generations"},
-            "5fdadebb-17ae-472c-bf76-877e657f97de": {"name": "Spirit Creatures", "id": "5fdadebb-17ae-472c-bf76-877e657f97de", "api_version": "v1", "endpoint": "generations"},
-            "cute-animal-characters": {"name": "Cute Animal Characters", "id": "6908bfaf-8cf2-4fda-8c46-03f892d82e06", "api_version": "v1", "endpoint": "generations"},
-            "6908bfaf-8cf2-4fda-8c46-03f892d82e06": {"name": "Cute Animal Characters", "id": "6908bfaf-8cf2-4fda-8c46-03f892d82e06", "api_version": "v1", "endpoint": "generations"},
-            "christmas-stickers": {"name": "Christmas Stickers", "id": "4b2e0f95-f15e-48d8-ada3-c071d6104db8", "api_version": "v1", "endpoint": "generations"},
-            "4b2e0f95-f15e-48d8-ada3-c071d6104db8": {"name": "Christmas Stickers", "id": "4b2e0f95-f15e-48d8-ada3-c071d6104db8", "api_version": "v1", "endpoint": "generations"},
-            "isometric-scifi-buildings": {"name": "Isometric Scifi Buildings", "id": "7a65f0ab-64a7-4be2-bcf3-64a1cc56f627", "api_version": "v1", "endpoint": "generations"},
-            "7a65f0ab-64a7-4be2-bcf3-64a1cc56f627": {"name": "Isometric Scifi Buildings", "id": "7a65f0ab-64a7-4be2-bcf3-64a1cc56f627", "api_version": "v1", "endpoint": "generations"},
-            "isometric-fantasy": {"name": "Isometric Fantasy", "id": "ab200606-5d09-4e1e-9050-0b05b839e944", "api_version": "v1", "endpoint": "generations"},
-            "ab200606-5d09-4e1e-9050-0b05b839e944": {"name": "Isometric Fantasy", "id": "ab200606-5d09-4e1e-9050-0b05b839e944", "api_version": "v1", "endpoint": "generations"},
-            "cute-characters": {"name": "Cute Characters", "id": "50c4f43b-f086-4838-bcac-820406244cec", "api_version": "v1", "endpoint": "generations"},
-            "50c4f43b-f086-4838-bcac-820406244cec": {"name": "Cute Characters", "id": "50c4f43b-f086-4838-bcac-820406244cec", "api_version": "v1", "endpoint": "generations"},
-            "amulets": {"name": "Amulets", "id": "ff883b60-9040-4c18-8d4e-ba7522c6b71d", "api_version": "v1", "endpoint": "generations"},
-            "ff883b60-9040-4c18-8d4e-ba7522c6b71d": {"name": "Amulets", "id": "ff883b60-9040-4c18-8d4e-ba7522c6b71d", "api_version": "v1", "endpoint": "generations"},
-            "crystal-deposits-alternate": {"name": "Crystal Deposits Alternate", "id": "5fce4543-8e23-4b77-9c3f-202b3f1c211e", "api_version": "v1", "endpoint": "generations"},
-            "5fce4543-8e23-4b77-9c3f-202b3f1c211e": {"name": "Crystal Deposits Alternate", "id": "5fce4543-8e23-4b77-9c3f-202b3f1c211e", "api_version": "v1", "endpoint": "generations"},
-            "isometric-asteroid-tiles": {"name": "Isometric Asteroid Tiles", "id": "756be0a8-38b1-4946-ad62-c0ac832422e3", "api_version": "v1", "endpoint": "generations"},
-            "756be0a8-38b1-4946-ad62-c0ac832422e3": {"name": "Isometric Asteroid Tiles", "id": "756be0a8-38b1-4946-ad62-c0ac832422e3", "api_version": "v1", "endpoint": "generations"},
-            "leonardo-signature": {"name": "Leonardo Signature", "id": "291be633-cb24-434f-898f-e662799936ad", "api_version": "v1", "endpoint": "generations"},
-            "291be633-cb24-434f-898f-e662799936ad": {"name": "Leonardo Signature", "id": "291be633-cb24-434f-898f-e662799936ad", "api_version": "v1", "endpoint": "generations"},
-
-
-            # Special Aliases and V2 Models
+            
+            # Universal / Vision XL (V1)
             "universal": {"name": "Universal Enhanced", "id": "6bef9f1b-713b-4271-9231-ef9090632332", "api_version": "v1", "endpoint": "generations"},
             "6bef9f1b-713b-4271-9231-ef9090632332": {"name": "Universal Enhanced", "id": "6bef9f1b-713b-4271-9231-ef9090632332", "api_version": "v1", "endpoint": "generations"},
+
+            # FLUX models (V1)
+            "b2614463-296c-462a-9586-aafdb8f00e36": {"name": "FLUX Dev", "id": "b2614463-296c-462a-9586-aafdb8f00e36", "api_version": "v1", "endpoint": "generations"},
+            "1dd50843-d653-4516-a8e3-f0238ee453ff": {"name": "FLUX Schnell", "id": "1dd50843-d653-4516-a8e3-f0238ee453ff", "api_version": "v1", "endpoint": "generations"},
+            "28aeddf8-bd19-4803-80fc-79602d1a9989": {"name": "FLUX.1 Kontext [pro]", "id": "28aeddf8-bd19-4803-80fc-79602d1a9989", "api_version": "v1", "endpoint": "generations"},
+            
+            # V2 models (Nano Banana Pro, FLUX.2 Pro, etc.)
             "gemini-image-2": {"name": "Nano Banana Pro", "id": "gemini-image-2", "api_version": "v2", "endpoint": "generations"},
             "flux-pro-2.0": {"name": "FLUX.2 Pro", "id": "flux-pro-2.0", "api_version": "v2", "endpoint": "generations"},
         }
@@ -353,383 +272,22 @@ class ModernGeneratorManager:
             "cost": "Paid",
             "features": ["text-to-image", "fine-tuned-models", "texture-generation"],
             "models": {
-"lucid-origin": {
-                    "id": "7b592283-e8a7-4c5a-9ba6-d18c31f258b9",
-                    "name": "Lucid Origin",
-                    "description": "Your go-to model for vibrant, diverse imagery in HD output. Excellent prompt adherence and text rendering.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "flux-1-kontext": {
-                    "id": "28aeddf8-bd19-4803-80fc-79602d1a9989",
-                    "name": "FLUX.1 Kontext",
-                    "description": "FLUX.1 Kontext is an Omni model by Black Forest Labs, built for precise, controllable image generation and editing",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "lucid-realism": {
-                    "id": "05ce0082-2d80-4a2d-8653-4d1c85e2418e",
-                    "name": "Lucid Realism",
-                    "description": "A high-speed model, designed for efficient, quick outputs. Perfect for fast-paced projects without sacrificing quality.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
                 "phoenix-1-0": {
                     "id": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",
-                    "name": "Phoenix 1.0",
-                    "description": "Leonardo's proprietary foundational model, delivering exceptional prompt adherence and text rendering.",
+                    "name": "Leonardo Phoenix Enhanced",
+                    "description": "Optimized SD 1.5 with LEONARDO preset (best available with current plan)",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "flux-dev": {
-                    "id": "b2614463-296c-462a-9586-aafdb8f00e36",
-                    "name": "Flux Dev",
-                    "description": "A specialized model built for developers. Great for rapid prototyping and creative iteration.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "flux-schnell": {
-                    "id": "1dd50843-d653-4516-a8e3-f0238ee453ff",
-                    "name": "Flux Schnell",
-                    "description": "A high-speed model, designed for efficient, quick outputs. Perfect for fast-paced projects without sacrificing quality.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
+                    "note": "Requires higher-tier subscription for true Phoenix models"
                 },
                 "phoenix-0-9": {
                     "id": "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
-                    "name": "Phoenix 0.9",
-                    "description": "Preview of our foundational model. Extreme prompt adherence and text rendering.",
+                    "name": "Leonardo Legacy Enhanced",
+                    "description": "Enhanced SD 1.5 with optimizations",
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
+                    "note": "Legacy model with enhanced prompt engineering"
                 },
-                "leonardo-anime-xl": {
-                    "id": "e71a1c2f-4f80-4800-934f-2c68979d8cc8",
-                    "name": "Leonardo Anime XL",
-                    "description": "A new high-speed Anime-focused model that excels at a range of anime, illustrative, and CG styles.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-lightning-xl": {
-                    "id": "b24e16ff-06e3-43eb-8d33-4416c2d75876",
-                    "name": "Leonardo Lightning XL",
-                    "description": "Our new high-speed generalist image gen model. Great at everything from photorealism to painterly styles.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "sdxl-1-0": {
-                    "id": "16e7060a-803e-4df3-97ee-edcfa5dc9cc8",
-                    "name": "SDXL 1.0",
-                    "description": "Diffusion-based text-to-image generative model",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-kino-xl": {
-                    "id": "aa77f04e-3eec-4034-9c07-d0f619684628",
-                    "name": "Leonardo Kino XL",
-                    "description": "A model with a strong focus on cinematic outputs. Excels at wider aspect ratios, and does not need a negative prompt.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-vision-xl": {
-                    "id": "5c232a9e-9061-4777-980a-ddc8e65647c6",
-                    "name": "Leonardo Vision XL",
-                    "description": "A versatile model that excels at realism and photography. Better results with longer prompts.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-diffusion-xl": {
-                    "id": "1e60896f-3c26-4296-8ecc-53e2afecc132",
-                    "name": "Leonardo Diffusion XL",
-                    "description": "The next phase of the core Leonardo model. Stunning outputs, even with short prompts.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "albedobase-xl": {
-                    "id": "2067ae52-33fd-4a82-bb92-c2c55e7d2786",
-                    "name": "AlbedoBase XL",
-                    "description": "A great generalist model that tends towards more CG artistic outputs. By albedobond.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "rpg-v5": {
-                    "id": "f1929ea3-b169-4c18-a16c-5d58b4292c69",
-                    "name": "RPG v5",
-                    "description": "Anashel returns with another great model, specialising in RPG characters of all kinds.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "sdxl-0-9": {
-                    "id": "b63f7119-31dc-4540-969b-2a9df997e173",
-                    "name": "SDXL 0.9",
-                    "description": "The latest Stable Diffusion model, currently in Beta.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "3d-animation-style": {
-                    "id": "d69c8273-6b17-4a30-a13e-d6637ae1c644",
-                    "name": "3D Animation Style",
-                    "description": "Great at 3D film vibes, capable of complex scenes with rich color. Storyboard time!",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "dreamshaper-v7": {
-                    "id": "ac614f96-1082-45bf-be9d-757f2d31c174",
-                    "name": "DreamShaper v7",
-                    "description": "Lykon is back with another update. This model is great at a range of different styles.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "absolute-reality-v1-6": {
-                    "id": "e316348f-7773-490e-adcd-46757c738eb7",
-                    "name": "Absolute Reality v1.6",
-                    "description": "A photorealistic style model from Lykon. Great at all sorts of photorealism.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "anime-pastel-dream": {
-                    "id": "1aa0f478-51be-4efd-94e8-76bfc8f533af",
-                    "name": "Anime Pastel Dream",
-                    "description": "Pastel anime styling. Use with PMv3 and the anime preset for incredible range. Model by Lykon.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "dreamshaper-v6": {
-                    "id": "b7aa9939-abed-4d4e-96c4-140b8c65dd92",
-                    "name": "DreamShaper v6",
-                    "description": "A new update to an incredibly versatile model, excels at both people and environments, by Lykon.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "dreamshaper-v5": {
-                    "id": "d2fb9cf9-7999-4ae5-8bfe-f0df2d32abf8",
-                    "name": "DreamShaper v5",
-                    "description": "A versatile model great at both photorealism and anime, includes noise offset training, by Lykon.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-diffusion": {
-                    "id": "b820ea11-02bf-4652-97ae-9ac0cc00593d",
-                    "name": "Leonardo Diffusion",
-                    "description": "A model with incredible shading and contrast, great at both photos and artistic styles, by cac0e.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "rpg-4-0": {
-                    "id": "a097c2df-8f0c-4029-ae0f-8fd349055e61",
-                    "name": "RPG 4.0",
-                    "description": "This model is best at creating RPG character portraits with the ability for great photorealism. Created by Anashel.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "deliberate-1-1": {
-                    "id": "458ecfff-f76c-402c-8b85-f09f6fb198de",
-                    "name": "Deliberate 1.1",
-                    "description": "A powerful model created by XpucT that  is great for both photorealism and artistic creations.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "vintage-style-photography": {
-                    "id": "17e4edbf-690b-425d-a466-53c816f0de8a",
-                    "name": "Vintage Style Photography",
-                    "description": "This model can generate a broad range of imagery with a vintage style as if it was taken from a film camera",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "dreamshaper-3-2": {
-                    "id": "f3296a34-9aef-4370-ad18-88daf26862c3",
-                    "name": "DreamShaper 3.2",
-                    "description": "This model by Lykon is great at a range of portrait styles as well as artistic backgrounds.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-select": {
-                    "id": "cd2b2a15-9760-4174-a5ff-4d2925057376",
-                    "name": "Leonardo Select",
-                    "description": "A powerful finetune of SD2.1 that can achieve a high level of realism.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-creative": {
-                    "id": "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3",
-                    "name": "Leonardo Creative",
-                    "description": "An alternative finetune of SD 2.1 that brings a little more creative interpretation to the mix.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "battle-axes": {
-                    "id": "47a6232a-1d49-4c95-83c3-2cc5342f82c7",
-                    "name": "Battle Axes",
-                    "description": "Generate a variety of detailed axe designs with this model. From medieval battle axes to modern chopping axes, this model is great for creating a r...",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "pixel-art": {
-                    "id": "e5a291b6-3990-495a-b1fa-7bd1864510a6",
-                    "name": "Pixel Art",
-                    "description": "A pixel art model that's trained on headshots, but is surprisingly flexible with all sorts of subjects.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "magic-potions": {
-                    "id": "45ab2421-87de-44c8-a07c-3b87e3bfdf84",
-                    "name": "Magic Potions",
-                    "description": "A great model for creating incredible semi-realistic magic potions. Try appending \"intricately detailed, 3d vray render\" to your prompt.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "chest-armor": {
-                    "id": "302e258f-29b5-4dd8-9a7c-0cd898cb2143",
-                    "name": "Chest Armor",
-                    "description": "Create all sorts of chest armor with this model in a consistent style but with wide thematic range.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "crystal-deposits": {
-                    "id": "102a8ee0-cf16-477c-8477-c76963a0d766",
-                    "name": "Crystal Deposits",
-                    "description": "A model for creating crystal deposits. Well-suited for use as items or in an isometric environment.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "character-portraits": {
-                    "id": "6c95de60-a0bc-4f90-b637-ee8971caf3b0",
-                    "name": "Character Portraits",
-                    "description": "A model that's for creating awesome RPG characters of varying classes in a consistent style.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "magic-items": {
-                    "id": "2d18c0af-374e-4391-9ca2-639f59837c85",
-                    "name": "Magic Items",
-                    "description": "Create a wide range of magical items like weapons, shields, boots, books. Very versatile.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "shields": {
-                    "id": "ee0fc1a3-aacb-48bf-9234-ada3cc02748f",
-                    "name": "Shields",
-                    "description": "Create a variety of impressively varied and detailed shield designs. Allows for an incredible range of material types.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "spirit-creatures": {
-                    "id": "5fdadebb-17ae-472c-bf76-877e657f97de",
-                    "name": "Spirit Creatures",
-                    "description": "From whimsical fairy-like beings to mythical creatures, create unique cute spirit characters.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "cute-animal-characters": {
-                    "id": "6908bfaf-8cf2-4fda-8c46-03f892d82e06",
-                    "name": "Cute Animal Characters",
-                    "description": "Perfect for creating adorable and cute animal characters - loveable and playful designs.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "christmas-stickers": {
-                    "id": "4b2e0f95-f15e-48d8-ada3-c071d6104db8",
-                    "name": "Christmas Stickers",
-                    "description": "Generate festive and fun Christmas stickers with this model. From cute and colorful to traditional and elegant.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "isometric-scifi-buildings": {
-                    "id": "7a65f0ab-64a7-4be2-bcf3-64a1cc56f627",
-                    "name": "Isometric Scifi Buildings",
-                    "description": "Great at creating scifi buildings of varying themes. Append the word isometric to your prompt to ensure an isometric view. \"3d vray render\" also helps steer the generation well. ",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "isometric-fantasy": {
-                    "id": "ab200606-5d09-4e1e-9050-0b05b839e944",
-                    "name": "Isometric Fantasy",
-                    "description": "Create all sorts of isometric fantasy environments. Try appending \"3d vray render, isometric\" and using a guidance scale of 6. For the negative prompt, try \"unclear, harsh, oversaturated, soft, blurry\".",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "cute-characters": {
-                    "id": "50c4f43b-f086-4838-bcac-820406244cec",
-                    "name": "Cute Characters",
-                    "description": "Create cute and charming game characters, perfect for adding some whimsy to your game design. Be sure to include the word \"character\" in your prompts for best results.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "amulets": {
-                    "id": "ff883b60-9040-4c18-8d4e-ba7522c6b71d",
-                    "name": "Amulets",
-                    "description": "Create unique and intricate amulets, jewellery and more. Try loading up the prompt terms to steer it in interesting directions.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "crystal-deposits-alternate": {
-                    "id": "5fce4543-8e23-4b77-9c3f-202b3f1c211e",
-                    "name": "Crystal Deposits Alternate",
-                    "description": "An alternative crystal deposits model that gives a slightly more realistic feel with its creations. Try using \"object\" and \"3d vray render\" in your prompts.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "isometric-asteroid-tiles": {
-                    "id": "756be0a8-38b1-4946-ad62-c0ac832422e3",
-                    "name": "Isometric Asteroid Tiles",
-                    "description": "A model for creating isometric asteroid environment tiles. Try appending \"3d vray render, unreal engine, beautiful, intricately detailed, trending on artstation, 8k\" to your prompt.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-                "leonardo-signature": {
-                    "id": "291be633-cb24-434f-898f-e662799936ad",
-                    "name": "Leonardo Signature",
-                    "description": "The core model of the Leonardo platform. An extremely powerful and diverse finetune which is highly effective for a wide range of uses.",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "Official Leonardo model"
-                },
-
                 "universal": {
                     "id": "6bef9f1b-713b-4271-9231-ef9090632332",
                     "name": "Universal Enhanced",
@@ -737,23 +295,7 @@ class ModernGeneratorManager:
                     "max_resolution": (1024, 1024),
                     "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
                     "note": "Optimized for all content types"
-                },
-                "gemini-image-2": {
-                    "id": "gemini-image-2",
-                    "name": "Nano Banana Pro",
-                    "description": "State-of-the-art V2 generation model",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "V2 Engine Structure"
-                },
-                "flux-pro-2.0": {
-                    "id": "flux-pro-2.0",
-                    "name": "FLUX.2 Pro",
-                    "description": "High fidelity V2 generation model",
-                    "max_resolution": (1024, 1024),
-                    "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "2:3", "3:2"],
-                    "note": "V2 Engine Structure"
-                },
+                }
             },
             "preset_styles": [
                 {"id": "CREATIVE", "name": "Creative", "description": "Balanced creative output"},
@@ -854,17 +396,6 @@ class ModernGeneratorManager:
                 {"id": "standard", "name": "Standard", "description": "20 steps, good quality"},
                 {"id": "high", "name": "High", "description": "30 steps, better quality"},
                 {"id": "ultra", "name": "Ultra", "description": "50 steps, best quality"}
-            ],
-            "gpus": [
-                {"id": "T4", "name": "NVIDIA T4 (Entry level)"},
-                {"id": "L4", "name": "NVIDIA L4 (Balanced)"},
-                {"id": "A10", "name": "NVIDIA A10 (High performance)"},
-                {"id": "L40S", "name": "NVIDIA L40S (Multi-purpose)"},
-                {"id": "A100 40gb", "name": "NVIDIA A100 40GB (Professional)"},
-                {"id": "A100 80gb", "name": "NVIDIA A100 80GB (Professional High VRAM)"},
-                {"id": "H100", "name": "NVIDIA H100 (State-of-the-art)"},
-                {"id": "H200", "name": "NVIDIA H200 (Next-gen)"},
-                {"id": "B200", "name": "NVIDIA B200 (Future-ready)"}
             ]
         }
 
@@ -1049,7 +580,6 @@ class ModernGeneratorManager:
         height = int(kwargs.get("height", 512) or 512)
         num_inference_steps = int(kwargs.get("num_inference_steps", 20) or 20)
         guidance_scale = float(kwargs.get("guidance_scale", 7.5) or 7.5)
-        gpu = kwargs.get("gpu", "A100 40gb")
 
         # Prefer env var so you can paste the URL that `modal serve modal_web.py` prints.
         # Example: https://timop80--visioncraft-modal-fastapi-app-dev.modal.run
@@ -1076,7 +606,6 @@ class ModernGeneratorManager:
                 "height": height,
                 "num_inference_steps": num_inference_steps,
                 "guidance_scale": guidance_scale,
-                "gpu": gpu,
             }
 
             async with httpx.AsyncClient(timeout=300.0, follow_redirects=True) as client:

@@ -73,7 +73,7 @@ _PIPELINE_CACHE = {}
 )
 def generate_image_internal(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
     """
-    Generate image using Modal H100 GPU (REMOTE EXECUTION)
+    Generate image using Modal (gpu selectable) (REMOTE EXECUTION)
     
     This function runs entirely on Modal's cloud infrastructure,
     NOT on your local machine or local GPU.
