@@ -99,6 +99,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+venv_gtx1070/
 
 # Spyder project settings
 .spyderproject
