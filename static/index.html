@@ -883,22 +883,37 @@
                 statusEl.textContent = `Found ${models.length} models. Click one to select it.`;
 
                 models.forEach(m => {
+                    const container = document.createElement('div');
+                    container.className = 'w-full flex-col gap-1 p-1';
+
                     const row = document.createElement('button');
                     row.type = 'button';
-                    row.className = 'w-full text-left px-3 py-2 rounded-lg bg-gray-700/40 hover:bg-gray-700/70 border border-gray-600/40 transition-colors';
+                    row.className = 'w-full text-left px-3 py-2 rounded-lg bg-gray-700/40 hover:bg-gray-700/70 border border-gray-600/40 transition-colors mb-1';
                     row.innerHTML = `
                         <div class="flex justify-between items-center">
-                            <span class="text-sm text-white font-medium">${m.id}</span>
-                            <span class="text-xs text-gray-300">⬇️ ${m.downloads || 0} | ❤️ ${m.likes || 0}</span>
+                            <span class="text-sm text-white font-medium truncate">${m.id}</span>
+                            <span class="text-xs text-gray-300 ml-2">⬇️ ${m.downloads || 0}</span>
                         </div>
-                        <div class="text-xs text-gray-400 mt-1">${(m.gated ? '⚠️ gated ' : '')}${(m.private ? '🔒 private ' : '')}</div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-xs text-gray-400 font-mono">❤️ ${m.likes || 0}</span>
+                            <span class="text-xs ${(m.gated || m.private) ? 'text-yellow-400' : 'text-green-400'}">
+                                ${(m.gated ? '⚠️ gated ' : '')}${(m.private ? '🔒 private ' : '')}${(!m.gated && !m.private ? '🟢 open' : '')}
+                            </span>
+                        </div>
                     `;
+
+                    const link = document.createElement('a');
+                    link.href = `https://huggingface.co/${m.id}`;
+                    link.target = '_blank';
+                    link.className = 'text-[10px] text-blue-400 hover:text-blue-300 underline mb-3 px-3 flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity';
+                    link.innerHTML = '<span>View on Hugging Face</span> <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>';
+
+                    container.appendChild(row);
+                    container.appendChild(link);
 
                     row.addEventListener('click', () => {
                         const modalModelSelect = document.getElementById('modal-model');
-                        if (!modalModelSelect) {
-                            return;
-                        }
+                        if (!modalModelSelect) return;
 
                         let option = Array.from(modalModelSelect.options).find(o => o.value === m.id);
                         if (!option) {
@@ -909,10 +924,31 @@
                         }
 
                         modalModelSelect.value = m.id;
-                        statusEl.textContent = `Selected: ${m.id}`;
+
+                        // Show specific message for gated models
+                        if (m.gated) {
+                            statusEl.innerHTML = `<span class="text-yellow-400 font-medium">⚠️ Gated Model Selected:</span> You must manually request access at <a href="https://huggingface.co/${m.id}" target="_blank" class="text-blue-400 underline font-medium">${m.id}</a> and ensure your <b>HF_TOKEN</b> is configured.`;
+                        } else {
+                            statusEl.textContent = `Selected: ${m.id}`;
+                        }
                     });
 
-                    resultsEl.appendChild(row);
+                    // Add Download Button for Local Use
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.type = 'button';
+                    downloadBtn.className = 'w-full text-center px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 transition-colors mb-4 text-[10px] font-medium text-blue-100 flex items-center justify-center gap-2';
+                    downloadBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download for Local Use';
+
+                    downloadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        downloadLocalModel(m.id);
+                    });
+
+                    container.appendChild(row);
+                    container.appendChild(downloadBtn);
+                    container.appendChild(link);
+
+                    resultsEl.appendChild(container);
                 });
             } catch (error) {
                 console.error('HF model search failed:', error);
@@ -931,6 +967,49 @@
                 searchHuggingFaceModels();
             }
         });
+
+        async function downloadLocalModel(repoId) {
+            const statusEl = document.getElementById('hf-search-status');
+            statusEl.textContent = `Starting download of ${repoId}...`;
+
+            try {
+                const response = await fetch('/local/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repo_id: repoId })
+                });
+
+                const data = await response.json();
+                if (data.status === 'started' || data.status === 'already downloading') {
+                    statusEl.innerHTML = `<span class="text-blue-400">⬇️ Download started:</span> ${repoId}. Check generator list in a few minutes.`;
+                    pollDownloadStatus(repoId);
+                } else {
+                    statusEl.textContent = `Status: ${data.status}`;
+                }
+            } catch (error) {
+                console.error('Download failed:', error);
+                statusEl.textContent = 'Failed to start download.';
+            }
+        }
+
+        async function pollDownloadStatus(repoId) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/local/status/${repoId}`);
+                    const data = await response.json();
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        document.getElementById('hf-search-status').innerHTML = `<span class="text-green-400">✅ Download complete!</span> ${repoId} is now available in Local Models.`;
+                        loadModels(); // Refresh the list
+                    } else if (data.status && data.status.startsWith('failed')) {
+                        clearInterval(interval);
+                        document.getElementById('hf-search-status').innerHTML = `<span class="text-red-400">❌ Download failed:</span> ${data.status}`;
+                    }
+                } catch (e) {
+                    console.error('Polling error:', e);
+                }
+            }, 5000);
+        }
 
         // Advanced Prompt Enhancement functionality
         let currentEnhancementStyle = "photorealistic";
@@ -1125,7 +1204,9 @@
                 updateModelDropdown();
 
                 // Update model info when selection changes
-                document.getElementById('model').addEventListener('change', updateModelInfo);
+                const modelSelect = document.getElementById('model');
+                modelSelect.removeEventListener('change', updateModelInfo);
+                modelSelect.addEventListener('change', updateModelInfo);
                 updateModelInfo();
 
             } catch (error) {
@@ -1175,19 +1256,17 @@
 
             // Add local models section
             if (Object.keys(availableModels).length > 0) {
-                console.log('🔍 Adding local models:', Object.keys(availableModels));
                 const localGroup = document.createElement('optgroup');
-                localGroup.label = '🏠 Local Models (Stable Diffusion)';
+                localGroup.label = '🏠 Local Models (Downloaded)';
 
                 for (const [key, model] of Object.entries(availableModels)) {
                     const option = document.createElement('option');
                     option.value = key;
-                    option.textContent = `${model.name} - ${model.quality} (${model.vram_required})`;
-                    if (model.experimental) {
-                        option.textContent += ' [Experimental]';
+                    option.textContent = model.name || key;
+                    if (model.is_local) {
+                        option.textContent += ' [Local]';
                     }
                     localGroup.appendChild(option);
-                    console.log(`🔍 Added local model option: ${key} -> ${option.textContent}`);
                 }
 
                 modelSelect.appendChild(localGroup);
@@ -1322,11 +1401,10 @@
                 const model = availableModels[selectedModel];
                 modelInfo.innerHTML = `
                     <div class="text-xs space-y-1">
-                        <p>💾 VRAM: ${model.vram_required}</p>
-                        <p>⚡ Speed: ${model.speed}</p>
-                        <p>📏 Resolution: ${model.resolution}</p>
-                        <p>📝 ${model.description}</p>
-                        ${model.experimental ? '<p class="text-yellow-400">⚠️ Experimental model</p>' : ''}
+                        <p>🏠 Type: Local model</p>
+                        <p>📍 Path: ${model.path || 'Local storage'}</p>
+                        <p>⚡ Status: Ready for generation</p>
+                        <p class="text-blue-400">ℹ️ Hardware: Runs on ${deviceInfo?.gpu_available ? 'GPU' : 'CPU (Slow)'}</p>
                     </div>
                 `;
                 leonardoControls.classList.add('hidden');

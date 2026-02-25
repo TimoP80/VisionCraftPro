@@ -96,53 +96,62 @@ def generate_image_internal(
         is_flux = "flux" in model_name_lower
         is_sd3 = ("stable-diffusion-3" in model_name_lower) or ("sd3" in model_name_lower)
 
-        if is_sdxl:
-            # SDXL on A100 tends to be more stable in bf16 than fp16 (avoids NaNs/black outputs)
-            pipe = StableDiffusionXLPipeline.from_pretrained(
-                model_name,
-                torch_dtype=torch.bfloat16,
-                **({"token": hf_token} if hf_token else {}),
-            )
-        elif is_sd3:
-            # SD3/SD3.5 are different pipelines than SD1/2 (not StableDiffusionPipeline)
-            try:
-                from diffusers import StableDiffusion3Pipeline
+        try:
+            if is_sdxl:
+                # SDXL on A100 tends to be more stable in bf16 than fp16 (avoids NaNs/black outputs)
+                pipe = StableDiffusionXLPipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.bfloat16,
+                    **({"token": hf_token} if hf_token else {}),
+                )
+            elif is_sd3:
+                # SD3/SD3.5 are different pipelines than SD1/2 (not StableDiffusionPipeline)
+                try:
+                    from diffusers import StableDiffusion3Pipeline
 
-                pipe = StableDiffusion3Pipeline.from_pretrained(
-                    model_name,
-                    torch_dtype=torch.bfloat16,
-                    **({"token": hf_token} if hf_token else {}),
-                )
-            except Exception:
-                pipe = DiffusionPipeline.from_pretrained(
-                    model_name,
-                    torch_dtype=torch.bfloat16,
-                    **({"token": hf_token} if hf_token else {}),
-                )
-        elif is_flux:
-            # FLUX models are not Stable Diffusion pipelines (no UNet). Use the correct pipeline class.
-            try:
-                from diffusers import FluxPipeline
+                    pipe = StableDiffusion3Pipeline.from_pretrained(
+                        model_name,
+                        torch_dtype=torch.bfloat16,
+                        **({"token": hf_token} if hf_token else {}),
+                    )
+                except Exception:
+                    pipe = DiffusionPipeline.from_pretrained(
+                        model_name,
+                        torch_dtype=torch.bfloat16,
+                        **({"token": hf_token} if hf_token else {}),
+                    )
+            elif is_flux:
+                # FLUX models are not Stable Diffusion pipelines (no UNet). Use the correct pipeline class.
+                try:
+                    from diffusers import FluxPipeline
 
-                pipe = FluxPipeline.from_pretrained(
+                    pipe = FluxPipeline.from_pretrained(
+                        model_name,
+                        torch_dtype=torch.bfloat16,
+                        **({"token": hf_token} if hf_token else {}),
+                    )
+                except Exception:
+                    pipe = DiffusionPipeline.from_pretrained(
+                        model_name,
+                        torch_dtype=torch.bfloat16,
+                        **({"token": hf_token} if hf_token else {}),
+                    )
+            else:
+                pipe = StableDiffusionPipeline.from_pretrained(
                     model_name,
-                    torch_dtype=torch.bfloat16,
+                    torch_dtype=torch.float16,
+                    safety_checker=None,
+                    requires_safety_checker=False,
                     **({"token": hf_token} if hf_token else {}),
                 )
-            except Exception:
-                pipe = DiffusionPipeline.from_pretrained(
-                    model_name,
-                    torch_dtype=torch.bfloat16,
-                    **({"token": hf_token} if hf_token else {}),
-                )
-        else:
-            pipe = StableDiffusionPipeline.from_pretrained(
-                model_name,
-                torch_dtype=torch.float16,
-                safety_checker=None,
-                requires_safety_checker=False,
-                **({"token": hf_token} if hf_token else {}),
-            )
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "forbidden" in err_msg or "401" in err_msg or "403" in err_msg or "authorization" in err_msg:
+                print(f"[MODAL-REMOTE] AUTH ERROR: {e}")
+                raise Exception(f"Hugging Face Authorization Error: Model '{model_name}' appears to be gated or private. Please ensure you have requested access at https://huggingface.co/{model_name} AND that your HF_TOKEN is correctly configured in Modal Secrets.")
+            print(f"[MODAL-REMOTE] LOAD ERROR: {e}")
+            raise Exception(f"Failed to load model '{model_name}': {str(e)}")
+
         pipe = pipe.to("cuda")
         _PIPELINE_CACHE[model_name] = pipe
 

@@ -19,11 +19,7 @@ import time
 import asyncio
 import io
 import base64
-from gtx1070_optimizations import GTX1070Optimizer
-from advanced_models import AdvancedModelManager
-from image_gallery import ImageGallery
-from prompt_enhancer import PromptEnhancer
-from modern_generators import ModernGeneratorManager
+from local_model_manager import LocalModelManager
 from cuda_checker import CudaChecker
 import urllib.parse
 import urllib.request
@@ -90,7 +86,7 @@ class ImageGenerator:
             self.cuda_checker.install_gpu_pytorch()
             print("[CUDA] Please restart the application after GPU PyTorch installation")
         
-        self.model_manager = AdvancedModelManager()
+        self.model_manager = LocalModelManager()
         self.modern_manager = ModernGeneratorManager()
         self.gallery = ImageGallery()
         self.model_loaded = False
@@ -288,25 +284,19 @@ class ImageGenerator:
     
     def _generate_with_local(self, request: GenerationRequest, start_time: float) -> GenerationResponse:
         """Generate image using local model"""
-        # Load model if needed or switch model
-        if not self.model_loaded or self.model_manager.current_model != request.model:
-            if not self.load_model(request.model):
-                raise HTTPException(status_code=400, detail=f"Failed to load model: {request.model}")
-        
         try:
             # Generate image
-            image = self.model_manager.generate_image(
+            image = self.model_manager.generate(
                 request.prompt,
                 negative_prompt=request.negative_prompt,
                 num_inference_steps=request.num_inference_steps,
                 guidance_scale=request.guidance_scale,
                 width=request.width,
-                height=request.height,
-                seed=request.seed if request.seed != -1 else None
+                height=request.height
             )
             
             generation_time = time.time() - start_time
-            vram_used = self.get_vram_usage()
+            vram_used = 0.0 # Could calculate if needed
             
             # Convert to base64 first
             buffered = io.BytesIO()
@@ -317,16 +307,13 @@ class ImageGenerator:
             image_id = self.gallery.add_image(
                 image_data=img_str,
                 prompt=request.prompt,
-                model=self.model_manager.current_model,
+                model=self.current_model,
                 generation_time=generation_time,
                 vram_used=vram_used,
                 steps=request.num_inference_steps,
                 guidance=request.guidance_scale,
                 resolution=(request.width, request.height)
             )
-            
-            # Aggressive cleanup for GTX 1070
-            GTX1070Optimizer.cleanup_memory()
             
             return GenerationResponse(
                 image=img_str,
@@ -335,8 +322,7 @@ class ImageGenerator:
             )
             
         except Exception as e:
-            # Clean up on error
-            GTX1070Optimizer.cleanup_memory()
+            print(f"[ERROR] Local generation failed: {e}")
             raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 # Initialize FastAPI app
@@ -501,18 +487,14 @@ async def get_enhance_styles():
 @app.get("/models")
 async def get_available_models():
     """Get list of available models including modern generators"""
-    local_models = generator.model_manager.get_compatible_models()
+    local_models = generator.model_manager.get_downloaded_models()
     modern_models = generator.modern_manager.get_available_generators()
     
     return {
-        "local_models": local_models,
+        "local_models": {m["id"]: m for m in local_models},
         "modern_generators": modern_models,
         "current_model": generator.current_model,
-        "current_generator_type": generator.current_generator_type,
-        "recommendations": {
-            "local": generator.model_manager.get_model_recommendations(),
-            "modern": generator.modern_manager.get_generator_recommendations()
-        }
+        "current_generator_type": generator.current_generator_type
     }
 
 @app.post("/set-api-key")

@@ -28,11 +28,7 @@ import time
 import asyncio
 import io
 import base64
-from gtx1070_optimizations import GTX1070Optimizer
-from advanced_models import AdvancedModelManager
-from image_gallery import ImageGallery
-from prompt_enhancer import PromptEnhancer
-from modern_generators import ModernGeneratorManager
+from local_model_manager import LocalModelManager
 from cuda_checker import CudaChecker
 
 class GenerationRequest(BaseModel):
@@ -95,7 +91,7 @@ class ImageGenerator:
             self.cuda_checker.install_gpu_pytorch()
             print("[CUDA] Please restart the application after GPU PyTorch installation")
         
-        self.model_manager = AdvancedModelManager()
+        self.model_manager = LocalModelManager()
         self.modern_manager = ModernGeneratorManager()
         self.gallery = ImageGallery()
         self.model_loaded = False
@@ -118,25 +114,23 @@ class ImageGenerator:
     def load_model(self, model_key: str = "stable-diffusion-1.5"):
         """Load a specific model or modern generator"""
         print(f"[RELOAD] Loading model: {model_key}")
-        print(f"[SEARCH] Available modern generators: {list(self.modern_manager.available_generators.keys())}")
-        print(f"[SEARCH] Checking if '{model_key}' is in available generators...")
         
         # Check if this is a modern generator
         if model_key in self.modern_manager.available_generators:
-            print(f"[SEARCH] Found '{model_key}' in modern generators!")
             self.current_generator_type = "modern"
             self.current_model = model_key
             self.model_loaded = True
-            print(f"[OK] Modern generator selected: {self.modern_manager.available_generators[model_key]['name']}")
-            print(f"[SEARCH] Generator type set to: {self.current_generator_type}")
-            print(f"[SEARCH] Model key: {model_key}")
             return True
-        else:
-            print(f"[SEARCH] '{model_key}' NOT found in modern generators!")
-            print(f"[SEARCH] Available keys: {list(self.modern_manager.available_generators.keys())}")
-            # Don't try to load as local model if it's not a valid local model
-            print(f"[ERROR] Unknown model: {model_key}")
-            return False
+            
+        # Check if this is a local model
+        success = self.model_manager.load_model(model_key)
+        if success:
+            self.current_generator_type = "local"
+            self.current_model = model_key
+            self.model_loaded = True
+            return True
+            
+        return False
     
     def get_status(self):
         """Get current system status"""
@@ -234,85 +228,46 @@ class ImageGenerator:
                 request.prompt,
                 **kwargs
             )
-            
-            generation_time = time.time() - start_time
-            vram_used = 0.0  # API generators don't use local VRAM
-            
-            # Convert to base64 first
-            buffered = io.BytesIO()
-            image.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            print(f"[OK] Modern generation completed in {generation_time:.2f}s")
-            
-            # Save to gallery
-            image_id = self.gallery.add_image(
-                image_data=img_str,
-                prompt=request.prompt,
-                model=self.current_model,
-                generation_time=generation_time,
-                vram_used=vram_used,
-                steps=request.num_inference_steps,
-                guidance=request.guidance_scale,
-                resolution=(request.width, request.height)
-            )
-            
-            return GenerationResponse(
-                image=img_str,
-                generation_time=generation_time,
-                vram_used=vram_used
-            )
         else:
+            # Local generation
             print(f"[DEBUG] Using local generator: {self.current_model}")
-            # Use local model
-            if self.current_generator_type == "local":
-                # Set seed for reproducibility
-                if request.seed != -1:
-                    torch.manual_seed(request.seed)
-                    np.random.seed(request.seed)
-                
-                # Generate image
-                image = self.model_manager.generate_image(
-                    prompt=request.prompt,
-                    negative_prompt=request.negative_prompt,
-                    num_inference_steps=request.num_inference_steps,
-                    guidance_scale=request.guidance_scale,
-                    width=request.width,
-                    height=request.height
-                )
-                
-                generation_time = time.time() - start_time
-                
-                # Get VRAM usage
-                if torch.cuda.is_available():
-                    vram_used = torch.cuda.memory_allocated(0) / (1024**3)
-                else:
-                    vram_used = 0.0
-                
-                # Convert to base64
-                buffered = io.BytesIO()
-                image.save(buffered, format="PNG")
-                img_str = base64.b64encode(buffered.getvalue()).decode()
-                
-                # Save to gallery
-                image_id = self.gallery.add_image(
-                    image_data=img_str,
-                    prompt=request.prompt,
-                    model=self.current_model,
-                    generation_time=generation_time,
-                    vram_used=vram_used,
-                    steps=request.num_inference_steps,
-                    guidance=request.guidance_scale,
-                    resolution=(request.width, request.height)
-                )
-                
-                return GenerationResponse(
-                    image=img_str,
-                    generation_time=generation_time,
-                    vram_used=vram_used
-                )
-            else:
-                raise HTTPException(status_code=400, detail="No valid generator loaded")
+            
+            image = self.model_manager.generate(
+                prompt=request.prompt,
+                negative_prompt=request.negative_prompt,
+                num_inference_steps=request.num_inference_steps,
+                guidance_scale=request.guidance_scale,
+                width=request.width,
+                height=request.height
+            )
+            
+        generation_time = time.time() - start_time
+        vram_used = 0.0 # Could calculate if needed
+        
+        # Convert to base64
+        buffered = io.BytesIO()
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        
+        print(f"[OK] Generation completed in {generation_time:.2f}s")
+        
+        # Save to gallery
+        image_id = self.gallery.add_image(
+            image_data=img_str,
+            prompt=request.prompt,
+            model=self.current_model,
+            generation_time=generation_time,
+            vram_used=vram_used,
+            steps=request.num_inference_steps,
+            guidance=request.guidance_scale,
+            resolution=(request.width, request.height)
+        )
+        
+        return GenerationResponse(
+            image=img_str,
+            generation_time=generation_time,
+            vram_used=vram_used
+        )
 
 # Initialize FastAPI app
 app = FastAPI(title="VisionCraft Pro API", version="1.1.6")
@@ -349,12 +304,32 @@ async def get_status():
 @app.get("/models")
 async def get_models():
     """Get available models"""
-    local_models = generator.model_manager.get_available_models()
+    local_models = generator.model_manager.get_downloaded_models()
     modern_generators = generator.modern_manager.get_available_generators()
     return {
-        "local_models": local_models,
+        "local_models": {m["id"]: m for m in local_models},
         "modern_generators": modern_generators
     }
+
+@app.post("/local/download")
+async def download_local_model(request: dict):
+    """Download a model from Hugging Face for local use"""
+    repo_id = request.get("repo_id")
+    if not repo_id:
+        raise HTTPException(status_code=400, detail="repo_id is required")
+    
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    return generator.model_manager.download_model(repo_id, token=hf_token)
+
+@app.get("/local/status/{model_id:path}")
+async def get_local_model_status(model_id: str):
+    """Get download status of a local model"""
+    return {"status": generator.model_manager.get_status(model_id)}
+
+@app.get("/local/models")
+async def list_local_models():
+    """List all downloaded local models"""
+    return {"models": generator.model_manager.get_downloaded_models()}
 
 @app.post("/generate")
 async def generate_image(request: GenerationRequest):
