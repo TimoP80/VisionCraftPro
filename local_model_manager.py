@@ -18,6 +18,7 @@ from huggingface_hub import snapshot_download, model_info
 from PIL import Image
 from typing import Dict, Any, Optional, List
 import threading
+import queue
 
 class LocalModelManager:
     """Manages local AI models with on-demand downloading and CPU/GPU support"""
@@ -28,6 +29,8 @@ class LocalModelManager:
         self.current_model_id = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.download_status = {} # model_id -> status string
+        self.download_progress = {} # model_id -> progress info
+        self.progress_queue = queue.Queue()
         
         # Ensure models directory exists
         if not os.path.exists(self.models_dir):
@@ -62,30 +65,90 @@ class LocalModelManager:
         return downloaded
 
     def download_model(self, repo_id: str, token: Optional[str] = None):
-        """Download a model from Hugging Face in a background thread"""
+        """Download a model from Hugging Face in a background thread with progress tracking"""
         if repo_id in self.download_status and self.download_status[repo_id] == "downloading":
             return {"status": "already downloading", "repo_id": repo_id}
+
+        def _progress_callback(repo_id: str, progress: Dict[str, Any]):
+            """Progress callback for download"""
+            self.download_progress[repo_id] = progress
+            # Put progress update in queue for UI polling
+            self.progress_queue.put({
+                "type": "progress",
+                "repo_id": repo_id,
+                "progress": progress
+            })
 
         def _download_task():
             try:
                 self.download_status[repo_id] = "downloading"
+                self.download_progress[repo_id] = {"percentage": 0, "speed": 0, "downloaded": 0, "total": 0}
                 print(f"[LOCAL-MANAGER] Starting download of {repo_id}...")
                 
                 # snapshot_download handles the local directory structure automatically
                 # but we'll put it under our models_dir
                 local_path = os.path.join(self.models_dir, repo_id.replace("/", os.sep))
                 
+                # Create a custom progress callback
+                def progress_hook(current: int, total: int):
+                    percentage = (current / total) * 100 if total > 0 else 0
+                    # Simple speed calculation (this is approximate)
+                    elapsed = time.time() - getattr(progress_hook, 'start_time', time.time())
+                    speed = current / elapsed if elapsed > 0 else 0
+                    
+                    progress_data = {
+                        "percentage": round(percentage, 2),
+                        "downloaded": current,
+                        "total": total,
+                        "speed": round(speed / (1024*1024), 2) if speed > 0 else 0,  # MB/s
+                        "status": "downloading"
+                    }
+                    _progress_callback(repo_id, progress_data)
+                
+                progress_hook.start_time = time.time()
+                
                 snapshot_download(
                     repo_id=repo_id,
                     local_dir=local_path,
                     token=token,
-                    ignore_patterns=["*.msgpack", "*.ckpt", "*.h5"] # Save space
+                    ignore_patterns=["*.msgpack", "*.ckpt", "*.h5"], # Save space
+                    resume_download=True
                 )
                 
+                # Mark as completed
                 self.download_status[repo_id] = "completed"
+                self.download_progress[repo_id] = {
+                    "percentage": 100,
+                    "speed": 0,
+                    "downloaded": self.download_progress[repo_id].get("total", 0),
+                    "total": self.download_progress[repo_id].get("total", 0),
+                    "status": "completed"
+                }
+                
+                # Notify completion
+                self.progress_queue.put({
+                    "type": "completed",
+                    "repo_id": repo_id
+                })
+                
                 print(f"[LOCAL-MANAGER] Successfully downloaded {repo_id}")
             except Exception as e:
                 self.download_status[repo_id] = f"failed: {str(e)}"
+                self.download_progress[repo_id] = {
+                    "percentage": 0,
+                    "speed": 0,
+                    "downloaded": 0,
+                    "total": 0,
+                    "status": f"failed: {str(e)}"
+                }
+                
+                # Notify failure
+                self.progress_queue.put({
+                    "type": "failed",
+                    "repo_id": repo_id,
+                    "error": str(e)
+                })
+                
                 print(f"[LOCAL-MANAGER] Failed to download {repo_id}: {e}")
 
         thread = threading.Thread(target=_download_task)
@@ -97,6 +160,27 @@ class LocalModelManager:
     def get_status(self, repo_id: str) -> str:
         """Get the download status of a model"""
         return self.download_status.get(repo_id, "unknown")
+
+    def get_progress(self, repo_id: str) -> Dict[str, Any]:
+        """Get download progress information for a model"""
+        return self.download_progress.get(repo_id, {
+            "percentage": 0,
+            "speed": 0,
+            "downloaded": 0,
+            "total": 0,
+            "status": "unknown"
+        })
+
+    def get_progress_updates(self) -> List[Dict[str, Any]]:
+        """Get all pending progress updates from the queue"""
+        updates = []
+        try:
+            while True:
+                update = self.progress_queue.get_nowait()
+                updates.append(update)
+        except queue.Empty:
+            pass
+        return updates
 
     def load_model(self, model_id: str) -> bool:
         """Load a locally available model"""

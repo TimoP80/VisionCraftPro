@@ -402,6 +402,28 @@ async def clear_gallery():
     generator.gallery.clear_gallery()
     return {"message": "cleared"}
 
+@app.post("/local/download/{repo_id}")
+async def download_local_model(repo_id: str):
+    """Download a model locally"""
+    try:
+        result = generator.model_manager.download_model(repo_id)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/local/status/{repo_id}")
+async def get_local_model_status(repo_id: str):
+    """Get download status of a local model"""
+    status = generator.model_manager.get_status(repo_id)
+    progress = generator.model_manager.get_progress(repo_id)
+    return {"status": status, "progress": progress}
+
+@app.get("/local/progress-updates")
+async def get_progress_updates():
+    """Get all pending progress updates"""
+    updates = generator.model_manager.get_progress_updates()
+    return {"updates": updates}
+
 @app.get("/hf/models")
 async def hf_search_models(q: str = "", limit: int = 20):
     """Search Hugging Face for Stable Diffusion / diffusers-compatible text-to-image models"""

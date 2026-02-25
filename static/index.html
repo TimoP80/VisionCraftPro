@@ -908,7 +908,19 @@
                     link.className = 'text-[10px] text-blue-400 hover:text-blue-300 underline mb-3 px-3 flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity';
                     link.innerHTML = '<span>View on Hugging Face</span> <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>';
 
+                    // Add Download Button for Local Use
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.type = 'button';
+                    downloadBtn.className = 'w-full text-center px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 transition-colors mb-4 text-[10px] font-medium text-blue-100 flex items-center justify-center gap-2';
+                    downloadBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download for Local Use';
+
+                    downloadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        downloadLocalModel(m.id);
+                    });
+
                     container.appendChild(row);
+                    container.appendChild(downloadBtn);
                     container.appendChild(link);
 
                     row.addEventListener('click', () => {
@@ -928,33 +940,19 @@
                         // Show specific message for gated models
                         if (m.gated) {
                             statusEl.innerHTML = `<span class="text-yellow-400 font-medium">⚠️ Gated Model Selected:</span> You must manually request access at <a href="https://huggingface.co/${m.id}" target="_blank" class="text-blue-400 underline font-medium">${m.id}</a> and ensure your <b>HF_TOKEN</b> is configured.`;
+                        } else if (m.private) {
+                            statusEl.innerHTML = `<span class="text-yellow-400 font-medium">🔒 Private Model Selected:</span> You must manually request access at <a href="https://huggingface.co/${m.id}" target="_blank" class="text-blue-400 underline font-medium">${m.id}</a> and ensure your <b>HF_TOKEN</b> is configured.`;
                         } else {
                             statusEl.textContent = `Selected: ${m.id}`;
                         }
                     });
 
-                    // Add Download Button for Local Use
-                    const downloadBtn = document.createElement('button');
-                    downloadBtn.type = 'button';
-                    downloadBtn.className = 'w-full text-center px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 transition-colors mb-4 text-[10px] font-medium text-blue-100 flex items-center justify-center gap-2';
-                    downloadBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download for Local Use';
-
-                    downloadBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        downloadLocalModel(m.id);
-                    });
-
-                    container.appendChild(row);
-                    container.appendChild(downloadBtn);
-                    container.appendChild(link);
-
                     resultsEl.appendChild(container);
                 });
             } catch (error) {
-                console.error('HF model search failed:', error);
-                statusEl.textContent = 'Search failed. Check server logs and connection.';
+                console.error('Failed to search Hugging Face models:', error);
+                statusEl.textContent = 'Failed to search models.';
             }
-        }
 
         document.getElementById('hf-model-search-btn')?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -973,19 +971,9 @@
             statusEl.textContent = `Starting download of ${repoId}...`;
 
             try {
-                const response = await fetch('/local/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ repo_id: repoId })
-                });
-
-                const data = await response.json();
-                if (data.status === 'started' || data.status === 'already downloading') {
-                    statusEl.innerHTML = `<span class="text-blue-400">⬇️ Download started:</span> ${repoId}. Check generator list in a few minutes.`;
-                    pollDownloadStatus(repoId);
-                } else {
-                    statusEl.textContent = `Status: ${data.status}`;
-                }
+                // Use the new download system with progress tracking
+                await downloadModel(repoId);
+                statusEl.innerHTML = `<span class="text-blue-400">⬇️ Download started:</span> ${repoId}. Progress will be shown in the model info section.`;
             } catch (error) {
                 console.error('Download failed:', error);
                 statusEl.textContent = 'Failed to start download.';
@@ -1215,9 +1203,6 @@
                 availableModels = {
                     'stable-diffusion-1.5': {
                         name: 'Stable Diffusion 1.5',
-                        quality: 'Good',
-                        vram_required: '4GB',
-                        speed: 'Medium',
                         resolution: '512x512',
                         description: 'Standard Stable Diffusion model',
                         experimental: false
@@ -1404,7 +1389,7 @@
                         <p>🏠 Type: Local model</p>
                         <p>📍 Path: ${model.path || 'Local storage'}</p>
                         <p>⚡ Status: Ready for generation</p>
-                        <p class="text-blue-400">ℹ️ Hardware: Runs on ${deviceInfo?.gpu_available ? 'GPU' : 'CPU (Slow)'}</p>
+                        <p class="text-blue-400">ℹ️ Hardware: Runs on ${navigator.hardwareConcurrency ? 'GPU' : 'CPU (Slow)'}</p>
                     </div>
                 `;
                 leonardoControls.classList.add('hidden');
@@ -1937,6 +1922,116 @@
             link.href = img.src;
             link.click();
         });
+
+        // Download progress tracking
+        let downloadProgress = {};
+        let progressUpdateInterval = null;
+
+        function startProgressTracking() {
+            if (progressUpdateInterval) return;
+            
+            progressUpdateInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/local/progress-updates`);
+                    const data = await response.json();
+                    
+                    for (const update of data.updates) {
+                        handleProgressUpdate(update);
+                    }
+                } catch (error) {
+                    console.error('Failed to get progress updates:', error);
+                }
+            }, 1000);
+        }
+
+        function stopProgressTracking() {
+            if (progressUpdateInterval) {
+                clearInterval(progressUpdateInterval);
+                progressUpdateInterval = null;
+            }
+        }
+
+        function handleProgressUpdate(update) {
+            const { type, repo_id, progress, error } = update;
+            
+            if (type === 'progress') {
+                downloadProgress[repo_id] = progress;
+                updateDownloadUI(repo_id);
+            } else if (type === 'completed') {
+                downloadProgress[repo_id] = { ...downloadProgress[repo_id], status: 'completed', percentage: 100 };
+                updateDownloadUI(repo_id);
+                setTimeout(() => { loadModels(); }, 1000);
+            } else if (type === 'failed') {
+                downloadProgress[repo_id] = { status: 'failed', error };
+                updateDownloadUI(repo_id);
+            }
+        }
+
+        function updateDownloadUI(repoId) {
+            const progress = downloadProgress[repoId];
+            if (!progress) return;
+
+            const progressBar = document.getElementById(`progress-${repoId.replace(/[^a-zA-Z0-9]/g, '-')}`);
+            const statusText = document.getElementById(`status-${repoId.replace(/[^a-zA-Z0-9]/g, '-')}`);
+            
+            if (progressBar) {
+                progressBar.style.width = `${progress.percentage || 0}%`;
+            }
+            
+            if (statusText) {
+                if (progress.status === 'downloading') {
+                    statusText.textContent = `Downloading... ${progress.percentage || 0}% (${progress.speed || 0} MB/s)`;
+                } else if (progress.status === 'completed') {
+                    statusText.textContent = 'Download completed! Refreshing model list...';
+                } else if (progress.status === 'failed') {
+                    statusText.textContent = `Download failed: ${progress.error || 'Unknown error'}`;
+                }
+            }
+        }
+
+        async function downloadModel(repoId) {
+            try {
+                const response = await fetch(`${API_BASE}/local/download/${encodeURIComponent(repoId)}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.status === 'started') {
+                    startProgressTracking();
+                    showDownloadProgress(repoId);
+                } else {
+                    alert(result.message || 'Failed to start download');
+                }
+            } catch (error) {
+                console.error('Download failed:', error);
+                alert('Download failed: ' + error.message);
+            }
+        }
+
+        function showDownloadProgress(repoId) {
+            const repoIdClean = repoId.replace(/[^a-zA-Z0-9]/g, '-');
+            
+            let progressContainer = document.getElementById(`download-progress-${repoIdClean}`);
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.id = `download-progress-${repoIdClean}`;
+                progressContainer.className = 'mt-2 p-2 bg-gray-800 rounded';
+                progressContainer.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-white">Downloading ${repoId}</span>
+                        <span id="status-${repoIdClean}" class="text-xs text-blue-400">Starting...</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div id="progress-${repoIdClean}" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                `;
+                
+                const modelInfo = document.getElementById('model-info');
+                if (modelInfo) {
+                    modelInfo.appendChild(progressContainer);
+                }
+            }
+        }
 
         // Initialize
         updateStatus();
