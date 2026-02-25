@@ -143,6 +143,49 @@ class ImageGenerator:
             return reserved
         return 0.0
     
+    def get_status(self):
+        """Get current system status"""
+        if torch.cuda.is_available():
+            vram_total = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+            vram_reserved = torch.cuda.memory_reserved(0) / (1024**3)
+            vram_used = torch.cuda.memory_allocated(0) / (1024**3)
+            vram_free = vram_total - vram_reserved
+            vram_used_percent = (vram_used / vram_total) * 100
+            
+            return {
+                "device": f"{torch.cuda.get_device_name(0)} (CUDA)",
+                "vram_total": vram_total,
+                "vram_free": vram_free,
+                "vram_used": vram_used,
+                "vram_reserved": vram_reserved,
+                "vram_used_percent": vram_used_percent,
+                "model_loaded": self.model_loaded,
+                "current_model": self.current_model,
+                "current_generator_type": self.current_generator_type,
+                "gpu_name": torch.cuda.get_device_name(0),
+                "cuda_version": torch.version.cuda,
+                "torch_version": torch.__version__,
+                "public_ip": get_public_ip(),
+                "optimal_settings": self.model_manager.get_optimal_settings() if self.current_generator_type == "local" else None
+            }
+        else:
+            return {
+                "device": "CPU",
+                "vram_total": 0,
+                "vram_free": 0,
+                "vram_used": 0,
+                "vram_reserved": 0,
+                "vram_used_percent": 0,
+                "model_loaded": self.model_loaded,
+                "current_model": self.current_model,
+                "current_generator_type": self.current_generator_type,
+                "gpu_name": "CPU",
+                "cuda_version": "N/A",
+                "torch_version": torch.__version__,
+                "public_ip": get_public_ip(),
+                "optimal_settings": None
+            }
+    
     def generate_image(self, request: GenerationRequest) -> GenerationResponse:
         """Generate image using local or modern generator"""
         start_time = time.time()
@@ -385,29 +428,27 @@ generator = ImageGenerator()
 @app.get("/status")
 async def get_status():
     """Get system status including VRAM usage"""
-    if generator is None:
-        return {"error": "Generator not initialized"}
+    return generator.get_status()
+
+@app.get("/local/models")
+async def list_local_models():
+    """List all downloaded local models"""
+    return {"models": generator.model_manager.get_downloaded_models()}
+
+@app.get("/local/status/{model_id:path}")
+async def get_local_model_status(model_id: str):
+    """Get download status of a local model"""
+    return {"status": generator.model_manager.get_status(model_id)}
+
+@app.post("/local/download")
+async def download_local_model(request: dict):
+    """Download a model from Hugging Face for local use"""
+    repo_id = request.get("repo_id")
+    if not repo_id:
+        raise HTTPException(status_code=400, detail="repo_id is required")
     
-    if torch.cuda.is_available():
-        allocated = torch.cuda.memory_allocated() / 1024**3
-        reserved = torch.cuda.memory_reserved() / 1024**3
-        total = torch.cuda.get_device_properties(0).total_memory / 1024**3
-    else:
-        allocated = reserved = total = 0
-    
-    status = {
-        "device": generator.device,
-        "model_loaded": generator.model_loaded,
-        "vram_allocated": allocated,  # Memory actually used by tensors
-        "vram_reserved": reserved,    # Memory reserved by PyTorch (closer to Task Manager)
-        "vram_total": total,
-        "vram_used_percent": (reserved / total * 100) if total > 0 else 0,
-        "cpu_percent": psutil.cpu_percent(),
-        "memory_percent": psutil.virtual_memory().percent,
-        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A",
-        "public_ip": get_public_ip()
-    }
-    return status
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    return generator.model_manager.download_model(repo_id, token=hf_token)
 
 @app.post("/generate")
 async def generate_image(request: GenerationRequest):
@@ -520,12 +561,27 @@ async def set_api_key(request: dict):
 async def get_modern_generators():
     """Get information about available modern generators"""
     return {
-        "generators": generator.modern_manager.get_available_generators(),
-        "api_keys_set": list(generator.modern_manager.api_keys.keys()),
-        "recommendations": generator.modern_manager.get_generator_recommendations(),
-        "webhook_endpoints": generator.modern_manager.get_webhook_endpoints(),
-        "leonardo_options": generator.modern_manager.get_leonardo_options()
+        "available_generators": generator.modern_manager.available_generators,
+        "api_keys_set": list(generator.modern_manager.api_keys.keys())
     }
+
+class LoadModelRequest(BaseModel):
+    model_name: str
+
+@app.post("/load-model")
+async def load_model(request: LoadModelRequest):
+    """Load a specific model"""
+    print(f"[API] /load-model called with model_name: {request.model_name}")
+    try:
+        success = generator.load_model(request.model_name)
+        print(f"[API] load_model result: {success}")
+        if success:
+            return {"message": f"Model {request.model_name} loaded successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=f"Failed to load model {request.model_name}")
+    except Exception as e:
+        print(f"[API] load_model error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/webhook/leonardo/{callback_id}")
 async def leonardo_webhook(callback_id: str, webhook_data: dict):
@@ -548,6 +604,17 @@ async def get_webhook_status():
         "pending_callbacks": pending_count,
         "webhook_url": "http://localhost:8000/webhook/leonardo/{callback_id}",
         "status": "active" if pending_count > 0 else "idle"
+    }
+
+@app.get("/debug-state")
+async def debug_state():
+    """Debug endpoint to check current server state"""
+    return {
+        "current_generator_type": generator.current_generator_type,
+        "current_model": generator.current_model,
+        "model_loaded": generator.model_loaded,
+        "available_modern_generators": list(generator.modern_manager.available_generators.keys()),
+        "available_local_models": list(generator.model_manager.get_available_models().keys())
     }
 
 @app.get("/gallery")
@@ -638,20 +705,11 @@ async def search_gallery(q: str = "", model: str = "", limit: int = 20):
         "images": generator.gallery.search_images(query=q, model=model, limit=limit)
     }
 
-@app.post("/load_model/{model_name}")
-async def load_model_endpoint(model_name: str):
-    """Load a specific model"""
-    success = generator.load_model(model_name)
-    if success:
-        return {"message": f"Model {model_name} loaded successfully", "current_model": generator.model_manager.current_model}
-    else:
-        raise HTTPException(status_code=400, detail=f"Failed to load model: {model_name}")
-
-@app.post("/load_model")
-async def load_model():
-    """Load the model (legacy endpoint)"""
-    generator.load_model()
-    return {"message": "Model loaded successfully"}
+@app.delete("/gallery")
+async def clear_gallery():
+    """Clear the entire gallery"""
+    generator.gallery.clear_gallery()
+    return {"message": "cleared"}
 
 if __name__ == "__main__":
     import logging
