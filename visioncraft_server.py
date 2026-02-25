@@ -53,6 +53,7 @@ class GenerationRequest(BaseModel):
     
     # Modal specific parameters
     modal_model: Optional[str] = None  # Modal model selection
+    modal_gpu: Optional[str] = None    # Modal GPU selection
 
 class GenerationResponse(BaseModel):
     image: str
@@ -222,6 +223,8 @@ class ImageGenerator:
             if self.current_model == 'modal':
                 if hasattr(request, 'modal_model') and request.modal_model:
                     kwargs['model'] = request.modal_model  # Pass specific Modal model
+                if hasattr(request, 'modal_gpu') and request.modal_gpu:
+                    kwargs['gpu'] = request.modal_gpu      # Pass specific Modal GPU
             
             print(f"[SEARCH] Modern generator kwargs: {kwargs}")
             

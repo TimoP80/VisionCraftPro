@@ -235,6 +235,33 @@ def generate_image_internal(
     print(f"[MODAL-REMOTE] Returning {len(img_bytes.getvalue())} bytes")
     return img_bytes.getvalue()
 
+# GPU Mapping for Modal
+def get_modal_gpu(gpu_name: str):
+    """Map GPU name to Modal GPU object"""
+    gpu_name = (gpu_name or "").lower().strip()
+    
+    if gpu_name == "t4":
+        return modal.gpu.T4()
+    elif gpu_name == "l4":
+        return modal.gpu.L4()
+    elif gpu_name == "a10":
+        return modal.gpu.A10G()
+    elif gpu_name == "l40s":
+        return modal.gpu.L40S()
+    elif "a100" in gpu_name:
+        if "80gb" in gpu_name:
+            return modal.gpu.A100(size="80GB")
+        return modal.gpu.A100(size="40GB")
+    elif gpu_name == "h100":
+        return modal.gpu.H100()
+    elif gpu_name == "h200":
+        return modal.gpu.H200()
+    elif gpu_name == "b200":
+        return modal.gpu.B200()
+    
+    # Default to A100-40GB if unknown
+    return modal.gpu.A100(size="40GB")
+
 # Web endpoint for image generation
 @web_app.post("/generate")
 async def generate_endpoint(
@@ -244,10 +271,15 @@ async def generate_endpoint(
     height: int = 512,
     num_inference_steps: int = 20,
     guidance_scale: float = 7.5,
+    gpu: str = "A100 40gb"
 ):
     """Web endpoint for image generation"""
     try:
-        image_bytes = await generate_image_internal.remote.aio(
+        # Use with_options to dynamically select the GPU at call time
+        gpu_config = get_modal_gpu(gpu)
+        print(f"[MODAL-WEB] Requesting GPU: {gpu} (Mapped to: {gpu_config})")
+        
+        image_bytes = await generate_image_internal.with_options(gpu=gpu_config).remote.aio(
             prompt,
             model_name,
             width,
@@ -257,6 +289,7 @@ async def generate_endpoint(
         )
         return Response(content=image_bytes, media_type="image/png")
     except Exception as e:
+        print(f"[MODAL-WEB] Generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Health check endpoint

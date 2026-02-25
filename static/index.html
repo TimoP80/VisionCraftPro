@@ -357,11 +357,29 @@
                         </div>
 
                         <!-- Aspect Ratio -->
-                        <div>
+                        <div class="mb-4">
                             <label for="modal-aspect" class="block text-sm font-medium mb-2 text-purple-300">📐 Aspect
                                 Ratio</label>
                             <select id="modal-aspect"
                                 class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none"></select>
+                        </div>
+
+                        <!-- GPU Selection -->
+                        <div>
+                            <label for="modal-gpu" class="block text-sm font-medium mb-2 text-purple-300">⚡
+                                GPU Model</label>
+                            <select id="modal-gpu"
+                                class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                                <option value="T4">NVIDIA T4 (Entry level)</option>
+                                <option value="L4" selected>NVIDIA L4 (Balanced)</option>
+                                <option value="A10">NVIDIA A10 (High performance)</option>
+                                <option value="L40S">NVIDIA L40S (Multi-purpose)</option>
+                                <option value="A100 40gb">NVIDIA A100 40GB (Professional)</option>
+                                <option value="A100 80gb">NVIDIA A100 80GB (Professional High VRAM)</option>
+                                <option value="H100">NVIDIA H100 (State-of-the-art)</option>
+                                <option value="H200">NVIDIA H200 (Next-gen)</option>
+                                <option value="B200">NVIDIA B200 (Future-ready)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -1641,8 +1659,10 @@
             if (selectedModel === 'modal') {
                 const modalModel = document.getElementById('modal-model')?.value || 'runwayml/stable-diffusion-v1-5';
                 const modalAspect = document.getElementById('modal-aspect')?.value || '1:1';
+                const modalGpu = document.getElementById('modal-gpu')?.value || 'L4';
                 Object.assign(data, {
-                    modal_model: modalModel
+                    modal_model: modalModel,
+                    modal_gpu: modalGpu
                 });
                 data.model = selectedModel; // Keep 'modal' as the generator
                 data.modal_model = modalModel; // Pass specific Modal model

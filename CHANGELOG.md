@@ -7,6 +7,13 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-02-25
+
+### ✨ Added
+- **Dynamic Modal GPU Selection** - Users can now select from a wide range of NVIDIA GPUs for remote generation: T4, L4, A10, L40S, A100 (40GB/80GB), H100, H200, and B200. This is implemented via Modal's `with_options` capability, allowing per-request hardware selection.
+
+---
+
 ## [1.1.4] - 2026-02-25
 
 ### ✨ Added

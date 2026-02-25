@@ -854,6 +854,17 @@ class ModernGeneratorManager:
                 {"id": "standard", "name": "Standard", "description": "20 steps, good quality"},
                 {"id": "high", "name": "High", "description": "30 steps, better quality"},
                 {"id": "ultra", "name": "Ultra", "description": "50 steps, best quality"}
+            ],
+            "gpus": [
+                {"id": "T4", "name": "NVIDIA T4 (Entry level)"},
+                {"id": "L4", "name": "NVIDIA L4 (Balanced)"},
+                {"id": "A10", "name": "NVIDIA A10 (High performance)"},
+                {"id": "L40S", "name": "NVIDIA L40S (Multi-purpose)"},
+                {"id": "A100 40gb", "name": "NVIDIA A100 40GB (Professional)"},
+                {"id": "A100 80gb", "name": "NVIDIA A100 80GB (Professional High VRAM)"},
+                {"id": "H100", "name": "NVIDIA H100 (State-of-the-art)"},
+                {"id": "H200", "name": "NVIDIA H200 (Next-gen)"},
+                {"id": "B200", "name": "NVIDIA B200 (Future-ready)"}
             ]
         }
 
@@ -1038,6 +1049,7 @@ class ModernGeneratorManager:
         height = int(kwargs.get("height", 512) or 512)
         num_inference_steps = int(kwargs.get("num_inference_steps", 20) or 20)
         guidance_scale = float(kwargs.get("guidance_scale", 7.5) or 7.5)
+        gpu = kwargs.get("gpu", "A100 40gb")
 
         # Prefer env var so you can paste the URL that `modal serve modal_web.py` prints.
         # Example: https://timop80--visioncraft-modal-fastapi-app-dev.modal.run
@@ -1064,6 +1076,7 @@ class ModernGeneratorManager:
                 "height": height,
                 "num_inference_steps": num_inference_steps,
                 "guidance_scale": guidance_scale,
+                "gpu": gpu,
             }
 
             async with httpx.AsyncClient(timeout=300.0, follow_redirects=True) as client:

@@ -48,6 +48,7 @@ class GenerationRequest(BaseModel):
     
     # Modal specific parameters
     modal_model: Optional[str] = "runwayml/stable-diffusion-v1-5"  # Modal model selection
+    modal_gpu: Optional[str] = None                                # Modal GPU selection
 
 class GenerationResponse(BaseModel):
     image: str
@@ -190,6 +191,8 @@ class ImageGenerator:
             # Add Modal specific parameters if available
             if hasattr(request, 'modal_model') and request.modal_model:
                 kwargs['model'] = request.modal_model  # Pass specific Modal model
+            if hasattr(request, 'modal_gpu') and request.modal_gpu:
+                kwargs['gpu'] = request.modal_gpu      # Pass specific Modal GPU
             
             print(f"[SEARCH] Modern generator kwargs: {kwargs}")
             
@@ -246,7 +249,9 @@ class ImageGenerator:
                 width=request.width,
                 height=request.height,
                 num_inference_steps=request.num_inference_steps,
-                guidance_scale=request.guidance_scale
+                guidance_scale=request.guidance_scale,
+                gpu=getattr(request, 'modal_gpu', None),
+                model=getattr(request, 'modal_model', None)
             ))
             
             generation_time = time.time() - start_time

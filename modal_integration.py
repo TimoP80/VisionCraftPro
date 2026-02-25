@@ -16,6 +16,33 @@ import os
 # Modal app configuration
 app = modal.App("visioncraft-modal")
 
+# GPU Mapping helper
+def get_modal_gpu(gpu_name: str):
+    """Map GPU name to Modal GPU object"""
+    gpu_name = (gpu_name or "").lower().strip()
+    
+    if gpu_name == "t4":
+        return modal.gpu.T4()
+    elif gpu_name == "l4":
+        return modal.gpu.L4()
+    elif gpu_name == "a10":
+        return modal.gpu.A10G()
+    elif gpu_name == "l40s":
+        return modal.gpu.L40S()
+    elif "a100" in gpu_name:
+        if "80gb" in gpu_name:
+            return modal.gpu.A100(size="80GB")
+        return modal.gpu.A100(size="40GB")
+    elif gpu_name == "h100":
+        return modal.gpu.H100()
+    elif gpu_name == "h200":
+        return modal.gpu.H200()
+    elif gpu_name == "b200":
+        return modal.gpu.B200()
+    
+    # Default to A100-40GB if unknown
+    return modal.gpu.A100(size="40GB")
+
 # Persistent volume for model caching
 volume = modal.Volume.from_name("visioncraft-model-cache", create_if_missing=True)
 
@@ -44,7 +71,7 @@ _PIPELINE_CACHE = {}
         modal.Secret.from_name("huggingface-token"),
     ]
 )
-def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
+def generate_image_internal(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-5") -> bytes:
     """
     Generate image using Modal H100 GPU (REMOTE EXECUTION)
     
@@ -127,6 +154,31 @@ def generate_image(prompt: str, model_name: str = "runwayml/stable-diffusion-v1-
     
     print(f"[MODAL-REMOTE] Returning {len(img_bytes.getvalue())} bytes")
     return img_bytes.getvalue()
+
+async def generate_image(
+    prompt: str,
+    model_name: str = "runwayml/stable-diffusion-v1-5",
+    width: int = 512,
+    height: int = 512,
+    num_inference_steps: int = 20,
+    guidance_scale: float = 7.5,
+    gpu: str = "A100 40gb"
+) -> bytes:
+    """
+    Generate image using Modal GPU
+    """
+    try:
+        # Use with_options to dynamically select the GPU at call time
+        gpu_config = get_modal_gpu(gpu)
+        print(f"[MODAL] Requesting GPU: {gpu} (Mapped to: {gpu_config})")
+        
+        return await generate_image_internal.with_options(gpu=gpu_config).remote.aio(
+            prompt,
+            model_name,
+        )
+    except Exception as e:
+        print(f"[MODAL] Error during generation: {e}")
+        raise
 
 if __name__ == "__main__":
     import sys
