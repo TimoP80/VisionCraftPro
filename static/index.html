@@ -1181,6 +1181,8 @@
                 const data = await response.json();
 
                 console.log('🔍 Models response:', data);
+                console.log('🔍 Local models in response:', data.local_models);
+                console.log('🔍 Local model keys:', Object.keys(data.local_models || {}));
 
                 // Store both local and modern models
                 availableModels = data.local_models || {};
@@ -1430,6 +1432,12 @@
             // Load the selected model on the server (only for local models)
             if (selectedModel && availableModels[selectedModel]) {
                 console.log(`🔄 Loading local model: ${selectedModel}`);
+                console.log('🔍 Available models check:', {
+                    selectedModel,
+                    availableModelsKeys: Object.keys(availableModels),
+                    modelExists: !!availableModels[selectedModel],
+                    modelDetails: availableModels[selectedModel]
+                });
                 fetch('/load-model', {
                     method: 'POST',
                     headers: {
@@ -1450,6 +1458,12 @@
                         console.error('❌ Failed to load model:', error);
                         alert('Failed to load model');
                     });
+            } else {
+                console.log('🔍 Skipping model load - not a local model or not available:', {
+                    selectedModel,
+                    availableModelsKeys: Object.keys(availableModels),
+                    isLocalModel: !!availableModels[selectedModel]
+                });
             }
         }
 
