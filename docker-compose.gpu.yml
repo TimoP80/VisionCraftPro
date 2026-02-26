@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  visioncraft:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    container_name: visioncraft-pro-gpu
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount models directory for persistence
+      - ./models:/app/models
+      # Mount uploads directory for persistence
+      - ./static/uploads:/app/static/uploads
+      # Mount keys.txt for environment variables
+      - ./keys.txt:/app/keys.txt
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - visioncraft-network
+
+  # Optional: Add Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: visioncraft-nginx-gpu
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - visioncraft
+    restart: unless-stopped
+    networks:
+      - visioncraft-network
+
+networks:
+  visioncraft-network:
+    driver: bridge
