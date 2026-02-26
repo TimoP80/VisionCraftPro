@@ -1186,33 +1186,41 @@
 
                 // Store both local and modern models
                 availableModels = data.local_models || {};
+                modernGenerators = data.modern_generators || {};
 
-    } catch (error) {
-        console.error('Failed to load models:', error);
-        // Clear models on error - user needs to download models or use API generators
-        availableModels = {};
-        modernGenerators = {
-            'leonardo-api': {
-                name: 'Leonardo.ai API',
-                cost: 'Paid',
-                speed: 'Fast',
-                quality: 'Professional',
-                description: 'Professional game asset generator with model selection',
-                features: ['text-to-image', 'fine-tuned-models', 'texture-generation']
-            },
-            'modal': {
-                name: 'Modal Cloud GPU',
-                cost: 'Pay-per-use (Modal Credit)',
-                speed: 'Configurable (Fast to Ultra)',
-                quality: 'Professional',
-                description: 'Infinite scalability with selectable NVIDIA GPUs (T4 to H200/B200).',
-                features: ['text-to-image', 'cloud-rendering', 'multi-gpu-support', 'fast-generation']
+            } catch (error) {
+                console.error('Failed to load models:', error);
+                // Clear models on error - user needs to download models or use API generators
+                availableModels = {};
+                modernGenerators = {
+                    'leonardo-api': {
+                        name: 'Leonardo.ai API',
+                        cost: 'Paid',
+                        speed: 'Fast',
+                        quality: 'Professional',
+                        description: 'Professional game asset generator with model selection',
+                        features: ['text-to-image', 'fine-tuned-models', 'texture-generation']
+                    },
+                    'modal': {
+                        name: 'Modal Cloud GPU',
+                        cost: 'Pay-per-use (Modal Credit)',
+                        speed: 'Configurable (Fast to Ultra)',
+                        quality: 'Professional',
+                        description: 'Infinite scalability with selectable NVIDIA GPUs (T4 to H200/B200).',
+                        features: ['text-to-image', 'cloud-rendering', 'multi-gpu-support', 'fast-generation']
+                    }
+                };
             }
-        };
-        updateModelDropdown();
-        updateModelInfo();
-    }
-}
+
+            // Update model dropdown with both types
+            updateModelDropdown();
+
+            // Update model info when selection changes
+            const modelSelect = document.getElementById('model');
+            modelSelect.removeEventListener('change', updateModelInfo);
+            modelSelect.addEventListener('change', updateModelInfo);
+            updateModelInfo();
+        }
 
 // Update model dropdown with both local and modern generators
 function updateModelDropdown() {
