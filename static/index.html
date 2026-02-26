@@ -1458,6 +1458,68 @@ function updateModelDropdown() {
             }
         }
 
+        // Populate Leonardo controls with available models
+        function populateLeonardoControls(generator) {
+            const modelSelectEl = document.getElementById('leonardo-model');
+            const aspectSelectEl = document.getElementById('leonardo-aspect');
+            const styleSelectEl = document.getElementById('leonardo-style');
+            const qualitySelectEl = document.getElementById('leonardo-quality');
+
+            if (!modelSelectEl || !aspectSelectEl || !styleSelectEl || !qualitySelectEl) {
+                console.error('Leonardo controls elements not found');
+                return;
+            }
+
+            // Clear existing options
+            modelSelectEl.innerHTML = '';
+            aspectSelectEl.innerHTML = '';
+            styleSelectEl.innerHTML = '';
+            qualitySelectEl.innerHTML = '';
+
+            // Populate models
+            const models = generator.models || {};
+            for (const [key, info] of Object.entries(models)) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = info.name || key;
+                modelSelectEl.appendChild(option);
+            }
+
+            // Populate aspect ratios
+            const aspectRatios = generator.aspect_ratios || [];
+            for (const ar of aspectRatios) {
+                const option = document.createElement('option');
+                option.value = ar.id;
+                option.textContent = `${ar.name} (${ar.resolution[0]}x${ar.resolution[1]})`;
+                aspectSelectEl.appendChild(option);
+            }
+
+            // Populate styles
+            const styles = generator.styles || [];
+            for (const style of styles) {
+                const option = document.createElement('option');
+                option.value = style.id;
+                option.textContent = style.name || style.id;
+                styleSelectEl.appendChild(option);
+            }
+
+            // Populate quality options
+            const qualities = generator.qualities || [];
+            for (const quality of qualities) {
+                const option = document.createElement('option');
+                option.value = quality.id;
+                option.textContent = quality.name || quality.id;
+                qualitySelectEl.appendChild(option);
+            }
+
+            console.log('🔍 Leonardo controls populated:', {
+                models: Object.keys(models).length,
+                aspects: aspectRatios.length,
+                styles: styles.length,
+                qualities: qualities.length
+            });
+        }
+
         // Show API key dialog
         function showApiKeyDialog(generatorName) {
             const generator = modernGenerators[generatorName];
