@@ -36,8 +36,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p models/local models/cache static/uploads
+# Create necessary directories with proper permissions
+RUN mkdir -p models/local models/cache static/uploads && \
+    chmod 755 models/local models/cache static/uploads && \
+    chown -R 1000:1000 models static
+
+# Create non-root user for security
+RUN useradd -m -u 1000 visioncraft && \
+    chown -R visioncraft:visioncraft /app
+USER visioncraft
 
 # Expose port
 EXPOSE 8000

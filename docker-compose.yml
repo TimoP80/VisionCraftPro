@@ -7,12 +7,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Mount models directory for persistence
-      - ./models:/app/models
-      # Mount uploads directory for persistence
-      - ./static/uploads:/app/static/uploads
-      # Mount keys.txt for environment variables
-      - ./keys.txt:/app/keys.txt
+      # Mount models directory for persistence with proper permissions
+      - ./models:/app/models:rw
+      # Mount uploads directory for persistence with proper permissions
+      - ./static/uploads:/app/static/uploads:rw
+      # Mount keys.txt for environment variables (read-only for security)
+      - ./keys.txt:/app/keys.txt:ro
     environment:
       - CUDA_VISIBLE_DEVICES=0
       - PYTHONUNBUFFERED=1

@@ -18,16 +18,24 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
-# Create necessary directories
+# Create necessary directories with proper permissions
 echo "📁 Creating directories..."
 mkdir -p models/local
 mkdir -p static/uploads
 mkdir -p models/cache
 
-# Set proper permissions
-chmod 755 models/local
-chmod 755 static/uploads
-chmod 755 models/cache
+# Set proper permissions for Docker volumes
+chmod 777 models/local
+chmod 777 static/uploads
+chmod 777 models/cache
+
+# Ensure keys.txt has proper permissions
+if [ -f "keys.txt" ]; then
+    chmod 644 keys.txt
+    echo "✅ Set permissions for keys.txt"
+else
+    echo "⚠️  keys.txt not found - please create it with your HF_TOKEN"
+fi
 
 # Build and start the container
 echo "🔨 Building Docker image..."
