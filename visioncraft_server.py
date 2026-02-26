@@ -307,12 +307,18 @@ async def get_status():
 @app.get("/models")
 async def get_models():
     """Get available models"""
-    local_models = generator.model_manager.get_downloaded_models()
-    modern_generators = generator.modern_manager.get_available_generators()
-    return {
-        "local_models": {m["id"]: m for m in local_models},
-        "modern_generators": modern_generators
-    }
+    try:
+        local_models = generator.model_manager.get_downloaded_models()
+        modern_generators = generator.modern_manager.get_available_generators()
+        return {
+            "local_models": {m["id"]: m for m in local_models},
+            "modern_generators": modern_generators
+        }
+    except Exception as e:
+        print(f"[SERVER] Error in /models endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/local/download")
 async def download_local_model(request: dict):

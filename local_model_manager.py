@@ -43,25 +43,32 @@ class LocalModelManager:
     def get_downloaded_models(self) -> List[Dict[str, Any]]:
         """List all models currently downloaded in the local directory"""
         downloaded = []
-        if not os.path.exists(self.models_dir):
-            return downloaded
-            
-        # Each subdirectory in models/local is expected to be a model (or part of a repo id path)
-        # For simplicity, we'll look for directories that look like they contain a model
-        for root, dirs, files in os.walk(self.models_dir):
-            if "model_index.json" in files:
-                # This is likely a diffusers model directory
-                relative_path = os.path.relpath(root, self.models_dir)
-                # Convert backslashes to forward slashes for repo-id style
-                model_id = relative_path.replace("\\", "/")
+        try:
+            if not os.path.exists(self.models_dir):
+                print(f"[LOCAL-MANAGER] Models directory {self.models_dir} does not exist")
+                return downloaded
                 
-                # Try to get some meta-info if available
-                downloaded.append({
-                    "id": model_id,
-                    "path": root,
-                    "name": model_id.split("/")[-1],
-                    "is_local": True
-                })
+            # Each subdirectory in models/local is expected to be a model (or part of a repo id path)
+            # For simplicity, we'll look for directories that look like they contain a model
+            for root, dirs, files in os.walk(self.models_dir):
+                if "model_index.json" in files:
+                    # This is likely a diffusers model directory
+                    relative_path = os.path.relpath(root, self.models_dir)
+                    # Convert backslashes to forward slashes for repo-id style
+                    model_id = relative_path.replace("\\", "/")
+                    
+                    # Try to get some meta-info if available
+                    downloaded.append({
+                        "id": model_id,
+                        "path": root,
+                        "name": model_id.split("/")[-1],
+                        "is_local": True
+                    })
+        except Exception as e:
+            print(f"[LOCAL-MANAGER] Error in get_downloaded_models: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
         return downloaded
 
     def download_model(self, repo_id: str, token: Optional[str] = None):
