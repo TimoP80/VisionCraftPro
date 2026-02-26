@@ -1939,8 +1939,12 @@
                     const response = await fetch(`${API_BASE}/local/progress-updates`);
                     const data = await response.json();
                     
-                    for (const update of data.updates) {
-                        handleProgressUpdate(update);
+                    console.log('Progress updates response:', data);
+                    
+                    if (data && data.updates) {
+                        for (const update of data.updates) {
+                            handleProgressUpdate(update);
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to get progress updates:', error);
