@@ -50,15 +50,28 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
-    - name: Build and push GPU image
+    - name: Build and push Salad Cloud GPU image
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile.gpu
+        file: ./Dockerfile.salad
         push: true
         tags: |
-          timop80/visioncraft-pro:gpu-latest
-          timop80/visioncraft-pro:rtx4090
+          timop80/visioncraft-pro:salad-gpu
+          timop80/visioncraft-pro:salad-latest
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        
+    - name: Build and push Salad Cloud CPU image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.salad-cpu
+        push: true
+        tags: |
+          timop80/visioncraft-pro:salad-cpu
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max

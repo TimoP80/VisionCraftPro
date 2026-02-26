@@ -4,13 +4,19 @@
 
 ### 📦 Available Docker Images
 
-#### **GPU Version (Recommended for RTX 4090)**
+#### **GPU Version (Recommended for RTX 4090) - Salad Cloud Optimized**
 ```
-timop80/visioncraft-pro:gpu-latest
+timop80/visioncraft-pro:salad-gpu
 ```
 
-#### **CPU Version**
+#### **CPU Version - Salad Cloud Optimized**
 ```
+timop80/visioncraft-pro:salad-cpu
+```
+
+#### **Alternative Images (if above don't work)**
+```
+timop80/visioncraft-pro:gpu-latest
 timop80/visioncraft-pro:latest
 ```
 
@@ -28,7 +34,7 @@ timop80/visioncraft-pro:latest
 
 #### **GPU Configuration (RTX 4090)**
 ```yaml
-Image: timop80/visioncraft-pro:gpu-latest
+Image: timop80/visioncraft-pro:salad-gpu
 GPU: RTX 4090 (24GB)
 RAM: 16GB
 Storage: 100GB
@@ -37,7 +43,7 @@ Ports: 8000
 
 #### **CPU Configuration**
 ```yaml
-Image: timop80/visioncraft-pro:latest
+Image: timop80/visioncraft-pro:salad-cpu
 CPU: 8 vCPUs
 RAM: 16GB
 Storage: 50GB
@@ -86,7 +92,7 @@ Retries: 3
 ### **GPU Version (Copy-Paste Ready)**
 ```yaml
 name: visioncraft-pro-gpu
-image: timop80/visioncraft-pro:gpu-latest
+image: timop80/visioncraft-pro:salad-gpu
 ports:
   - "8000:8000"
 resources:
@@ -117,7 +123,7 @@ volumes:
 ### **CPU Version (Copy-Paste Ready)**
 ```yaml
 name: visioncraft-pro-cpu
-image: timop80/visioncraft-pro:latest
+image: timop80/visioncraft-pro:salad-cpu
 ports:
   - "8000:8000"
 resources:
