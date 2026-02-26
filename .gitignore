@@ -141,6 +141,9 @@ outputs/
 *.jpeg
 *.webp
 
+# Exception: Logo file
+!static/logo.png
+
 # IDE
 .vscode/
 .idea/

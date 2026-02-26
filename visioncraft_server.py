@@ -402,15 +402,6 @@ async def clear_gallery():
     generator.gallery.clear_gallery()
     return {"message": "cleared"}
 
-@app.post("/local/download/{repo_id}")
-async def download_local_model(repo_id: str):
-    """Download a model locally"""
-    try:
-        result = generator.model_manager.download_model(repo_id)
-        return result
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
 @app.get("/local/status/{repo_id}")
 async def get_local_model_status(repo_id: str):
     """Get download status of a local model"""
