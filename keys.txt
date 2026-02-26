@@ -36,3 +36,8 @@ ElWcJ0pxXssiAxihHBss578meAx0Wbe8zo4835paipiqhPD/ffCSeXcmiShi86MYtB9hS1
 20rNgYSrUNkI5ggDHzPUnBJ5DKiFLrEx6xILIKb/2e4EQteOQGil/FpZ6lFIu9/pKuzOXl
 lAQV2Ee23i4XUAAAANdHBpdGtAVGltby1QQwECAwQFBg==
 -----END OPENSSH PRIVATE KEY-----
+
+# Hugging Face Token for model downloads
+# Get your token from: https://huggingface.co/settings/tokens
+# Replace YOUR_HF_TOKEN_HERE with your actual token
+HF_TOKEN=YOUR_HF_TOKEN_HERE
