@@ -290,8 +290,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize generator
 generator = ImageGenerator()
 
-# Load default model
-generator.load_model("stable-diffusion-1.5")
+# Don't load a default model - let users choose
+# generator.load_model("stable-diffusion-1.5")
 
 # API Endpoints
 @app.get("/")
