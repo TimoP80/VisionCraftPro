@@ -1508,9 +1508,9 @@
                 document.getElementById('modern-api-key-controls')?.classList.add('hidden');
             }
 
-            // Load the selected model on the server
-            if (selectedModel) {
-                console.log(`🔄 Loading model: ${selectedModel}`);
+            // Load the selected model on the server (only for local models)
+            if (selectedModel && availableModels[selectedModel]) {
+                console.log(`🔄 Loading local model: ${selectedModel}`);
                 fetch('/load-model', {
                     method: 'POST',
                     headers: {
@@ -1529,10 +1529,8 @@
                     })
                     .catch(error => {
                         console.error('❌ Failed to load model:', error);
-                        console.error('❌ Error details:', error.message);
                     });
             }
-        }
 
         // Show API key dialog
         function showApiKeyDialog(generatorName) {
