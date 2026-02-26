@@ -1186,63 +1186,43 @@
 
                 // Store both local and modern models
                 availableModels = data.local_models || {};
-                modernGenerators = data.modern_generators || {};
 
-                console.log('🔍 Available models:', availableModels);
-                console.log('🔍 Modern generators:', modernGenerators);
-
-                // Update model dropdown with both types
-                updateModelDropdown();
-
-                // Update model info when selection changes
-                const modelSelect = document.getElementById('model');
-                modelSelect.removeEventListener('change', updateModelInfo);
-                modelSelect.addEventListener('change', updateModelInfo);
-                updateModelInfo();
-
-            } catch (error) {
-                console.error('Failed to load models:', error);
-                // Add fallback options
-                availableModels = {
-                    'stable-diffusion-1.5': {
-                        name: 'Stable Diffusion 1.5',
-                        resolution: '512x512',
-                        description: 'Standard Stable Diffusion model',
-                        experimental: false
-                    }
-                };
-                modernGenerators = {
-                    'leonardo-api': {
-                        name: 'Leonardo.ai API',
-                        cost: 'Paid',
-                        speed: 'Fast',
-                        quality: 'Professional',
-                        description: 'Professional game asset generator with model selection',
-                        features: ['text-to-image', 'fine-tuned-models', 'texture-generation']
-                    },
-                    'modal': {
-                        name: 'Modal Cloud GPU',
-                        cost: 'Pay-per-use (Modal Credit)',
-                        speed: 'Configurable (Fast to Ultra)',
-                        quality: 'Professional',
-                        description: 'Infinite scalability with selectable NVIDIA GPUs (T4 to H200/B200).',
-                        features: ['text-to-image', 'cloud-rendering', 'multi-gpu-support', 'fast-generation']
-                    }
-                };
-                updateModelDropdown();
-                updateModelInfo();
+    } catch (error) {
+        console.error('Failed to load models:', error);
+        // Clear models on error - user needs to download models or use API generators
+        availableModels = {};
+        modernGenerators = {
+            'leonardo-api': {
+                name: 'Leonardo.ai API',
+                cost: 'Paid',
+                speed: 'Fast',
+                quality: 'Professional',
+                description: 'Professional game asset generator with model selection',
+                features: ['text-to-image', 'fine-tuned-models', 'texture-generation']
+            },
+            'modal': {
+                name: 'Modal Cloud GPU',
+                cost: 'Pay-per-use (Modal Credit)',
+                speed: 'Configurable (Fast to Ultra)',
+                quality: 'Professional',
+                description: 'Infinite scalability with selectable NVIDIA GPUs (T4 to H200/B200).',
+                features: ['text-to-image', 'cloud-rendering', 'multi-gpu-support', 'fast-generation']
             }
-        }
+        };
+        updateModelDropdown();
+        updateModelInfo();
+    }
+}
 
-        // Update model dropdown with both local and modern generators
-        function updateModelDropdown() {
-            const modelSelect = document.getElementById('model');
-            console.log('🔍 Updating model dropdown...');
-            console.log('🔍 Model select element:', modelSelect);
+// Update model dropdown with both local and modern generators
+function updateModelDropdown() {
+    const modelSelect = document.getElementById('model');
+    console.log('🔍 Updating model dropdown...');
+    console.log('🔍 Model select element:', modelSelect);
 
-            modelSelect.innerHTML = '';
+    modelSelect.innerHTML = '';
 
-            // Add local models section
+    // Add local models section
             if (Object.keys(availableModels).length > 0) {
                 const localGroup = document.createElement('optgroup');
                 localGroup.label = '🏠 Local Models (Downloaded)';
@@ -1277,13 +1257,15 @@
                 modelSelect.appendChild(modernGroup);
             }
 
-            // Add a default option if no models are available
+            // Add a "no models available" message if no models are found
             if (modelSelect.options.length === 0) {
-                console.log('🔍 No models available, adding default option');
-                const defaultOption = document.createElement('option');
-                defaultOption.value = 'stable-diffusion-1.5';
-                defaultOption.textContent = 'Stable Diffusion 1.5 (Default)';
-                modelSelect.appendChild(defaultOption);
+                console.log('🔍 No models available, adding placeholder option');
+                const placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.textContent = 'No models available - Download a model first';
+                placeholderOption.disabled = true;
+                placeholderOption.selected = true;
+                modelSelect.appendChild(placeholderOption);
             }
 
             console.log('🔍 Final model dropdown options:', modelSelect.options.length);
