@@ -1791,8 +1791,11 @@
                 console.log('🎨 Leonardo.ai generation with parameters:', data);
             } else if (selectedModel === 'modal') {
                 console.log('🚀 Modal generation with parameters:', data);
-            } else {
+            } else if (availableModels[selectedModel]) {
                 console.log('🏠 Local model generation with parameters:', data);
+            } else {
+                alert(`Model "${selectedModel}" is not available locally. Please download it first using the Hugging Face model search.`);
+                return;
             }
 
             // Show loading
