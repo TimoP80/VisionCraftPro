@@ -1939,12 +1939,15 @@ function updateModelDropdown() {
                     console.log('Progress updates response:', data);
                     
                     if (data && data.updates && data.updates.length > 0) {
+                        console.log(`🔄 Processing ${data.updates.length} progress updates`);
                         // Reset timeout when we get updates
                         resetProgressTimeout();
                         for (const update of data.updates) {
+                            console.log('📊 Handling update:', update);
                             handleProgressUpdate(update);
                         }
                     } else {
+                        console.log('📭 No progress updates available');
                         // No updates, continue tracking for now
                         // (we could implement a timeout here if needed)
                     }
