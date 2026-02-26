@@ -357,15 +357,30 @@ async def load_model(request: LoadModelRequest):
     """Load a specific model"""
     print(f"[API] /load-model called with model_name: {request.model_name}")
     try:
+        # Check if model actually exists in available models
+        available_models = generator.model_manager.get_downloaded_models()
+        available_model_ids = [m["id"] for m in available_models]
+        
+        print(f"[API] Available models: {available_model_ids}")
+        print(f"[API] Requested model: {request.model_name}")
+        
+        if request.model_name not in available_model_ids:
+            print(f"[API] Model {request.model_name} not found in available models")
+            raise HTTPException(status_code=404, detail=f"Model {request.model_name} is not available locally. Please download it first.")
+        
         success = generator.load_model(request.model_name)
         print(f"[API] load_model result: {success}")
         if success:
             return {"message": f"Model {request.model_name} loaded successfully"}
         else:
             raise HTTPException(status_code=400, detail=f"Failed to load model {request.model_name}")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[API] load_model error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error while loading model: {str(e)}")
 
 @app.get("/gallery")
 async def get_gallery():

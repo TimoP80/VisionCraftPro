@@ -57,13 +57,40 @@ class LocalModelManager:
                     # Convert backslashes to forward slashes for repo-id style
                     model_id = relative_path.replace("\\", "/")
                     
-                    # Try to get some meta-info if available
-                    downloaded.append({
-                        "id": model_id,
-                        "path": root,
-                        "name": model_id.split("/")[-1],
-                        "is_local": True
-                    })
+                    # Validate that the model has essential files for loading
+                    required_files = ["model_index.json"]
+                    optional_files = ["scheduler", "text_encoder", "tokenizer", "unet", "vae"]
+                    
+                    # Check if at least some essential components exist
+                    has_components = False
+                    for component in optional_files:
+                        if component in files or any(f.startswith(component) for f in files):
+                            has_components = True
+                            break
+                    
+                    # Only add model if it has required files AND some components
+                    if has_components:
+                        # Try to validate the model_index.json is readable
+                        try:
+                            model_index_path = os.path.join(root, "model_index.json")
+                            with open(model_index_path, 'r') as f:
+                                import json
+                                model_config = json.load(f)
+                                # Basic validation of model config
+                                if "_class_name" in model_config:
+                                    downloaded.append({
+                                        "id": model_id,
+                                        "path": root,
+                                        "name": model_id.split("/")[-1],
+                                        "is_local": True
+                                    })
+                                    print(f"[LOCAL-MANAGER] Found valid model: {model_id}")
+                                else:
+                                    print(f"[LOCAL-MANAGER] Invalid model_index.json in: {model_id}")
+                        except Exception as e:
+                            print(f"[LOCAL-MANAGER] Failed to read model_index.json for {model_id}: {e}")
+                    else:
+                        print(f"[LOCAL-MANAGER] Incomplete model directory (missing components): {model_id}")
         except Exception as e:
             print(f"[LOCAL-MANAGER] Error in get_downloaded_models: {str(e)}")
             import traceback
