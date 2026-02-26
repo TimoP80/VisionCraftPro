@@ -1331,10 +1331,10 @@
 
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
-                            <p>💰 Cost: ${generator.cost}</p>
-                            <p>⚡ Speed: ${generator.speed}</p>
-                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                            <p>📝 ${generator.description}</p>
+                            <p>💰 Cost: ${generator.cost || 'Paid'}</p>
+                            <p>⚡ Speed: ${generator.speed || 'Fast'}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution ? `${generator.max_resolution[0]}x${generator.max_resolution[1]}` : 'Variable'}</p>
+                            <p>📝 ${generator.description || 'AI image generation service'}</p>
                             <p>🔧 Type: API Generator</p>
                             <p class="text-blue-400">✅ Advanced controls available</p>
                         </div>
@@ -1385,12 +1385,13 @@
                     // Update Info Display
                     const updateModalInfoDisplay = () => {
                         const selectedGpuName = modalGpuSelect.options[modalGpuSelect.selectedIndex]?.text || 'NVIDIA GPU';
+                        const maxResolution = generator.max_resolution ? `${generator.max_resolution[0]}x${generator.max_resolution[1]}` : 'Variable';
                         modelInfo.innerHTML = `
                             <div class="text-xs space-y-1">
-                                <p>💰 Cost: ${generator.cost}</p>
-                                <p>⚡ Speed: ${generator.speed}</p>
-                                <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                                <p>📝 ${generator.description}</p>
+                                <p>💰 Cost: ${generator.cost || 'Pay-per-use'}</p>
+                                <p>⚡ Speed: ${generator.speed || 'Fast'}</p>
+                                <p>📏 Max Resolution: ${maxResolution}</p>
+                                <p>📝 ${generator.description || 'Cloud-based AI image generation'}</p>
                                 <p>🔧 Type: Modal Cloud</p>
                                 <p class="text-green-400">🚀 Running on ${selectedGpuName}</p>
                             </div>
@@ -1413,10 +1414,10 @@
                     }
                     modelInfo.innerHTML = `
                         <div class="text-xs space-y-1">
-                            <p>💰 Cost: ${generator.cost}</p>
-                            <p>⚡ Speed: ${generator.speed}</p>
-                            <p>📏 Max Resolution: ${generator.max_resolution[0]}x${generator.max_resolution[1]}</p>
-                            <p>📝 ${generator.description}</p>
+                            <p>💰 Cost: ${generator.cost || 'Variable'}</p>
+                            <p>⚡ Speed: ${generator.speed || 'Variable'}</p>
+                            <p>📏 Max Resolution: ${generator.max_resolution ? `${generator.max_resolution[0]}x${generator.max_resolution[1]}` : 'Variable'}</p>
+                            <p>📝 ${generator.description || 'AI image generation service'}</p>
                             <p>🔧 Type: API Generator</p>
                         </div>
                     `;
