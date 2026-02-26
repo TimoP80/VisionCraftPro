@@ -252,6 +252,7 @@ class ModernGeneratorManager:
             "num_images": 1,
             "contrast": kwargs.get("contrast", 3.5),
             "enhancePrompt": kwargs.get("enhancePrompt", False),
+            "quality": kwargs.get("quality", 80),  # Add quality setting for V1
         }
 
         # Add optional parameters if provided
@@ -298,6 +299,7 @@ class ModernGeneratorManager:
             "height": height,
             "quantity": 1,
             "prompt_enhance": "OFF",  # Default to OFF for V2 models
+            "quality": kwargs.get("quality", 80),  # Add quality setting
         }
 
         # Add style_ids if preset_style is provided
@@ -315,6 +317,9 @@ class ModernGeneratorManager:
             }
             style_ids = style_id_map.get(kwargs["preset_style"], ["111dc692-d470-4eec-b791-3475abac4c46"])
             parameters["style_ids"] = style_ids
+        else:
+            # Default style_ids for V2 models (required for some models)
+            parameters["style_ids"] = ["111dc692-d470-4eec-b791-3475abac4c46"]
 
         # Add negative prompt if provided
         if kwargs.get("negative_prompt"):
