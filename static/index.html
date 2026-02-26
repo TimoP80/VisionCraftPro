@@ -1214,12 +1214,18 @@
 
             // Update model dropdown with both types
             updateModelDropdown();
+            
+            console.log('🔄 Model dropdown updated');
+            console.log('🔍 Available models after update:', Object.keys(availableModels));
+            console.log('🔍 Modern generators after update:', Object.keys(modernGenerators));
 
             // Update model info when selection changes
             const modelSelect = document.getElementById('model');
             modelSelect.removeEventListener('change', updateModelInfo);
             modelSelect.addEventListener('change', updateModelInfo);
             updateModelInfo();
+            
+            console.log('✅ loadModels() completed successfully');
         }
 
 // Update model dropdown with both local and modern generators
@@ -1995,7 +2001,17 @@ function updateModelDropdown() {
             } else if (type === 'completed') {
                 downloadProgress[repo_id] = { ...downloadProgress[repo_id], status: 'completed', percentage: 100 };
                 updateDownloadUI(repo_id);
-                setTimeout(() => { loadModels(); }, 1000);
+                console.log('✅ Download completed, refreshing model list...');
+                // Refresh models immediately and again after a short delay to ensure the backend has updated
+                setTimeout(async () => {
+                    console.log('🔄 Refreshing models after download completion');
+                    await loadModels();
+                    // Second refresh after 2 seconds to ensure backend has fully processed the download
+                    setTimeout(async () => {
+                        console.log('🔄 Second refresh to ensure model is available');
+                        await loadModels();
+                    }, 2000);
+                }, 1000);
             } else if (type === 'failed') {
                 downloadProgress[repo_id] = { status: 'failed', error };
                 updateDownloadUI(repo_id);
