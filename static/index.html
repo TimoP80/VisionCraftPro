@@ -1930,32 +1930,70 @@
         // Download progress tracking
         let downloadProgress = {};
         let progressUpdateInterval = null;
+        let progressTimeout = null; // Timeout for inactivity
 
         function startProgressTracking() {
             if (progressUpdateInterval) return;
             
+            // Set a timeout to stop tracking after 30 seconds of inactivity
+            resetProgressTimeout();
+            
             progressUpdateInterval = setInterval(async () => {
                 try {
                     const response = await fetch(`${API_BASE}/local/progress-updates`);
-                    const data = await response.json();
                     
+                    if (!response.ok) {
+                        // If endpoint returns 404 or other error, stop tracking
+                        console.log('Progress updates endpoint not available, stopping tracking');
+                        stopProgressTracking();
+                        return;
+                    }
+                    
+                    const data = await response.json();
                     console.log('Progress updates response:', data);
                     
-                    if (data && data.updates) {
+                    if (data && data.updates && data.updates.length > 0) {
+                        // Reset timeout when we get updates
+                        resetProgressTimeout();
                         for (const update of data.updates) {
                             handleProgressUpdate(update);
                         }
+                    } else {
+                        // No updates, continue tracking for now
+                        // (we could implement a timeout here if needed)
                     }
                 } catch (error) {
                     console.error('Failed to get progress updates:', error);
+                    // Stop tracking on persistent errors
+                    if (error.message.includes('404') || error.message.includes('Not Found')) {
+                        console.log('Progress updates endpoint not found, stopping tracking');
+                        stopProgressTracking();
+                    }
                 }
             }, 1000);
+        }
+
+        function resetProgressTimeout() {
+            // Clear existing timeout
+            if (progressTimeout) {
+                clearTimeout(progressTimeout);
+            }
+            
+            // Set new timeout to stop tracking after 30 seconds
+            progressTimeout = setTimeout(() => {
+                console.log('No progress updates for 30 seconds, stopping tracking');
+                stopProgressTracking();
+            }, 30000); // 30 seconds
         }
 
         function stopProgressTracking() {
             if (progressUpdateInterval) {
                 clearInterval(progressUpdateInterval);
                 progressUpdateInterval = null;
+            }
+            if (progressTimeout) {
+                clearTimeout(progressTimeout);
+                progressTimeout = null;
             }
         }
 
