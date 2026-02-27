@@ -103,6 +103,8 @@ class LocalModelManager:
         if repo_id in self.download_status and self.download_status[repo_id] == "downloading":
             return {"status": "already downloading", "repo_id": repo_id}
 
+        print(f"[LOCAL-MANAGER] Starting download thread for {repo_id}...")
+        
         def _progress_callback(repo_id: str, progress: Dict[str, Any]):
             """Progress callback for download"""
             self.download_progress[repo_id] = progress
@@ -112,6 +114,7 @@ class LocalModelManager:
                 "repo_id": repo_id,
                 "progress": progress
             })
+            print(f"[LOCAL-MANAGER] Progress update for {repo_id}: {progress}")
 
         def _download_task():
             try:
@@ -146,7 +149,8 @@ class LocalModelManager:
                     local_dir=local_path,
                     token=token,
                     ignore_patterns=["*.msgpack", "*.ckpt", "*.h5"], # Save space
-                    resume_download=True
+                    resume_download=True,
+                    progress_hook=progress_hook
                 )
                 
                 # Mark as completed

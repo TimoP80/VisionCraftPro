@@ -434,6 +434,7 @@ async def get_local_model_status(repo_id: str):
 async def get_progress_updates():
     """Get all pending progress updates"""
     updates = generator.model_manager.get_progress_updates()
+    print(f"[PROGRESS] Returning {len(updates)} updates: {updates}")
     return {"updates": updates}
 
 @app.get("/hf/models")
