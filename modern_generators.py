@@ -58,6 +58,153 @@ class ModernGeneratorManager:
         print(f"Initialized {len(self.available_generators)} generator(s)")
         print(f"[SETUP] Modal setup completed. Available generators: {list(self.available_generators.keys())}")
 
+    async def enhance_prompt(self, prompt: str, model_name: str = None) -> str:
+        """Enhance a simple prompt using AI LLM for better image generation results"""
+        if len(prompt) > 100:  # Already detailed enough
+            return prompt
+            
+        print(f"[PROMPT] Enhancing simple prompt: '{prompt}'")
+        
+        # Try different LLM APIs in order of preference
+        enhanced_prompt = await self._try_openai_enhancement(prompt, model_name)
+        if not enhanced_prompt:
+            enhanced_prompt = await self._try_claude_enhancement(prompt, model_name)
+        if not enhanced_prompt:
+            enhanced_prompt = await self._try_gemini_enhancement(prompt, model_name)
+        
+        if enhanced_prompt and enhanced_prompt != prompt:
+            print(f"[PROMPT] Enhanced: '{enhanced_prompt}'")
+            return enhanced_prompt
+        else:
+            print(f"[PROMPT] Could not enhance prompt, using original")
+            return prompt
+
+    async def _try_openai_enhancement(self, prompt: str, model_name: str) -> str:
+        """Try to enhance prompt using OpenAI API"""
+        try:
+            import openai
+            api_key = self.api_keys.get("openai")
+            if not api_key:
+                return None
+                
+            client = openai.OpenAI(api_key=api_key)
+            
+            system_prompt = """You are an expert prompt engineer for AI image generation. 
+            Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+            
+            Rules:
+            1. Keep the core meaning and intent of the original prompt
+            2. Add specific details about lighting, composition, style, mood, and atmosphere
+            3. Include technical art terms that will help the AI model
+            4. Keep it concise but descriptive (under 200 words)
+            5. Focus on visual elements that will improve image quality
+            6. If the original prompt mentions a specific style, enhance that style
+            
+            Example:
+            Input: "a beautiful woman"
+            Output: "A beautiful woman with soft natural lighting, elegant pose, detailed facial features, professional portrait photography, shallow depth of field, warm golden hour lighting, high resolution, photorealistic style"
+            
+            Input: "dragon"
+            Output: "A majestic dragon with iridescent scales, powerful wings spread, fantasy art style, dramatic lighting, detailed texture, cinematic composition, epic atmosphere, digital painting"
+            """
+            
+            response = await client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
+                ],
+                max_tokens=150,
+                temperature=0.7
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"[PROMPT] OpenAI enhancement failed: {e}")
+            return None
+
+    async def _try_claude_enhancement(self, prompt: str, model_name: str) -> str:
+        """Try to enhance prompt using Claude API"""
+        try:
+            import anthropic
+            api_key = self.api_keys.get("anthropic")
+            if not api_key:
+                return None
+                
+            client = anthropic.Anthropic(api_key=api_key)
+            
+            system_prompt = """You are an expert prompt engineer for AI image generation. 
+            Expand simple prompts into detailed, descriptive prompts for better image generation.
+            
+            Rules:
+            1. Keep core meaning but add visual details
+            2. Include lighting, composition, style, mood
+            3. Use technical art terms
+            4. Keep under 200 words
+            5. Focus on visual elements that improve quality
+            
+            Example:
+            Input: "a beautiful woman"
+            Output: "A beautiful woman with soft natural lighting, elegant pose, detailed facial features, professional portrait photography, shallow depth of field, warm golden hour lighting, high resolution, photorealistic style"
+            """
+            
+            response = await client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=150,
+                temperature=0.7,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
+                ]
+            )
+            
+            return response.content[0].text.strip()
+            
+        except Exception as e:
+            print(f"[PROMPT] Claude enhancement failed: {e}")
+            return None
+
+    async def _try_gemini_enhancement(self, prompt: str, model_name: str) -> str:
+        """Try to enhance prompt using Gemini API"""
+        try:
+            import google.generativeai as genai
+            api_key = self.api_keys.get("google")
+            if not api_key:
+                return None
+                
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-pro')
+            
+            system_prompt = """You are an expert prompt engineer for AI image generation. 
+            Expand simple prompts into detailed, descriptive prompts for better image generation.
+            
+            Rules:
+            1. Keep core meaning but add visual details
+            2. Include lighting, composition, style, mood
+            3. Use technical art terms
+            4. Keep under 200 words
+            5. Focus on visual elements that improve quality
+            
+            Example:
+            Input: "a beautiful woman"
+            Output: "A beautiful woman with soft natural lighting, elegant pose, detailed facial features, professional portrait photography, shallow depth of field, warm golden hour lighting, high resolution, photorealistic style"
+            """
+            
+            response = await model.generate_content_async(
+                f"{system_prompt}\n\nEnhance this prompt for image generation: {prompt}",
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=150,
+                )
+            )
+            
+            return response.text.strip()
+            
+        except Exception as e:
+            print(f"[PROMPT] Gemini enhancement failed: {e}")
+            return None
+
     def _fetch_leonardo_platform_models(self, force: bool = False) -> List[Dict[str, Any]]:
         """Fetch Leonardo platform models (requires API key). Cached to avoid repeated calls."""
         cache_ttl_s = 10 * 60
@@ -1535,33 +1682,59 @@ class ModernGeneratorManager:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                # Initiate upscaling
-                import requests
-                response = requests.post(
-                    "https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler",
-                    headers=headers,
-                    json=payload,
-                    timeout=30
-                )
+                # Try the older upscale endpoint first, then universal upscaler
+                upscale_endpoints = [
+                    "https://cloud.leonardo.ai/api/rest/v1/variations/upscale",
+                    "https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler"
+                ]
                 
-                # Log detailed error information
-                if response.status_code != 200:
-                    print(f"[ERROR] API Response Status: {response.status_code}")
-                    print(f"[ERROR] API Response Headers: {dict(response.headers)}")
+                for endpoint in upscale_endpoints:
                     try:
-                        error_data = response.json()
-                        print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
-                    except:
-                        print(f"[ERROR] API Response Text: {response.text}")
-                
-                response.raise_for_status()
-                
-                result = response.json()
-                upscaling_id = result.get("id") or result.get("variationId")
-                print(f"[UPSCALE] Upscaling initiated: {upscaling_id}")
-                
-                # Poll for completion
-                return await self._poll_leonardo_upscale(upscaling_id, headers)
+                        # Use different payload for different endpoints
+                        if endpoint.endswith("/upscale"):
+                            # Older endpoint might expect imageId
+                            payload_endpoint = {
+                                "imageId": image_b64,  # Try with imageId parameter
+                                "upscaleMultiplier": upscale_factor,
+                                "creativityStrength": kwargs.get("creativity_strength", 5),
+                                "upscalerStyle": kwargs.get("upscaler_style", "CINEMATIC"),
+                            }
+                        else:
+                            # Universal upscaler payload
+                            payload_endpoint = payload.copy()
+                        
+                        response = requests.post(
+                            endpoint,
+                            headers=headers,
+                            json=payload_endpoint,
+                            timeout=30
+                        )
+                        
+                        # Log detailed error information
+                        if response.status_code != 200:
+                            print(f"[ERROR] API Response Status: {response.status_code}")
+                            print(f"[ERROR] API Response Headers: {dict(response.headers)}")
+                            try:
+                                error_data = response.json()
+                                print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
+                            except:
+                                print(f"[ERROR] API Response Text: {response.text}")
+                        
+                        response.raise_for_status()
+                        
+                        result = response.json()
+                        upscaling_id = result.get("id") or result.get("variationId")
+                        print(f"[UPSCALE] Upscaling initiated with {endpoint}: {upscaling_id}")
+                        
+                        # Poll for completion
+                        return await self._poll_leonardo_upscale(upscaling_id, headers)
+                        
+                    except Exception as e:
+                        if endpoint == upscale_endpoints[-1]:  # Last endpoint tried
+                            raise
+                        else:
+                            print(f"[UPSCALE] {endpoint} failed, trying next endpoint...")
+                            continue
                 
             except Exception as e:
                 if attempt == max_retries - 1:
@@ -2042,6 +2215,14 @@ class ModernGeneratorManager:
         print(f"[ART] Starting generation with {generator_name}")
         print(f"[NOTE] Prompt: {prompt[:100]}...")
         print(f"[SEARCH] Available generators: {list(self.available_generators.keys())}")
+        
+        # Enhance prompt if it's simple
+        enhance_prompt = kwargs.get("enhance_prompt", True)
+        if enhance_prompt and len(prompt) < 100:
+            enhanced_prompt = await self.enhance_prompt(prompt, generator_name)
+            if enhanced_prompt != prompt:
+                prompt = enhanced_prompt
+                print(f"[ART] Using enhanced prompt: {prompt[:150]}...")
         
         if generator_name not in self.available_generators:
             raise ValueError(f"Generator {generator_name} not available")
