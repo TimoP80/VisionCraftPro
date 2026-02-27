@@ -7,6 +7,24 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-02-27
+
+### ✨ Added
+- **Todo List Management System** - Comprehensive task management with backend CRUD operations, REST API endpoints, and full frontend UI integration. Features include filtering by status/priority, sorting, search functionality, statistics dashboard, and JSON persistence.
+- **Unit Tests for Todo API** - Complete test coverage for todo endpoints including CRUD operations, filtering, sorting, and search functionality.
+
+### 🚀 Improved
+- **Leonardo.ai Upscaling** - Enhanced upscaling to use Phoenix 1.0 model for generating variations, providing better quality results. Fixed polling logic to correctly detect upscaling completion from nested JSON response structures.
+- **Image Download Validation** - Added proper validation for image downloads to prevent "undefined" filename issues and null image sources.
+
+### 🐛 Fixed
+- **Leonardo Style/Quality Selectors** - Fixed issue where style and quality dropdowns were being cleared by JavaScript, now properly retain their hardcoded HTML options.
+- **POST /gallery Endpoint** - Added missing endpoint to save upscaled images to the gallery (was returning 405 Method Not Allowed).
+- **NameError in Server** - Fixed missing `List` import in typing module for Todo request models.
+- **HTML Structure Corruption** - Fixed broken HTML structure in index.html that was causing modal and todo section conflicts.
+
+---
+
 ## [1.2.0] - 2026-02-26
 
 ### ✨ Added

@@ -1,0 +1,27 @@
+# Minimal Dockerfile for fast deployment
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir fastapi uvicorn torch diffusers transformers accelerate
+
+# Copy application
+COPY visioncraft_server.py .
+COPY modern_generators.py .
+COPY local_model_manager.py .
+COPY -r static/ ./static/
+
+# Create directories
+RUN mkdir -p models/local models/cache static/uploads && chmod 777 models/local models/cache static/uploads
+
+EXPOSE 8000
+
+CMD ["python", "visioncraft_server.py"]

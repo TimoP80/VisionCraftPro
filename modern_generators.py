@@ -1539,7 +1539,7 @@ class ModernGeneratorManager:
                 print(f"[ERROR] Error processing Leonardo.ai callback: {e}")
     
     async def upscale_with_leonardo(self, image: Image.Image, upscale_factor: float = 2.0, **kwargs) -> Image.Image:
-        """Upscale image using Leonardo.ai Universal Upscaler API"""
+        """Upscale image using Leonardo.ai by first generating with it, then upscaling"""
         print(f"[UPSCALE] Leonardo.ai upscaling with factor {upscale_factor}...")
         
         # Check API key
@@ -1554,14 +1554,299 @@ class ModernGeneratorManager:
         
         print(f"[UPSCALE] API key found: {'*' * 10}{api_key[-4:]}")
         
-        # Convert image to base64
-        import io
-        import base64
+        # Step 1: Upload the image to get an image ID for image-to-image generation
+        image_id = await self._upload_image_to_leonardo(image, api_key)
         
+        # Step 2: Generate a new image using the uploaded image as input (this creates a Leonardo-generated image)
+        print("[UPSCALE] Generating image from uploaded image...")
+        generated_image_id = await self._generate_from_image(image_id, api_key, **kwargs)
+        
+        # Step 3: Now upscale the Leonardo-generated image
+        print(f"[UPSCALE] Upscaling Leonardo-generated image: {generated_image_id}")
+        return await self._upscale_generated_image(generated_image_id, upscale_factor, api_key, **kwargs)
+    
+    async def _generate_from_image(self, image_id: str, api_key: str, **kwargs) -> str:
+        """Generate an image using uploaded image as input"""
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json"
+        }
+        
+        # Use a simple model for image-to-image generation
+        prompt = kwargs.get("prompt", "enhance image details and quality")
+        if not prompt or prompt.strip() == "":
+            prompt = "enhance image details and quality"  # Ensure we always have a prompt
+            
+        payload = {
+            "modelId": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",  # Phoenix 1.0 - Best quality for variations
+            "prompt": prompt,
+            "width": 1024,
+            "height": 576,
+            "init_image_id": image_id,  # For uploaded images
+            "init_strength": 0.8,  # How much to influence from init image
+            "num_images": 1
+        }
+        
+        print(f"[UPSCALE] Generation payload: {json.dumps(payload, indent=2)}")
+        
+        try:
+            response = requests.post(
+                "https://cloud.leonardo.ai/api/rest/v1/generations",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            # Log detailed error information
+            if response.status_code != 200:
+                print(f"[ERROR] Generation API Response Status: {response.status_code}")
+                print(f"[ERROR] Generation API Response Headers: {dict(response.headers)}")
+                try:
+                    error_data = response.json()
+                    print(f"[ERROR] Generation API Response Body: {json.dumps(error_data, indent=2)}")
+                except:
+                    print(f"[ERROR] Generation API Response Text: {response.text}")
+            
+            response.raise_for_status()
+            
+            data = response.json()
+            generation_id = data.get("sdGenerationJob", {}).get("generationId")
+            
+            if not generation_id:
+                raise Exception("No generation ID returned")
+            
+            # Poll for completion
+            generated_image = await self._poll_leonardo_generation(generation_id, headers)
+            
+            # Extract the generated image ID from the generation response
+            # The polling returns the image, but we need the ID for upscaling
+            # Let's make another API call to get the generation details
+            status_response = requests.get(
+                f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}",
+                headers=headers,
+                timeout=10
+            )
+            status_response.raise_for_status()
+            status_data = status_response.json()
+            
+            # Get the generated image ID
+            generations_by_pk = status_data.get("generations_by_pk", {})
+            generated_images = generations_by_pk.get("generated_images", [])
+            
+            if len(generated_images) > 0:
+                return generated_images[0].get("id")
+            else:
+                raise Exception("No generated image ID found")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to generate from image: {e}")
+            raise
+    
+    async def _upscale_generated_image(self, image_id: str, upscale_factor: float, api_key: str, **kwargs) -> Image.Image:
+        """Upscale a Leonardo-generated image"""
+        print(f"[UPSCALE] Upscaling Leonardo-generated image: {image_id}")
+        
+        # Check API limits
+        max_multiplier = 2.0
+        if upscale_factor > max_multiplier:
+            print(f"[UPSCALE] Warning: Leonardo.ai only supports up to {max_multiplier}x upscaling. Reducing from {upscale_factor}x to {max_multiplier}x")
+            upscale_factor = max_multiplier
+        
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json"
+        }
+        
+        # Use the regular upscale endpoint with Leonardo-generated image
+        payload = {
+            "id": image_id
+        }
+        
+        print(f"[UPSCALE] Payload: {json.dumps(payload, indent=2)}")
+        
+        try:
+            response = requests.post(
+                "https://cloud.leonardo.ai/api/rest/v1/variations/upscale",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                print(f"[ERROR] API Response Status: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
+                except:
+                    print(f"[ERROR] API Response Text: {response.text}")
+            
+            response.raise_for_status()
+            
+            result = response.json()
+            print(f"[UPSCALE] Upscale response: {json.dumps(result, indent=2)}")
+            
+            # Extract ID from nested structure (Leonardo.ai uses sdUpscaleJob.id)
+            if "sdUpscaleJob" in result and isinstance(result["sdUpscaleJob"], dict):
+                upscaling_id = result["sdUpscaleJob"].get("id")
+            else:
+                # Fallback to top-level fields
+                upscaling_id = (result.get("id") or 
+                               result.get("variationId") or 
+                               result.get("upscaleId") or
+                               result.get("jobId"))
+            
+            if not upscaling_id:
+                print(f"[ERROR] No upscaling ID found in response: {list(result.keys())}")
+                raise Exception("Could not extract upscaling ID from response")
+            
+            print(f"[UPSCALE] Upscaling initiated: {upscaling_id}")
+            
+            # Poll for completion
+            return await self._poll_leonardo_upscale(upscaling_id, headers)
+            
+        except Exception as e:
+            print(f"[ERROR] Leonardo.ai upscaling failed: {e}")
+            raise
+    
+    async def _upscale_with_base64(self, image_b64: str, upscale_factor: float, api_key: str, **kwargs) -> Image.Image:
+        """Upscale using Leonardo.ai Universal Upscaler with base64 image"""
+        print(f"[UPSCALE] Using base64 image for Universal Upscaler")
+        
+        # Check API limits and warn if needed
+        max_multiplier = 2.0
+        if upscale_factor > max_multiplier:
+            print(f"[UPSCALE] Warning: Leonardo.ai only supports up to {max_multiplier}x upscaling. Reducing from {upscale_factor}x to {max_multiplier}x")
+            upscale_factor = max_multiplier
+        
+        # Prepare upscaling request
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json"
+        }
+        
+        # Leonardo.ai Universal Upscaler payload with base64 image
+        payload = {
+            "inputImage": image_b64,  # Use base64 image directly
+            "upscaleMultiplier": upscale_factor,  # API limits: 1-2x only
+            "creativityStrength": kwargs.get("creativity_strength", 5),
+            "upscalerStyle": kwargs.get("upscaler_style", "CINEMATIC"),  # CINEMATIC, ARTISTIC, etc.
+        }
+        
+        # Add optional parameters if provided
+        if kwargs.get("prompt"):
+            payload["prompt"] = kwargs.get("prompt")
+        if kwargs.get("negative_prompt"):
+            payload["negativePrompt"] = kwargs.get("negative_prompt")
+        
+        print(f"[UPSCALE] Payload: {json.dumps({k: v for k, v in payload.items() if k != 'inputImage'}, indent=2)}")
+        print(f"[UPSCALE] Upscaling with multiplier: {upscale_factor}x")
+        
+        try:
+            # Initiate upscaling
+            import requests
+            response = requests.post(
+                "https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            # Log detailed error information
+            if response.status_code != 200:
+                print(f"[ERROR] API Response Status: {response.status_code}")
+                print(f"[ERROR] API Response Headers: {dict(response.headers)}")
+                try:
+                    error_data = response.json()
+                    print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
+                except:
+                    print(f"[ERROR] API Response Text: {response.text}")
+            
+            response.raise_for_status()
+            
+            result = response.json()
+            upscaling_id = result.get("id") or result.get("variationId")
+            print(f"[UPSCALE] Upscaling initiated: {upscaling_id}")
+            
+            # Poll for completion
+            return await self._poll_leonardo_upscale(upscaling_id, headers)
+            
+        except Exception as e:
+            print(f"[ERROR] Leonardo.ai upscaling failed: {e}")
+            raise
+    
+    async def _upload_image_to_leonardo(self, image: Image.Image, api_key: str) -> str:
+        """Upload image to Leonardo.ai and return the image ID"""
+        print("[UPSCALE] Uploading image to Leonardo.ai...")
+        
+        # Convert image to bytes
+        import io
         img_buffer = io.BytesIO()
         image.save(img_buffer, format='PNG')
         img_buffer.seek(0)
-        image_b64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+        image_bytes = img_buffer.getvalue()
+        
+        # Step 1: Get presigned URL for upload
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json"
+        }
+        
+        upload_payload = {
+            "extension": "png"
+        }
+        
+        try:
+            response = requests.post(
+                "https://cloud.leonardo.ai/api/rest/v1/init-image",
+                headers=headers,
+                json=upload_payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            upload_data = response.json()
+            upload_init_image = upload_data.get("uploadInitImage", {})
+            image_id = upload_init_image.get("id")
+            
+            if not image_id:
+                raise Exception("No image ID returned from upload init image endpoint")
+            
+            print(f"[UPSCALE] Got image ID: {image_id}")
+            
+            # Step 2: Upload the actual image to the presigned URL
+            fields = json.loads(upload_init_image.get("fields", "{}"))
+            upload_url = upload_init_image.get("url")
+            
+            files = {'file': image_bytes}
+            upload_response = requests.post(upload_url, data=fields, files=files, timeout=30)
+            upload_response.raise_for_status()
+            
+            print(f"[UPSCALE] Image uploaded successfully")
+            
+            # Wait a moment for the image to be processed
+            import asyncio
+            print("[UPSCALE] Waiting for image processing...")
+            await asyncio.sleep(3)
+            
+            return image_id
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to upload image to Leonardo.ai: {e}")
+            raise
+    
+    async def _upscale_with_image_id(self, image_id: str, upscale_factor: float, api_key: str, **kwargs) -> Image.Image:
+        """Upscale using Leonardo.ai image ID"""
+        print(f"[UPSCALE] Starting upscaling with image ID: {image_id}")
+        
+        # Check API limits and warn if needed
+        max_multiplier = 2.0
+        if upscale_factor > max_multiplier:
+            print(f"[UPSCALE] Warning: Leonardo.ai only supports up to {max_multiplier}x upscaling. Reducing from {upscale_factor}x to {max_multiplier}x")
+            upscale_factor = max_multiplier
         
         # Prepare upscaling request
         headers = {
@@ -1572,81 +1857,159 @@ class ModernGeneratorManager:
         
         # Leonardo.ai Universal Upscaler payload
         payload = {
-            "inputImage": image_b64,
-            "modelId": "6ffa2213-5565-4b68-b119-a35351685387",  # Universal Upscaler model ID
-            "sdVersion": "v1_5",  # Use SD 1.5 for upscaling
-            "width": int(image.width * upscale_factor),
-            "height": int(image.height * upscale_factor),
-            "scaleFactor": upscale_factor,
-            "prompt": kwargs.get("prompt", ""),  # Optional prompt for guided upscaling
-            "negativePrompt": kwargs.get("negative_prompt", ""),
-            "steps": kwargs.get("num_inference_steps", 20),
-            "cfgScale": kwargs.get("guidance_scale", 7.5),
-            "seed": kwargs.get("seed", -1) if kwargs.get("seed", -1) >= 0 else None,
-            "precision": "standard"  # standard, high, or ultra
+            "inputImage": image_id,  # Use the uploaded image ID
+            "upscaleMultiplier": upscale_factor,  # API limits: 1-2x only
+            "creativityStrength": kwargs.get("creativity_strength", 5),
+            "upscalerStyle": kwargs.get("upscaler_style", "CINEMATIC"),  # CINEMATIC, ARTISTIC, etc.
         }
         
-        print(f"[UPSCALE] Upscaling from {image.width}x{image.height} to {payload['width']}x{payload['height']}")
+        # Add optional parameters if provided
+        if kwargs.get("prompt"):
+            payload["prompt"] = kwargs.get("prompt")
+        if kwargs.get("negative_prompt"):
+            payload["negativePrompt"] = kwargs.get("negative_prompt")
         
-        try:
-            # Initiate upscaling
-            import requests
-            response = requests.post(
-                "https://cloud.leonardo.ai/api/rest/v2/upscaler",
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            response.raise_for_status()
-            
-            result = response.json()
-            upscaling_id = result["sdUpscaleJob"]["id"]
-            print(f"[UPSCALE] Upscaling initiated: {upscaling_id}")
-            
-            # Poll for completion
-            return await self._poll_leonardo_upscale(upscaling_id, headers, image.width, image.height)
-            
-        except Exception as e:
-            print(f"[ERROR] Leonardo.ai upscaling failed: {e}")
-            raise
+        print(f"[UPSCALE] Payload: {json.dumps({k: v for k, v in payload.items()}, indent=2)}")
+        print(f"[UPSCALE] Upscaling with multiplier: {upscale_factor}x")
+        
+        # Retry logic in case image is still processing
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Initiate upscaling
+                import requests
+                response = requests.post(
+                    "https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler",
+                    headers=headers,
+                    json=payload,
+                    timeout=30
+                )
+                
+                # Log detailed error information
+                if response.status_code != 200:
+                    print(f"[ERROR] API Response Status: {response.status_code}")
+                    print(f"[ERROR] API Response Headers: {dict(response.headers)}")
+                    try:
+                        error_data = response.json()
+                        print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
+                        
+                        # If it's a "couldn't access image" error and we have retries left, wait and retry
+                        if "couldn't access image" in str(error_data) and attempt < max_retries - 1:
+                            print(f"[UPSCALE] Image still processing, waiting 5 seconds... (attempt {attempt + 1}/{max_retries})")
+                            import asyncio
+                            await asyncio.sleep(5)
+                            continue
+                    except:
+                        print(f"[ERROR] API Response Text: {response.text}")
+                
+                response.raise_for_status()
+                
+                result = response.json()
+                upscaling_id = result.get("id") or result.get("variationId")
+                print(f"[UPSCALE] Upscaling initiated: {upscaling_id}")
+                
+                # Poll for completion
+                return await self._poll_leonardo_upscale(upscaling_id, headers)
+                
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"[ERROR] Leonardo.ai upscaling failed after {max_retries} attempts: {e}")
+                    raise
+                else:
+                    print(f"[UPSCALE] Attempt {attempt + 1} failed, retrying...")
+                    continue
     
-    async def _poll_leonardo_upscale(self, upscaling_id: str, headers: dict, original_width: int, original_height: int) -> Image.Image:
+    async def _poll_leonardo_upscale(self, upscaling_id: str, headers: dict) -> Image.Image:
         """Poll Leonardo.ai upscaling completion"""
         print(f"[UPSCALE] Polling upscaling: {upscaling_id}")
         
-        status_url = f"https://cloud.leonardo.ai/api/rest/v2/upscaler/{upscaling_id}"
+        # Use the correct endpoint for checking upscale status
+        # Based on Leonardo API, the upscale status is at /variations/{id} or /sd-upscales/{id}
+        possible_endpoints = [
+            f"https://cloud.leonardo.ai/api/rest/v1/sd-upscales/{upscaling_id}",
+            f"https://cloud.leonardo.ai/api/rest/v1/variations/{upscaling_id}",
+            f"https://cloud.leonardo.ai/api/rest/v1/upscale/{upscaling_id}",
+        ]
+        
+        current_endpoint_idx = 0
         
         for attempt in range(120):  # Poll for up to 4 minutes (120 * 2 seconds)
             try:
+                status_url = possible_endpoints[current_endpoint_idx]
                 status_response = requests.get(status_url, headers=headers, timeout=10)
+                
+                if status_response.status_code == 404:
+                    # Try next endpoint
+                    if current_endpoint_idx < len(possible_endpoints) - 1:
+                        current_endpoint_idx += 1
+                        print(f"[UPSCALE] Trying next endpoint: {possible_endpoints[current_endpoint_idx]}")
+                        continue
+                    else:
+                        # All endpoints failed, wait and retry from first
+                        current_endpoint_idx = 0
+                        await asyncio.sleep(2)
+                        continue
+                
                 status_response.raise_for_status()
                 
                 status_data = status_response.json()
-                current_status = status_data.get("status")
                 
+                # Debug: print full response on first successful call
+                if attempt == 0:
+                    print(f"[UPSCALE] Debug - Full status response: {json.dumps(status_data, indent=2)}")
+                
+                # Handle Leonardo's generated_image_variation_generic array structure
+                # {"generated_image_variation_generic": [{"status": "PENDING", "url": null, ...}]}
+                variation_list = status_data.get("generated_image_variation_generic", [])
+                if variation_list and isinstance(variation_list, list) and len(variation_list) > 0:
+                    variation_data = variation_list[0]
+                    current_status = variation_data.get("status")
+                    image_url = variation_data.get("url")
+                else:
+                    # Fallback to old structure parsing
+                    upscale_data = status_data.get("sdUpscaleJob", status_data.get("upscale_job", status_data))
+                    current_status = (
+                        upscale_data.get("status") if isinstance(upscale_data, dict) else None
+                    ) or status_data.get("status")
+                    image_url = None
+                
+                # Log every attempt with status
                 print(f"[UPSCALE] Poll attempt {attempt + 1}/120 - Status: {current_status}")
+                
+                if current_status is None and attempt < 3:
+                    print(f"[UPSCALE] Debug - Response keys: {list(status_data.keys())}")
                 
                 if current_status == "COMPLETE":
                     print(f"[UPSCALE] Upscaling complete! Retrieving image...")
                     
-                    # Get the upscaled image URL
-                    if "upscaledImage" in status_data:
-                        image_url = status_data["upscaledImage"]
-                    elif "outputImageUrl" in status_data:
-                        image_url = status_data["outputImageUrl"]
-                    else:
+                    # Use URL from variation data if available, otherwise try other locations
+                    if not image_url:
+                        image_url = (
+                            status_data.get("upscaledImage") or
+                            status_data.get("url") or
+                            status_data.get("imageUrl")
+                        )
+                    
+                    if not image_url:
+                        print(f"[UPSCALE] Available keys in status_data: {list(status_data.keys())}")
+                        if variation_list and len(variation_list) > 0:
+                            print(f"[UPSCALE] Available keys in variation: {list(variation_list[0].keys())}")
                         raise Exception("Upscaling marked as COMPLETE but no image URL found")
                     
-                    # Download the upscaled image
+                    # Download upscaled image
                     image_response = requests.get(image_url, timeout=30)
                     image_response.raise_for_status()
                     
                     upscaled_image = Image.open(io.BytesIO(image_response.content))
-                    print(f"[UPSCALE] Upscaling completed: {upscaled_image.size} (was {original_width}x{original_height})")
+                    print(f"[UPSCALE] Upscaling completed successfully!")
                     return upscaled_image
                 
                 elif current_status == "FAILED":
-                    error_message = status_data.get("errorMessage", "Unknown error")
+                    error_message = (
+                        upscale_data.get("errorMessage") or
+                        status_data.get("errorMessage") or
+                        "Unknown error"
+                    )
                     raise Exception(f"Leonardo.ai upscaling failed: {error_message}")
                 
                 else:
@@ -1656,7 +2019,9 @@ class ModernGeneratorManager:
                 print(f"[WARNING] Upscaling poll failed: {e}")
                 await asyncio.sleep(2)
         
-        raise TimeoutError("Upscaling timed out after 4 minutes")
+        # If all polling attempts fail, return a fallback
+        print(f"[UPSCALE] Polling failed after 4 minutes. Upscaling may still be processing.")
+        raise TimeoutError("Upscaling timed out after 4 minutes - the job may still be processing in Leonardo.ai")
     
     def get_webhook_endpoints(self) -> Dict[str, str]:
         """Get webhook endpoints for supported generators"""

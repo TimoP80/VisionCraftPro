@@ -309,3 +309,27 @@ class LocalModelManager:
         except Exception as e:
             print(f"[LOCAL-MANAGER] Error: Generation failed: {e}")
             raise e
+
+    def get_optimal_settings(self) -> Dict[str, Any]:
+        """Get optimal settings based on current device and loaded model"""
+        settings = {
+            "device": self.device,
+            "recommended_steps": 20,
+            "recommended_guidance_scale": 7.5,
+            "recommended_width": 512,
+            "recommended_height": 512,
+            "memory_optimizations": []
+        }
+        
+        if self.device == "cpu":
+            settings["recommended_steps"] = 15  # Fewer steps for CPU
+            settings["recommended_width"] = 512  # Smaller dimensions for CPU
+            settings["recommended_height"] = 512
+            settings["memory_optimizations"] = ["attention_slicing", "sequential_cpu_offload"]
+        else:
+            # CUDA optimizations
+            settings["recommended_width"] = 768 if self.current_model_id and "XL" in self.current_model_id.upper() else 512
+            settings["recommended_height"] = 768 if self.current_model_id and "XL" in self.current_model_id.upper() else 512
+            settings["memory_optimizations"] = ["attention_slicing", "model_cpu_offload", "xformers_memory_efficient_attention"]
+            
+        return settings

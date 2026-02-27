@@ -11,9 +11,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install Python and system dependencies
 RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3.10-pip \
-    python3.10-venv \
+    python3 \
+    python3-pip \
+    python3-venv \
     git \
     curl \
     wget \
@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create Python virtual environment
-RUN python3.10 -m venv /opt/venv
+RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Upgrade pip
@@ -41,8 +41,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install additional GPU-specific packages
 RUN pip install --no-cache-dir \
-    nvidia-ml-py3==1.13.1 \
-    pynvml==11.5.0
+    nvidia-ml-py3 \
+    pynvml
 
 # Set working directory
 WORKDIR /app

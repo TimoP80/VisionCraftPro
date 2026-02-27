@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 import json
 import urllib.parse
@@ -401,13 +401,19 @@ async def search_gallery(q: str = ""):
 @app.get("/gallery/{image_id}")
 async def get_gallery_image(image_id: str):
     """Get a single gallery image as base64 plus metadata"""
-    image_b64 = generator.gallery.get_image_data(image_id)
-    metadata = generator.gallery.get_image_by_id(image_id)
+    try:
+        image_b64 = generator.gallery.get_image_data(image_id)
+        metadata = generator.gallery.get_image_by_id(image_id)
 
-    if not image_b64 or not metadata:
-        raise HTTPException(status_code=404, detail="Image not found")
+        if not image_b64 or not metadata:
+            raise HTTPException(status_code=404, detail="Image not found")
 
-    return {"image": image_b64, "metadata": metadata}
+        return {"image": image_b64, "metadata": metadata}
+    except MemoryError:
+        raise HTTPException(status_code=500, detail="Image too large to load")
+    except Exception as e:
+        print(f"[ERROR] Gallery image error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/gallery/{image_id}")
 async def delete_gallery_image(image_id: str):
@@ -422,6 +428,45 @@ async def clear_gallery():
     """Clear the entire gallery"""
     generator.gallery.clear_gallery()
     return {"message": "cleared"}
+
+@app.post("/gallery")
+async def add_to_gallery(request: dict):
+    """Add an image to the gallery"""
+    try:
+        image_data = request.get("image")
+        prompt = request.get("prompt", "No prompt")
+        model = request.get("model", "unknown")
+        generation_time = request.get("generation_time", 0)
+        vram_used = request.get("vram_used", 0)
+        steps = request.get("steps", 20)
+        guidance = request.get("guidance", 7.5)
+        resolution = request.get("resolution", [512, 512])
+        
+        if not image_data:
+            raise HTTPException(status_code=400, detail="No image data provided")
+        
+        # Remove data URL prefix if present
+        if image_data.startswith("data:image/"):
+            image_data = image_data.split(",", 1)[1]
+        
+        image_id = generator.gallery.add_image(
+            image_data=image_data,
+            prompt=prompt,
+            model=model,
+            generation_time=generation_time,
+            vram_used=vram_used,
+            steps=steps,
+            guidance=guidance,
+            resolution=resolution
+        )
+        
+        return {
+            "message": "Image added to gallery",
+            "image_id": image_id
+        }
+    except Exception as e:
+        print(f"[ERROR] Failed to add to gallery: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/local/status/{repo_id}")
 async def get_local_model_status(repo_id: str):
@@ -553,6 +598,17 @@ async def leonardo_webhook(callback_id: str, data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/upscale/status/{job_id}")
+async def get_upscale_status(job_id: str):
+    """Get status of an upscaling job"""
+    # This would typically check a job store/database
+    # For now, return a placeholder response
+    return {
+        "job_id": job_id,
+        "status": "unknown",  # Would be processing/completed/failed
+        "message": f"Status requested for job {job_id}"
+    }
+
 @app.post("/upscale")
 async def upscale_image(request: dict):
     """Upscale an image using Leonardo.ai Universal Upscaler"""
@@ -575,6 +631,8 @@ async def upscale_image(request: dict):
         from io import BytesIO
         from PIL import Image
         
+        print(f"[UPSCALE] Received image: {image_data[:50]}..., upscaling by {upscale_factor}x")
+        
         if image_data.startswith("data:image/"):
             # Remove data URL prefix
             image_data = image_data.split(",", 1)[1]
@@ -582,9 +640,12 @@ async def upscale_image(request: dict):
         image_bytes = base64.b64decode(image_data)
         image = Image.open(BytesIO(image_bytes))
         
-        print(f"[UPSCALE] Received image: {image.size}, upscaling by {upscale_factor}x")
+        # Create a unique job ID for tracking
+        import uuid
+        job_id = str(uuid.uuid4())
         
-        # Upscale using Leonardo.ai
+        # Run upscaling and wait for completion
+        print(f"[UPSCALE] Starting upscaling job {job_id}")
         upscaled_image = await generator.modern_manager.upscale_with_leonardo(
             image=image,
             upscale_factor=upscale_factor,
@@ -595,22 +656,189 @@ async def upscale_image(request: dict):
             seed=seed
         )
         
-        # Convert back to base64
+        # Convert to base64 for response
         output_buffer = BytesIO()
-        upscaled_image.save(output_buffer, format="PNG")
+        upscaled_image.save(output_buffer, format='PNG')
         output_buffer.seek(0)
         upscaled_b64 = base64.b64encode(output_buffer.getvalue()).decode('utf-8')
+        
+        print(f"[UPSCALE] Job {job_id} completed successfully")
         
         return {
             "success": True,
             "upscaled_image": f"data:image/png;base64,{upscaled_b64}",
-            "original_size": f"{image.width}x{image.height}",
-            "upscaled_size": f"{upscaled_image.width}x{upscaled_image.height}",
-            "upscale_factor": upscale_factor
+            "job_id": job_id,
+            "upscaled_size": f"{upscaled_image.width}x{upscaled_image.height}"
         }
         
     except Exception as e:
+        import traceback
         print(f"[ERROR] Upscaling failed: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Import TodoManager for todo endpoints
+from todo_manager import TodoManager
+
+# Initialize TodoManager
+todo_manager = TodoManager()
+
+
+class TodoCreateRequest(BaseModel):
+    """Request model for creating a todo"""
+    title: str
+    description: Optional[str] = ""
+    status: Optional[str] = "pending"
+    priority: Optional[str] = "medium"
+    tags: Optional[List[str]] = []
+    due_date: Optional[str] = None
+
+
+class TodoUpdateRequest(BaseModel):
+    """Request model for updating a todo"""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    tags: Optional[List[str]] = None
+    due_date: Optional[str] = None
+
+
+@app.get("/todos")
+async def get_todos(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc"
+):
+    """Get all todos with optional filtering and sorting"""
+    try:
+        todos = todo_manager.get_all_todos(
+            status=status,
+            priority=priority,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+        return {
+            "todos": [todo.to_dict() for todo in todos],
+            "count": len(todos)
+        }
+    except Exception as e:
+        print(f"[ERROR] Failed to get todos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/todos/stats")
+async def get_todo_stats():
+    """Get todo statistics"""
+    try:
+        stats = todo_manager.get_stats()
+        return stats
+    except Exception as e:
+        print(f"[ERROR] Failed to get todo stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/todos/search")
+async def search_todos(q: str = ""):
+    """Search todos by query string"""
+    try:
+        if not q:
+            raise HTTPException(status_code=400, detail="Query parameter 'q' is required")
+        todos = todo_manager.search_todos(q)
+        return {
+            "todos": [todo.to_dict() for todo in todos],
+            "count": len(todos)
+        }
+    except Exception as e:
+        print(f"[ERROR] Failed to search todos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/todos/{todo_id}")
+async def get_todo(todo_id: str):
+    """Get a specific todo by ID"""
+    try:
+        todo = todo_manager.get_todo(todo_id)
+        if not todo:
+            raise HTTPException(status_code=404, detail="Todo not found")
+        return todo.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Failed to get todo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/todos")
+async def create_todo(request: TodoCreateRequest):
+    """Create a new todo"""
+    try:
+        todo = todo_manager.create_todo(
+            title=request.title,
+            description=request.description or "",
+            status=request.status or "pending",
+            priority=request.priority or "medium",
+            tags=request.tags or [],
+            due_date=request.due_date
+        )
+        return todo.to_dict()
+    except Exception as e:
+        print(f"[ERROR] Failed to create todo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/todos/{todo_id}")
+async def update_todo(todo_id: str, request: TodoUpdateRequest):
+    """Update an existing todo"""
+    try:
+        todo = todo_manager.update_todo(
+            todo_id=todo_id,
+            title=request.title,
+            description=request.description,
+            status=request.status,
+            priority=request.priority,
+            tags=request.tags,
+            due_date=request.due_date
+        )
+        if not todo:
+            raise HTTPException(status_code=404, detail="Todo not found")
+        return todo.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Failed to update todo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/todos/{todo_id}")
+async def delete_todo(todo_id: str):
+    """Delete a todo"""
+    try:
+        success = todo_manager.delete_todo(todo_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Todo not found")
+        return {"message": "Todo deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Failed to delete todo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/todos/{todo_id}/complete")
+async def complete_todo(todo_id: str):
+    """Mark a todo as completed"""
+    try:
+        todo = todo_manager.complete_todo(todo_id)
+        if not todo:
+            raise HTTPException(status_code=404, detail="Todo not found")
+        return todo.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Failed to complete todo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

@@ -623,6 +623,84 @@
                 <!-- Gallery items will be added here -->
             </div>
         </div>
+
+        <!-- Todo List Section -->
+        <div class="glass rounded-xl p-6 mb-8 card-hover">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                    ✅ Todo List
+                </h2>
+                <div class="flex gap-3">
+                    <button id="add-todo-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                        <span>➕</span>
+                        <span>Add Task</span>
+                    </button>
+                    <button id="refresh-todos-btn"
+                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                        <span>🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Todo Stats -->
+            <div id="todo-stats" class="mb-6 p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-400/30">
+                <div class="flex items-center justify-center gap-6 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span>📋</span>
+                        <span class="text-yellow-300">Total:</span>
+                        <span class="font-semibold text-white" id="todo-total">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>✅</span>
+                        <span class="text-green-300">Completed:</span>
+                        <span class="font-semibold text-white" id="todo-completed">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>⏳</span>
+                        <span class="text-blue-300">Pending:</span>
+                        <span class="font-semibold text-white" id="todo-pending">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>🎯</span>
+                        <span class="text-purple-300">Completion:</span>
+                        <span class="font-semibold text-white" id="todo-completion-rate">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Todo Filters -->
+            <div class="mb-4 flex flex-wrap gap-2">
+                <select id="todo-filter-status" class="px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500">
+                    <option value="">All Status</option>
+                    <option value="pending">⏳ Pending</option>
+                    <option value="in_progress">🔄 In Progress</option>
+                    <option value="completed">✅ Completed</option>
+                    <option value="archived">📦 Archived</option>
+                </select>
+                <select id="todo-filter-priority" class="px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500">
+                    <option value="">All Priorities</option>
+                    <option value="high">🔴 High</option>
+                    <option value="medium">🟡 Medium</option>
+                    <option value="low">🟢 Low</option>
+                </select>
+                <select id="todo-sort-by" class="px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500">
+                    <option value="created_at">📅 Sort by Date</option>
+                    <option value="priority">🔥 Sort by Priority</option>
+                    <option value="status">📊 Sort by Status</option>
+                    <option value="due_date">⏰ Sort by Due Date</option>
+                </select>
+                <input type="text" id="todo-search" placeholder="🔍 Search todos..."
+                    class="px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500 flex-1 min-w-[200px]">
+            </div>
+
+            <!-- Todo List -->
+            <div id="todo-list" class="space-y-3">
+                <!-- Todo items will be added here -->
+                <div class="text-center text-gray-400 py-8">Loading todos...</div>
+            </div>
+        </div>
     </div>
 
     <!-- Image Modal -->
@@ -819,7 +897,13 @@
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
 
-            imagesToRender.forEach(item => {
+            imagesToRender.forEach((item, index) => {
+                // Skip items without valid IDs
+                if (!item || !item.id) {
+                    console.warn(`[Gallery] Skipping item at index ${index}: missing or invalid id`, item);
+                    return;
+                }
+
                 const div = document.createElement('div');
                 div.className = 'gallery-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl overflow-hidden cursor-pointer hover:from-gray-700/50 hover:to-gray-800/50 transition-all duration-300 border border-gray-700/50';
                 div.onclick = () => openImageModal(item.id);
@@ -849,6 +933,13 @@
 
         // Load gallery image
         async function loadGalleryImage(imageId, imgElement) {
+            // Validate imageId before making API call
+            if (!imageId || imageId === 'undefined') {
+                console.error('[Gallery] Cannot load image: invalid imageId', imageId);
+                imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzM3NDE1MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+RmFpbGVkIHRvIGxvYWQ8L3RleHQ+PC9zdmc+';
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/gallery/${imageId}`);
                 const data = await response.json();
@@ -861,6 +952,13 @@
 
         // Open image modal
         async function openImageModal(imageId) {
+            // Validate imageId before making API call
+            if (!imageId || imageId === 'undefined') {
+                console.error('[Gallery] Cannot open modal: invalid imageId', imageId);
+                alert('Cannot open image: invalid ID');
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/gallery/${imageId}`);
                 const data = await response.json();
@@ -915,10 +1013,27 @@
             const imageId = modal.dataset.imageId;
             const modalImage = document.getElementById('modal-image');
 
+            // Validate imageId
+            if (!imageId || imageId === 'undefined') {
+                console.error('[Download] Invalid image ID:', imageId);
+                alert('Cannot download: Invalid image ID. Please try reopening the image.');
+                return;
+            }
+
+            // Validate image source
+            if (!modalImage.src || modalImage.src === '') {
+                console.error('[Download] No image source available');
+                alert('Cannot download: Image not loaded.');
+                return;
+            }
+
             const link = document.createElement('a');
             link.download = `generated_image_${imageId}.png`;
             link.href = modalImage.src;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            console.log('[Download] Image downloaded:', imageId);
         });
 
         // Delete image
@@ -1588,19 +1703,15 @@ function updateModelDropdown() {
         function populateLeonardoControls(generator) {
             const modelSelectEl = document.getElementById('leonardo-model');
             const aspectSelectEl = document.getElementById('leonardo-aspect');
-            const styleSelectEl = document.getElementById('leonardo-style');
-            const qualitySelectEl = document.getElementById('leonardo-quality');
 
-            if (!modelSelectEl || !aspectSelectEl || !styleSelectEl || !qualitySelectEl) {
+            if (!modelSelectEl || !aspectSelectEl) {
                 console.error('Leonardo controls elements not found');
                 return;
             }
 
-            // Clear existing options
+            // Clear existing options for model and aspect only
             modelSelectEl.innerHTML = '';
             aspectSelectEl.innerHTML = '';
-            styleSelectEl.innerHTML = '';
-            qualitySelectEl.innerHTML = '';
 
             // Populate models
             const models = generator.models || {};
@@ -1620,29 +1731,14 @@ function updateModelDropdown() {
                 aspectSelectEl.appendChild(option);
             }
 
-            // Populate styles
-            const styles = generator.styles || [];
-            for (const style of styles) {
-                const option = document.createElement('option');
-                option.value = style.id;
-                option.textContent = style.name || style.id;
-                styleSelectEl.appendChild(option);
-            }
-
-            // Populate quality options
-            const qualities = generator.qualities || [];
-            for (const quality of qualities) {
-                const option = document.createElement('option');
-                option.value = quality.id;
-                option.textContent = quality.name || quality.id;
-                qualitySelectEl.appendChild(option);
-            }
+            // NOTE: Style and Quality selectors are NOT cleared/populated here
+            // because they have hardcoded options in the HTML that work with all Leonardo models
 
             console.log('🔍 Leonardo controls populated:', {
                 models: Object.keys(models).length,
                 aspects: aspectRatios.length,
-                styles: styles.length,
-                qualities: qualities.length
+                styles: 'hardcoded',
+                qualities: 'hardcoded'
             });
         }
 
@@ -2385,6 +2481,279 @@ function updateModelDropdown() {
         setInterval(updateStatus, 5000); // Update status every 5 seconds
         loadModels(); // Load available models
         loadGallery(); // Load gallery on startup
+        loadTodos(); // Load todos on startup
+
+        // ==================== TODO MANAGEMENT ====================
+        
+        // Load todos
+        async function loadTodos() {
+            try {
+                const response = await fetch(`${API_BASE}/todos`);
+                const data = await response.json();
+                
+                renderTodos(data.todos);
+                updateTodoStats(data.todos);
+            } catch (error) {
+                console.error('Failed to load todos:', error);
+                document.getElementById('todo-list').innerHTML = '<div class="text-center text-red-400 py-4">❌ Failed to load todos</div>';
+            }
+        }
+
+        // Render todos
+        function renderTodos(todos) {
+            const todoList = document.getElementById('todo-list');
+            
+            if (!todos || todos.length === 0) {
+                todoList.innerHTML = '<div class="text-center text-gray-400 py-8">📝 No todos yet. Add your first task!</div>';
+                return;
+            }
+            
+            todoList.innerHTML = todos.map(todo => `
+                <div class="todo-item p-4 bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-lg border border-gray-700/50 hover:border-yellow-500/30 transition-all duration-200" data-id="${todo.id}">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-3 flex-1">
+                            <button onclick="toggleTodoStatus('${todo.id}', '${todo.status}')" 
+                                class="mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                    todo.status === 'completed' 
+                                        ? 'bg-green-500 border-green-500' 
+                                        : 'border-gray-500 hover:border-yellow-500'
+                                }">
+                                ${todo.status === 'completed' ? '✓' : ''}
+                            </button>
+                            <div class="flex-1">
+                                <h4 class="font-medium ${todo.status === 'completed' ? 'line-through text-gray-400' : 'text-white'}">${escapeHtml(todo.title)}</h4>
+                                ${todo.description ? `<p class="text-sm text-gray-400 mt-1">${escapeHtml(todo.description)}</p>` : ''}
+                                <div class="flex items-center gap-2 mt-2 text-xs">
+                                    <span class="px-2 py-1 rounded ${getPriorityClass(todo.priority)}">${getPriorityIcon(todo.priority)} ${todo.priority}</span>
+                                    <span class="px-2 py-1 rounded ${getStatusClass(todo.status)}">${getStatusIcon(todo.status)} ${todo.status.replace('_', ' ')}</span>
+                                    ${todo.due_date ? `<span class="text-orange-400">📅 ${new Date(todo.due_date).toLocaleDateString()}</span>` : ''}
+                                    ${todo.tags.map(tag => `<span class="text-blue-400">#${escapeHtml(tag)}</span>`).join(' ')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="editTodo('${todo.id}')" class="p-2 text-gray-400 hover:text-blue-400 transition-colors" title="Edit">
+                                ✏️
+                            </button>
+                            <button onclick="deleteTodo('${todo.id}')" class="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Delete">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update todo statistics
+        function updateTodoStats(todos) {
+            const total = todos.length;
+            const completed = todos.filter(t => t.status === 'completed').length;
+            const pending = todos.filter(t => t.status === 'pending').length;
+            const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            document.getElementById('todo-total').textContent = total;
+            document.getElementById('todo-completed').textContent = completed;
+            document.getElementById('todo-pending').textContent = pending;
+            document.getElementById('todo-completion-rate').textContent = completionRate + '%';
+        }
+
+        // Helper functions for styling
+        function getPriorityClass(priority) {
+            const classes = {
+                'high': 'bg-red-500/20 text-red-400',
+                'medium': 'bg-yellow-500/20 text-yellow-400',
+                'low': 'bg-green-500/20 text-green-400'
+            };
+            return classes[priority] || classes.medium;
+        }
+
+        function getPriorityIcon(priority) {
+            const icons = { 'high': '🔴', 'medium': '🟡', 'low': '🟢' };
+            return icons[priority] || '🟡';
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'pending': 'bg-gray-500/20 text-gray-400',
+                'in_progress': 'bg-blue-500/20 text-blue-400',
+                'completed': 'bg-green-500/20 text-green-400',
+                'archived': 'bg-purple-500/20 text-purple-400'
+            };
+            return classes[status] || classes.pending;
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'pending': '⏳',
+                'in_progress': '🔄',
+                'completed': '✅',
+                'archived': '📦'
+            };
+            return icons[status] || '⏳';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Toggle todo status
+        async function toggleTodoStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+            
+            try {
+                const response = await fetch(`${API_BASE}/todos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.ok) {
+                    loadTodos();
+                }
+            } catch (error) {
+                console.error('Failed to update todo:', error);
+                alert('Failed to update todo status');
+            }
+        }
+
+        // Delete todo
+        async function deleteTodo(id) {
+            if (!confirm('Are you sure you want to delete this todo?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/todos/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadTodos();
+                }
+            } catch (error) {
+                console.error('Failed to delete todo:', error);
+                alert('Failed to delete todo');
+            }
+        }
+
+        // Edit todo (simple prompt-based for now)
+        async function editTodo(id) {
+            try {
+                const response = await fetch(`${API_BASE}/todos/${id}`);
+                const todo = await response.json();
+                
+                const newTitle = prompt('Edit title:', todo.title);
+                if (newTitle === null) return; // Cancelled
+                
+                const newDescription = prompt('Edit description:', todo.description);
+                if (newDescription === null) return;
+                
+                const updateResponse = await fetch(`${API_BASE}/todos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: newTitle,
+                        description: newDescription
+                    })
+                });
+                
+                if (updateResponse.ok) {
+                    loadTodos();
+                }
+            } catch (error) {
+                console.error('Failed to edit todo:', error);
+                alert('Failed to edit todo');
+            }
+        }
+
+        // Add new todo
+        document.getElementById('add-todo-btn')?.addEventListener('click', async () => {
+            const title = prompt('Enter todo title:');
+            if (!title) return;
+            
+            const description = prompt('Enter description (optional):') || '';
+            
+            try {
+                const response = await fetch(`${API_BASE}/todos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description,
+                        status: 'pending',
+                        priority: 'medium'
+                    })
+                });
+                
+                if (response.ok) {
+                    loadTodos();
+                }
+            } catch (error) {
+                console.error('Failed to create todo:', error);
+                alert('Failed to create todo');
+            }
+        });
+
+        // Refresh todos
+        document.getElementById('refresh-todos-btn')?.addEventListener('click', loadTodos);
+
+        // Filter todos
+        document.getElementById('todo-filter-status')?.addEventListener('change', filterTodos);
+        document.getElementById('todo-filter-priority')?.addEventListener('change', filterTodos);
+        document.getElementById('todo-sort-by')?.addEventListener('change', filterTodos);
+        document.getElementById('todo-search')?.addEventListener('input', debounce(filterTodos, 300));
+
+        async function filterTodos() {
+            const status = document.getElementById('todo-filter-status')?.value;
+            const priority = document.getElementById('todo-filter-priority')?.value;
+            const sortBy = document.getElementById('todo-sort-by')?.value;
+            const search = document.getElementById('todo-search')?.value;
+            
+            try {
+                let url = `${API_BASE}/todos`;
+                const params = new URLSearchParams();
+                if (status) params.append('status', status);
+                if (priority) params.append('priority', priority);
+                if (sortBy) {
+                    params.append('sort_by', sortBy);
+                    params.append('sort_order', 'desc');
+                }
+                if (params.toString()) url += '?' + params.toString();
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                let todos = data.todos;
+                
+                // Apply search filter client-side
+                if (search) {
+                    const query = search.toLowerCase();
+                    todos = todos.filter(t => 
+                        t.title.toLowerCase().includes(query) ||
+                        t.description.toLowerCase().includes(query) ||
+                        t.tags.some(tag => tag.toLowerCase().includes(query))
+                    );
+                }
+                
+                renderTodos(todos);
+                updateTodoStats(data.todos); // Keep stats for all todos
+            } catch (error) {
+                console.error('Failed to filter todos:', error);
+            }
+        }
+
+        // Debounce helper
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
     </script>
 </body>
 
