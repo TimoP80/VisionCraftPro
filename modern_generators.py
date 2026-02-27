@@ -254,12 +254,6 @@ class ModernGeneratorManager:
         width = kwargs.get("width", 1024)
         height = kwargs.get("height", 1024)
         
-        # Map quality string to numeric value
-        quality = kwargs.get("quality", 80)
-        if isinstance(quality, str):
-            quality_map = {"standard": 60, "high": 80, "ultra": 100}
-            quality = quality_map.get(quality.lower(), 80)
-        
         payload = {
             "prompt": prompt,
             "modelId": model_config.get("id", model_key),
@@ -268,12 +262,8 @@ class ModernGeneratorManager:
             "num_images": 1,
             "alchemy": kwargs.get("alchemy", False),
             "enhancePrompt": kwargs.get("enhancePrompt", False),
-            "contrast": kwargs.get("contrast", 3.5),
+            "ultra": kwargs.get("ultra", False),
         }
-        
-        # Only add quality if valid numeric
-        if isinstance(quality, (int, float)) and quality > 0:
-            payload["quality"] = int(quality)
 
         # Add optional parameters if provided
         if "preset_style" in kwargs:
@@ -1316,6 +1306,17 @@ class ModernGeneratorManager:
                 json=payload,
                 timeout=30
             )
+            
+            # Log detailed error information
+            if response.status_code != 200:
+                print(f"[ERROR] API Response Status: {response.status_code}")
+                print(f"[ERROR] API Response Headers: {dict(response.headers)}")
+                try:
+                    error_data = response.json()
+                    print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
+                except:
+                    print(f"[ERROR] API Response Text: {response.text}")
+            
             response.raise_for_status()
             
             data = response.json()
@@ -1481,12 +1482,94 @@ class ModernGeneratorManager:
         
         print(f"[UPSCALE] API key found: {'*' * 10}{api_key[-4:]}")
         
-        # Step 1: Upload the image to get an image ID
-        image_id = await self._upload_image_to_leonardo(image, api_key)
+        # Convert image to base64 directly for Universal Upscaler
+        import io
+        img_buffer = io.BytesIO()
+        image.save(img_buffer, format='PNG')
+        img_buffer.seek(0)
+        image_bytes = img_buffer.getvalue()
         
-        # Step 2: Use Universal Upscaler with the uploaded image ID
-        print(f"[UPSCALE] Using Universal Upscaler with image ID: {image_id}")
-        return await self._upscale_with_image_id(image_id, upscale_factor, api_key, **kwargs)
+        # Convert to base64
+        import base64
+        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+        
+        # Use Universal Upscaler with base64 image directly
+        print(f"[UPSCALE] Using base64 image for Universal Upscaler")
+        return await self._upscale_with_base64(image_b64, upscale_factor, api_key, **kwargs)
+    
+    async def _upscale_with_base64(self, image_b64: str, upscale_factor: float, api_key: str, **kwargs) -> Image.Image:
+        """Upscale using Leonardo.ai Universal Upscaler with base64 image"""
+        print(f"[UPSCALE] Using base64 image for Universal Upscaler")
+        
+        # Check API limits and warn if needed
+        max_multiplier = 2.0
+        if upscale_factor > max_multiplier:
+            print(f"[UPSCALE] Warning: Leonardo.ai only supports up to {max_multiplier}x upscaling. Reducing from {upscale_factor}x to {max_multiplier}x")
+            upscale_factor = max_multiplier
+        
+        # Prepare upscaling request
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json"
+        }
+        
+        # Leonardo.ai Universal Upscaler payload with base64 image
+        payload = {
+            "image": image_b64,  # Use base64 image directly
+            "upscaleMultiplier": upscale_factor,  # API limits: 1-2x only
+            "creativityStrength": kwargs.get("creativity_strength", 5),
+            "upscalerStyle": kwargs.get("upscaler_style", "CINEMATIC"),  # CINEMATIC, ARTISTIC, etc.
+        }
+        
+        # Add optional parameters if provided
+        if kwargs.get("prompt"):
+            payload["prompt"] = kwargs.get("prompt")
+        if kwargs.get("negative_prompt"):
+            payload["negativePrompt"] = kwargs.get("negative_prompt")
+        
+        print(f"[UPSCALE] Payload: {json.dumps({k: v for k, v in payload.items() if k != 'image'}, indent=2)}")
+        print(f"[UPSCALE] Upscaling with multiplier: {upscale_factor}x")
+        
+        # Retry logic in case image is still processing
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Initiate upscaling
+                import requests
+                response = requests.post(
+                    "https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler",
+                    headers=headers,
+                    json=payload,
+                    timeout=30
+                )
+                
+                # Log detailed error information
+                if response.status_code != 200:
+                    print(f"[ERROR] API Response Status: {response.status_code}")
+                    print(f"[ERROR] API Response Headers: {dict(response.headers)}")
+                    try:
+                        error_data = response.json()
+                        print(f"[ERROR] API Response Body: {json.dumps(error_data, indent=2)}")
+                    except:
+                        print(f"[ERROR] API Response Text: {response.text}")
+                
+                response.raise_for_status()
+                
+                result = response.json()
+                upscaling_id = result.get("id") or result.get("variationId")
+                print(f"[UPSCALE] Upscaling initiated: {upscaling_id}")
+                
+                # Poll for completion
+                return await self._poll_leonardo_upscale(upscaling_id, headers)
+                
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"[ERROR] Leonardo.ai upscaling failed after {max_retries} attempts: {e}")
+                    raise
+                else:
+                    print(f"[UPSCALE] Attempt {attempt + 1} failed, retrying...")
+                    continue
     
     async def _generate_from_image(self, image_id: str, api_key: str, **kwargs) -> str:
         """Generate an image using uploaded image as input"""
@@ -1780,7 +1863,7 @@ class ModernGeneratorManager:
         
         # Leonardo.ai Universal Upscaler payload
         payload = {
-            "inputImage": image_id,  # Use the uploaded image ID
+            "image": image_id,  # Use 'image' parameter instead of 'inputImage'
             "upscaleMultiplier": upscale_factor,  # API limits: 1-2x only
             "creativityStrength": kwargs.get("creativity_strength", 5),
             "upscalerStyle": kwargs.get("upscaler_style", "CINEMATIC"),  # CINEMATIC, ARTISTIC, etc.
