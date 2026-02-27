@@ -659,6 +659,123 @@
                     </button>
                     <button id="delete-btn"
                         class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>🗑️</span>
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upscaling Modal -->
+    <div id="upscale-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content rounded-xl max-w-4xl max-h-full overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+                        🔍 Upscale Image
+                    </h3>
+                    <button id="close-upscale-modal"
+                        class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Image Comparison -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-300 mb-2">Original</h4>
+                        <img id="upscale-original" class="w-full rounded-lg shadow-lg" src="" alt="Original image">
+                        <p id="original-size" class="text-sm text-gray-400 mt-2">Size: Loading...</p>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-300 mb-2">Upscaled</h4>
+                        <div id="upscaled-container" class="relative">
+                            <img id="upscaled-result" class="w-full rounded-lg shadow-lg hidden" src="" alt="Upscaled image">
+                            <div id="upscale-loading" class="hidden">
+                                <div class="flex items-center justify-center h-64">
+                                    <div class="loading-spinner"></div>
+                                </div>
+                                <p class="text-center text-gray-300 mt-4">Upscaling in progress...</p>
+                                <div class="mt-4">
+                                    <div class="bg-gray-700 rounded-full h-2">
+                                        <div id="upscale-progress-bar"
+                                            class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                                            style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="upscaled-size" class="text-sm text-gray-400 mt-2 hidden">Size: Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Upscaling Controls -->
+                <div class="bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <h4 class="text-lg font-semibold text-gray-300 mb-4">Upscaling Settings</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">🔍 Upscale Factor</label>
+                            <select id="upscale-factor" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                <option value="1.5">1.5x</option>
+                                <option value="2.0" selected>2.0x</option>
+                                <option value="3.0">3.0x</option>
+                                <option value="4.0">4.0x</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">⚡ Steps</label>
+                            <input type="number" id="upscale-steps" min="10" max="50" value="20"
+                                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">🎯 Guidance Scale</label>
+                            <input type="number" id="upscale-guidance" min="0" max="20" step="0.5" value="7.5"
+                                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">🎲 Seed</label>
+                            <input type="number" id="upscale-seed" value="-1"
+                                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                placeholder="-1 for random">
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">💬 Enhancement Prompt (Optional)</label>
+                        <textarea id="upscale-prompt" rows="2"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
+                            placeholder="enhance details, sharp focus, high quality..."></textarea>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">🚫 Negative Prompt (Optional)</label>
+                        <textarea id="upscale-negative-prompt" rows="2"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
+                            placeholder="blurry, low quality, distorted..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 flex gap-4">
+                    <button id="start-upscale-btn"
+                        class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>🔍</span>
+                        <span>Start Upscaling</span>
+                    </button>
+                    <button id="download-upscaled-btn" class="hidden"
+                        class="gradient-btn text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>💾</span>
+                        <span>Download Upscaled</span>
+                    </button>
+                    <button id="save-to-gallery-btn" class="hidden"
+                        class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>🖼️</span>
+                        <span>Save to Gallery</span>
                     </button>
                 </div>
             </div>
