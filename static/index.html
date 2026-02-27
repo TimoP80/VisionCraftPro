@@ -1019,7 +1019,8 @@
             const modalImage = document.getElementById('modal-image');
             
             console.log('[Download] imageId:', imageId);
-            console.log('[Download] modalImage.src:', modalImage.src ? 'present' : 'missing');
+            console.log('[Download] modalImage exists:', !!modalImage);
+            console.log('[Download] modalImage.src:', modalImage?.src?.substring(0, 50));
 
             // Validate imageId
             if (!imageId || imageId === 'undefined') {
@@ -1029,7 +1030,7 @@
             }
 
             // Validate image source
-            if (!modalImage.src || modalImage.src === '') {
+            if (!modalImage || !modalImage.src || modalImage.src === '') {
                 console.error('[Download] No image source available');
                 alert('Cannot download: Image not loaded.');
                 return;
@@ -1037,29 +1038,50 @@
             
             // Check if src is a data URL
             if (!modalImage.src.startsWith('data:image')) {
-                console.error('[Download] Image src is not a data URL:', modalImage.src.substring(0, 50));
+                console.error('[Download] Image src is not a data URL');
                 alert('Cannot download: Image format not supported.');
                 return;
             }
 
-            console.log('[Download] Creating download link...');
-            
-            const link = document.createElement('a');
-            link.download = `generated_image_${imageId}.png`;
-            link.href = modalImage.src;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            
-            console.log('[Download] Triggering download...');
-            
-            // Use setTimeout to ensure DOM is ready
-            setTimeout(() => {
+            try {
+                console.log('[Download] Converting data URL to blob...');
+                
+                // Convert base64 to blob for more reliable download
+                const dataUrl = modalImage.src;
+                const byteString = atob(dataUrl.split(',')[1]);
+                const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                
+                const blob = new Blob([ab], { type: mimeString });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                console.log('[Download] Blob created, triggering download...');
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `generated_image_${imageId}.png`;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                
+                // Trigger click
                 link.click();
+                
+                // Cleanup
                 setTimeout(() => {
                     document.body.removeChild(link);
-                    console.log('[Download] Image downloaded:', imageId);
+                    URL.revokeObjectURL(blobUrl);
+                    console.log('[Download] Success:', imageId);
                 }, 100);
-            }, 0);
+                
+            } catch (error) {
+                console.error('[Download] Error:', error);
+                alert('Download failed: ' + error.message);
+            }
         });
 
         // Delete image
