@@ -15,6 +15,15 @@ import time
 import asyncio
 from datetime import datetime
 
+# Leonardo.ai SDK
+try:
+    from leonardo_ai_sdk import LeonardoAiSDK
+    from leonardo_ai_sdk.models import shared, operations
+    LEONARDO_SDK_AVAILABLE = True
+except ImportError:
+    LEONARDO_SDK_AVAILABLE = False
+    print("leonardo-ai-sdk not installed. Install with: pip install leonardo-ai-sdk")
+
 # Modal imports - will be imported conditionally
 try:
     import modal
@@ -1254,179 +1263,139 @@ class ModernGeneratorManager:
         return base_negative
     
     async def generate_with_leonardo(self, prompt: str, **kwargs) -> Image.Image:
-        """Generate image using Leonardo.ai API"""
-        print(f"[ART] Leonardo.ai generation with {prompt[:100]}...")
+        """Generate image using Leonardo.ai API via official SDK"""
+        print(f"[ART] Leonardo.ai SDK generation with {prompt[:100]}...")
 
-        endpoint = (self.available_generators.get("leonardo-api") or {}).get("api_endpoint")
-        if not endpoint or not isinstance(endpoint, str) or not endpoint.startswith("http"):
-            raise ValueError(
-                f"Leonardo api_endpoint is misconfigured: {endpoint!r}. "
-                "Expected a full https URL."
-            )
-        
         # Check API key
         if 'leonardo-api' not in self.api_keys:
             raise ValueError("Leonardo.ai API key not set. Please set your API key first.")
-        
+
         api_key = self.api_keys['leonardo-api']
-        
+
         # Validate API key format
         if not isinstance(api_key, str) or len(api_key) > 1000 or len(api_key) < 10:
             raise ValueError("Leonardo.ai API key appears to be corrupted or invalid. Please check your API key configuration.")
-        
-        # Check if API key contains unexpected characters (like NSIS output)
-        if 'MakeNSIS' in api_key or 'Copyright' in api_key or '\r\n' in api_key:
-            raise ValueError("Leonardo.ai API key appears to be corrupted with system output. Please reset your API key.")
-        
+
         print(f"API key found: {'*' * 10}{api_key[-4:]}")
-        
-        # Enhance prompt for better quality
-        enhanced_prompt = prompt
-        print(f"[PROMPT] Enhanced: {enhanced_prompt[:100]}...")
-        
-        # ... rest of the function continues ...
-        
-        headers = {
-            "accept": "application/json",
-            "authorization": f"Bearer {api_key}",
-            "content-type": "application/json"
-        }
-        
-        print(f"[SEARCH] Headers prepared: {list(headers.keys())}")
-        
-        # Generate a unique callback ID for this generation
-        callback_id = f"leonardo_{int(time.time())}_{hash(prompt) % 10000}"
-        print(f"[SEARCH] Generated callback ID: {callback_id}")
-        
-        # Get parameters with defaults
+
+        # Get parameters
         model_key = kwargs.get("model", "phoenix-1-0")
         aspect_ratio = kwargs.get("aspect_ratio", "1:1")
-        
-        print(f"[SEARCH] Model key: {model_key}")
-        print(f"[SEARCH] Aspect ratio: {aspect_ratio}")
-        
-        # Get model info
-        generator_info = self.available_generators["leonardo-api"]
-        models = generator_info["models"]
-        
-        print(f"[SEARCH] Available models: {list(models.keys())}")
-        
-        if model_key not in models:
-            # Allow passing a raw Leonardo platform modelId directly (UI may send the platform id)
-            model_info = {
-                "id": model_key,
-                "name": model_key,
-                "description": "Platform model id",
-                "max_resolution": generator_info.get("max_resolution", (1024, 1024)),
-                "aspect_ratios": [ar.get("id") for ar in generator_info.get("aspect_ratios", []) if isinstance(ar, dict) and ar.get("id")],
-                "note": "Using raw modelId",
-            }
-            print(f"[SEARCH] Using raw Leonardo modelId: {model_key}")
-        else:
-            model_info = models[model_key]
-            print(f"[SEARCH] Selected model: {model_info['name']} (ID: {model_info['id']})")
-        
-        # Get resolution from aspect ratio
-        aspect_ratios = {ar["id"]: ar for ar in generator_info["aspect_ratios"]}
-        if aspect_ratio not in aspect_ratios:
-            aspect_ratio = "1:1"  # Default fallback
-        
-        resolution = aspect_ratios[aspect_ratio]["resolution"]
-        width, height = resolution
-        print(f"[SEARCH] Resolution: {width}x{height}")
+        width = kwargs.get("width", 1024)
+        height = kwargs.get("height", 1024)
 
-        # Determine model config (api version, endpoint, etc.)
-        model_config = self._leonardo_model_config(model_key)
-        api_version = model_config["api_version"]
-        endpoint_path = model_config["endpoint"]
-        full_endpoint = f"https://cloud.leonardo.ai/api/rest/{api_version}/{endpoint_path}"
-
-        print(f"[LEONARDO] Model: {model_config['name']} ({model_key})")
-        print(f"[LEONARDO] API version: {api_version}")
-        print(f"[LEONARDO] Endpoint: {full_endpoint}")
-
-        # Build payload based on API version
-        if api_version == "v2":
-            generation_payload = self._build_leonardo_payload_v2(model_key, model_config, prompt, **kwargs)
-        else:
-            generation_payload = self._build_leonardo_payload_v1(model_key, model_config, prompt, **kwargs)
-
-        print(f"[LEONARDO] Payload: {json.dumps(generation_payload, indent=2)}")
-
-        # Update headers for V2 if needed
-        headers = {
-            "accept": "application/json",
-            "authorization": f"Bearer {api_key}",
-            "content-type": "application/json"
-        }
-
-        print(f"[LEONARDO] Sending to: {full_endpoint}")
-        print(f"[LEONARDO] Headers: {list(headers.keys())}")
-        print(f"[LEONARDO] Payload: {json.dumps(generation_payload, indent=2)}")
+        print(f"[SDK] Model: {model_key}, Resolution: {width}x{height}")
 
         try:
-            print(f"[SEND] Sending POST request...")
-            # Start generation
-            response = requests.post(
-                full_endpoint,
-                headers=headers,
-                json=generation_payload,
-                timeout=30
-            )
-            
-            if response.status_code >= 500:
-                print(f"[CRITICAL] Leonardo.ai server error (500). Usually this means an invalid model ID or payload parameter.")
-                print(f"[CRITICAL] Endpoint: {full_endpoint}")
-                print(f"[CRITICAL] Payload sent: {json.dumps(generation_payload)}")
-                
-            response.raise_for_status()
-            
-            data = response.json()
-            print(f"[SEND] Response data: {json.dumps(data, indent=2)}")
-            
-            # Extract generation ID from the response
-            if "sdGenerationJob" in data and "generationId" in data["sdGenerationJob"]:
-                generation_id = data["sdGenerationJob"]["generationId"]
-            elif "generations_by_pk" in data and "id" in data["generations_by_pk"]:
-                generation_id = data["generations_by_pk"]["id"]
-            else:
-                print(f"� Full response structure: {json.dumps(data, indent=2)}")
-                raise ValueError("Could not extract generation ID from response")
-            
-            print(f"[OK] Leonardo.ai generation started: {generation_id}")
-            
-            # Poll for completion
-            return await self._poll_leonardo_generation(generation_id, headers)
-            
+            # Initialize SDK client
+            from leonardo_ai_sdk import LeonardoAiSDK
+
+            async with LeonardoAiSDK(bearer_auth=api_key) as client:
+                # Build generation request using SDK models
+                request = {
+                    "prompt": prompt,
+                    "model_id": self._leonardo_model_config(model_key).get("id", model_key),
+                    "width": width,
+                    "height": height,
+                    "num_images": 1,
+                }
+
+                # Add optional parameters
+                if kwargs.get("negative_prompt"):
+                    request["negative_prompt"] = kwargs["negative_prompt"]
+
+                # Map quality string to numeric
+                quality = kwargs.get("quality", 80)
+                if isinstance(quality, str):
+                    quality_map = {"standard": 60, "high": 80, "ultra": 100}
+                    quality = quality_map.get(quality.lower(), 80)
+                request["sd_version"] = quality  # SDK uses sd_version for quality
+
+                # Add guidance scale if provided
+                if "guidance_scale" in kwargs and kwargs["guidance_scale"] is not None:
+                    request["guidance_scale"] = kwargs["guidance_scale"]
+
+                # Add inference steps if provided
+                if "num_inference_steps" in kwargs and kwargs["num_inference_steps"] is not None:
+                    request["inference_steps"] = kwargs["num_inference_steps"]
+
+                # Add seed if provided (valid integer only)
+                if "seed" in kwargs and kwargs["seed"] is not None and kwargs["seed"] >= 0:
+                    request["seed"] = kwargs["seed"]
+
+                # Add style if provided
+                if "preset_style" in kwargs:
+                    request["preset_style"] = kwargs["preset_style"]
+
+                print(f"[SDK] Request: {json.dumps({k: v for k, v in request.items() if k != 'prompt'}, indent=2)}")
+
+                # Create generation using SDK
+                res = await client.image.create_generation_async(request=request)
+
+                if not res or not res.sd_generation_job:
+                    raise ValueError("No generation job returned from SDK")
+
+                generation_id = res.sd_generation_job.generation_id
+                print(f"[SDK] Generation started: {generation_id}")
+
+                # Poll for completion using SDK
+                return await self._poll_leonardo_generation_sdk(client, generation_id)
+
         except Exception as e:
-            print(f"[ERROR] Leonardo.ai generation failed: {e}")
-            print(f"[SEARCH] Error type: {type(e).__name__}")
+            print(f"[ERROR] Leonardo.ai SDK generation failed: {e}")
+            print(f"[SDK] Error type: {type(e).__name__}")
             import traceback
             traceback.print_exc()
-            
-            # Check if it was a timeout - the generation might have actually completed
-            if "timeout" in str(e).lower():
-                print(f"[SEARCH] Checking if generation completed despite timeout...")
-                try:
-                    # Final check for completion
-                    status_url = f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}"
-                    final_response = requests.get(status_url, headers=headers, timeout=10)
-                    final_response.raise_for_status()
-                    final_data = final_response.json()
-                    
-                    if final_data.get("status") == "COMPLETE":
-                        print(f"[OK] Generation completed despite timeout! Retrieving image...")
-                        if "generated_images" in final_data and len(final_data["generated_images"]) > 0:
-                            image_url = final_data["generated_images"][0]["url"]
-                            image_response = requests.get(image_url, timeout=30)
-                            image_response.raise_for_status()
-                            image = Image.open(io.BytesIO(image_response.content))
-                            print(f"[OK] Leonardo.ai image retrieved successfully!")
-                            return image
-                except Exception as final_check_error:
-                    print(f"[SEARCH] Final check failed: {final_check_error}")
-            
             raise
+
+    async def _poll_leonardo_generation_sdk(self, client, generation_id: str) -> Image.Image:
+        """Poll for generation completion using SDK"""
+        print(f"[SDK] Polling generation: {generation_id}")
+
+        for attempt in range(180):  # Poll for up to 6 minutes
+            try:
+                # Get generation status using SDK
+                res = await client.image.get_generation_by_id_async(id=generation_id)
+
+                if not res or not res.generations_by_pk:
+                    print(f"[SDK] Poll {attempt + 1}/180 - No data yet")
+                    await asyncio.sleep(3)
+                    continue
+
+                generation_data = res.generations_by_pk
+                current_status = generation_data.status
+
+                print(f"[SDK] Poll {attempt + 1}/180 - Status: {current_status}")
+
+                if current_status == "COMPLETE":
+                    print(f"[SDK] Generation complete!")
+
+                    generated_images = generation_data.generated_images or []
+                    if len(generated_images) > 0:
+                        image_url = generated_images[0].url
+
+                        # Download the image
+                        image_response = requests.get(image_url, timeout=30)
+                        image_response.raise_for_status()
+
+                        image = Image.open(io.BytesIO(image_response.content))
+                        print(f"[SDK] Image downloaded successfully")
+                        return image
+                    else:
+                        raise Exception("Generation marked COMPLETE but no images found")
+
+                elif current_status == "FAILED":
+                    error_message = generation_data.error_message or "Unknown error"
+                    raise Exception(f"Leonardo.ai generation failed: {error_message}")
+
+                else:
+                    await asyncio.sleep(3)
+
+            except Exception as e:
+                print(f"[WARNING] SDK polling error: {e}")
+                await asyncio.sleep(3)
+
+        raise TimeoutError("Generation timed out after 6 minutes")
     
     async def _wait_for_leonardo_callback(self, generation_id: str, callback_id: str, headers: dict) -> Image.Image:
         """Wait for Leonardo.ai callback or fall back to polling"""
