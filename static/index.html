@@ -652,10 +652,13 @@
                         <span>💾</span>
                         <span>Download</span>
                     </button>
+                    <button id="upscale-btn"
+                        class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <span>🔍</span>
+                        <span>Upscale</span>
+                    </button>
                     <button id="delete-btn"
                         class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
-                        <span>🗑️</span>
-                        <span>Delete</span>
                     </button>
                 </div>
             </div>
@@ -2087,6 +2090,178 @@ function updateModelDropdown() {
                 }
             }
         }
+
+        // Upscaling functionality
+        let currentUpscalingImage = null;
+
+        // Open upscaling modal
+        document.getElementById('upscale-btn').addEventListener('click', () => {
+            const modal = document.getElementById('image-modal');
+            const modalImage = document.getElementById('modal-image');
+            const upscaleModal = document.getElementById('upscale-modal');
+            const upscaleOriginal = document.getElementById('upscale-original');
+            const originalSize = document.getElementById('original-size');
+            
+            // Get image dimensions
+            const img = new Image();
+            img.onload = function() {
+                originalSize.textContent = `Size: ${this.width}x${this.height}`;
+            };
+            img.src = modalImage.src;
+            
+            // Copy image to upscaling modal
+            upscaleOriginal.src = modalImage.src;
+            currentUpscalingImage = modalImage.src;
+            
+            // Hide upscaling result initially
+            document.getElementById('upscaled-result').classList.add('hidden');
+            document.getElementById('upscaled-size').classList.add('hidden');
+            document.getElementById('download-upscaled-btn').classList.add('hidden');
+            document.getElementById('save-to-gallery-btn').classList.add('hidden');
+            document.getElementById('upscale-loading').classList.add('hidden');
+            
+            // Show upscaling modal
+            upscaleModal.classList.remove('hidden');
+            modal.classList.add('hidden');
+        });
+
+        // Close upscaling modal
+        document.getElementById('close-upscale-modal').addEventListener('click', () => {
+            document.getElementById('upscale-modal').classList.add('hidden');
+        });
+
+        // Start upscaling
+        document.getElementById('start-upscale-btn').addEventListener('click', async () => {
+            if (!currentUpscalingImage) {
+                alert('No image to upscale');
+                return;
+            }
+
+            // Get upscaling parameters
+            const upscaleFactor = parseFloat(document.getElementById('upscale-factor').value);
+            const prompt = document.getElementById('upscale-prompt').value;
+            const negativePrompt = document.getElementById('upscale-negative-prompt').value;
+            const steps = parseInt(document.getElementById('upscale-steps').value);
+            const guidance = parseFloat(document.getElementById('upscale-guidance').value);
+            const seed = parseInt(document.getElementById('upscale-seed').value);
+
+            // Show loading state
+            document.getElementById('upscale-loading').classList.remove('hidden');
+            document.getElementById('upscaled-result').classList.add('hidden');
+            document.getElementById('download-upscaled-btn').classList.add('hidden');
+            document.getElementById('save-to-gallery-btn').classList.add('hidden');
+            document.getElementById('start-upscale-btn').disabled = true;
+
+            try {
+                // Prepare request
+                const requestData = {
+                    image: currentUpscalingImage,
+                    upscale_factor: upscaleFactor,
+                    prompt: prompt,
+                    negative_prompt: negativePrompt,
+                    num_inference_steps: steps,
+                    guidance_scale: guidance,
+                    seed: seed
+                };
+
+                console.log('[UPSCALE] Starting upscaling with parameters:', requestData);
+
+                // Call upscaling API
+                const response = await fetch(`${API_BASE}/upscale`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show upscaled result
+                    const upscaledImg = document.getElementById('upscaled-result');
+                    upscaledImg.src = result.upscaled_image;
+                    upscaledImg.classList.remove('hidden');
+                    
+                    // Update size info
+                    document.getElementById('upscaled-size').textContent = `Size: ${result.upscaled_size}`;
+                    document.getElementById('upscaled-size').classList.remove('hidden');
+                    
+                    // Show action buttons
+                    document.getElementById('download-upscaled-btn').classList.remove('hidden');
+                    document.getElementById('save-to-gallery-btn').classList.remove('hidden');
+                    
+                    // Store upscaled image data for download
+                    document.getElementById('download-upscaled-btn').dataset.imageData = result.upscaled_image;
+                    document.getElementById('save-to-gallery-btn').dataset.imageData = result.upscaled_image;
+                    
+                    console.log('[UPSCALE] Upscaling completed successfully');
+                } else {
+                    throw new Error(result.error || 'Upscaling failed');
+                }
+            } catch (error) {
+                console.error('[UPSCALE] Upscaling failed:', error);
+                alert('Upscaling failed: ' + error.message);
+            } finally {
+                // Hide loading state
+                document.getElementById('upscale-loading').classList.add('hidden');
+                document.getElementById('start-upscale-btn').disabled = false;
+            }
+        });
+
+        // Download upscaled image
+        document.getElementById('download-upscaled-btn').addEventListener('click', () => {
+            const imageData = document.getElementById('download-upscaled-btn').dataset.imageData;
+            if (imageData) {
+                const link = document.createElement('a');
+                link.download = `upscaled_image_${Date.now()}.png`;
+                link.href = imageData;
+                link.click();
+            }
+        });
+
+        // Save upscaled image to gallery
+        document.getElementById('save-to-gallery-btn').addEventListener('click', async () => {
+            const imageData = document.getElementById('save-to-gallery-btn').dataset.imageData;
+            if (!imageData) return;
+
+            try {
+                // Extract base64 data
+                const base64Data = imageData.split(',')[1];
+                
+                // Save to gallery
+                const response = await fetch(`${API_BASE}/gallery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: base64Data,
+                        prompt: 'Upscaled image',
+                        model: 'Leonardo.ai Universal Upscaler',
+                        steps: 20,
+                        guidance: 7.5,
+                        resolution: [1024, 1024], // Will be updated by server
+                        generation_time: 0,
+                        vram_used: 0
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Upscaled image saved to gallery!');
+                    loadGallery(); // Refresh gallery
+                } else {
+                    throw new Error('Failed to save to gallery');
+                }
+            } catch (error) {
+                console.error('Failed to save to gallery:', error);
+                alert('Failed to save to gallery: ' + error.message);
+            }
+        });
 
         // Initialize
         updateStatus();
