@@ -1304,12 +1304,33 @@ class ModernGeneratorManager:
                 if kwargs.get("negative_prompt"):
                     request["negative_prompt"] = kwargs["negative_prompt"]
 
-                # Map quality string to numeric
-                quality = kwargs.get("quality", 80)
-                if isinstance(quality, str):
-                    quality_map = {"standard": 60, "high": 80, "ultra": 100}
-                    quality = quality_map.get(quality.lower(), 80)
-                request["sd_version"] = quality  # SDK uses sd_version for quality
+                # Map model to sd_version enum (SDK requirement)
+                # sd_version must be one of: 'v1_5', 'v2', 'v3', 'SDXL_0_8', 'SDXL_0_9', 
+                # 'SDXL_1_0', 'SDXL_LIGHTNING', 'PHOENIX', 'FLUX', 'FLUX_DEV', 'KINO_2_0'
+                model_to_sd_version = {
+                    "phoenix-1-0": "PHOENIX",
+                    "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3": "PHOENIX",
+                    "phoenix-0-9": "PHOENIX",
+                    "6b645e3a-d64f-4341-a6d8-7a3690fbf042": "PHOENIX",
+                    "flux-dev": "FLUX_DEV",
+                    "b2614463-296c-462a-9586-aafdb8f00e36": "FLUX_DEV",
+                    "flux-schnell": "FLUX",
+                    "1dd50843-d653-4516-a8e3-f0238ee453ff": "FLUX",
+                    "flux-1-kontext": "FLUX",
+                    "28aeddf8-bd19-4803-80fc-79602d1a9989": "FLUX",
+                    "leonardo-kino-xl": "SDXL_LIGHTNING",
+                    "aa77f04e-3eec-4034-9c07-d0f619684628": "SDXL_LIGHTNING",
+                    "leonardo-lightning-xl": "SDXL_LIGHTNING",
+                    "b24e16ff-06e3-43eb-8d33-4416c2d75876": "SDXL_LIGHTNING",
+                    "sdxl-1-0": "SDXL_1_0",
+                    "16e7060a-803e-4df3-97ee-edcfa5dc9cc8": "SDXL_1_0",
+                    "lucid-origin": "PHOENIX",  # Lucid Origin uses Phoenix
+                    "7b592283-e8a7-4c5a-9ba6-d18c31f258b9": "PHOENIX",
+                    "lucid-realism": "PHOENIX",
+                    "05ce0082-2d80-4a2d-8653-4d1c85e2418e": "PHOENIX",
+                }
+                sd_version = model_to_sd_version.get(model_key, "PHOENIX")
+                request["sd_version"] = sd_version
 
                 # Add guidance scale if provided
                 if "guidance_scale" in kwargs and kwargs["guidance_scale"] is not None:
