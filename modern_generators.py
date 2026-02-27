@@ -244,16 +244,25 @@ class ModernGeneratorManager:
         """Build Leonardo V1 payload (modelId, styleUUID, enhancePrompt, etc.)."""
         width = kwargs.get("width", 1024)
         height = kwargs.get("height", 1024)
+        
+        # Map quality string to numeric value
+        quality = kwargs.get("quality", 80)
+        if isinstance(quality, str):
+            quality_map = {"standard": 60, "high": 80, "ultra": 100}
+            quality = quality_map.get(quality.lower(), 80)
+        
         payload = {
             "prompt": prompt,
             "modelId": model_config.get("id", model_key),
             "width": width,
             "height": height,
             "num_images": 1,
-            "contrast": kwargs.get("contrast", 3.5),
             "enhancePrompt": kwargs.get("enhancePrompt", False),
-            "quality": kwargs.get("quality", 80),  # Add quality setting for V1
         }
+        
+        # Only add quality if valid numeric
+        if isinstance(quality, (int, float)) and quality > 0:
+            payload["quality"] = int(quality)
 
         # Add optional parameters if provided
         if "preset_style" in kwargs:
@@ -293,13 +302,20 @@ class ModernGeneratorManager:
         """Build Leonardo V2 payload (model, parameters wrapper, prompt_enhance, style_ids)."""
         width = kwargs.get("width", 1024)
         height = kwargs.get("height", 1024)
+        
+        # Map quality string to numeric value
+        quality = kwargs.get("quality", 80)
+        if isinstance(quality, str):
+            quality_map = {"standard": 60, "high": 80, "ultra": 100}
+            quality = quality_map.get(quality.lower(), 80)
+        
         parameters = {
             "prompt": prompt,
             "width": width,
             "height": height,
             "quantity": 1,
             "prompt_enhance": "OFF",  # Default to OFF for V2 models
-            "quality": kwargs.get("quality", 80),  # Add quality setting
+            "quality": int(quality) if isinstance(quality, (int, float)) and quality > 0 else 80,
         }
 
         # Add style_ids if preset_style is provided
