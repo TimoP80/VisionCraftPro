@@ -55,7 +55,7 @@ def generate_image_internal_a100(
     guidance_scale: float = 7.5,
 ) -> bytes:
     """Generate image using Modal A100"""
-    return await _generate_image_internal(prompt, model_name, width, height, num_inference_steps, guidance_scale)
+    return _generate_image_internal(prompt, model_name, width, height, num_inference_steps, guidance_scale)
 
 # Modal function for image generation - H100
 @app.function(
@@ -81,10 +81,10 @@ def generate_image_internal_h100(
     guidance_scale: float = 7.5,
 ) -> bytes:
     """Generate image using Modal H100"""
-    return await _generate_image_internal(prompt, model_name, width, height, num_inference_steps, guidance_scale)
+    return _generate_image_internal(prompt, model_name, width, height, num_inference_steps, guidance_scale)
 
 # Shared internal generation logic
-async def _generate_image_internal(
+def _generate_image_internal(
     prompt: str,
     model_name: str,
     width: int,
