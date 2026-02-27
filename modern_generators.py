@@ -276,11 +276,11 @@ class ModernGeneratorManager:
             payload["negative_prompt"] = kwargs["negative_prompt"]
 
         # Add guidance scale if provided (V1 uses guidance_scale)
-        if "guidance_scale" in kwargs:
+        if "guidance_scale" in kwargs and kwargs["guidance_scale"] is not None:
             payload["guidance_scale"] = kwargs["guidance_scale"]
 
         # Add num_inference_steps if provided
-        if "num_inference_steps" in kwargs:
+        if "num_inference_steps" in kwargs and kwargs["num_inference_steps"] is not None:
             payload["num_inference_steps"] = kwargs["num_inference_steps"]
 
         # Add seed if provided (must be a valid integer, not None)
@@ -326,11 +326,11 @@ class ModernGeneratorManager:
             parameters["negative_prompt"] = kwargs["negative_prompt"]
 
         # Add guidance scale if provided (V2 uses guidance_scale in parameters)
-        if "guidance_scale" in kwargs:
+        if "guidance_scale" in kwargs and kwargs["guidance_scale"] is not None:
             parameters["guidance_scale"] = kwargs["guidance_scale"]
 
         # Add num_inference_steps if provided (V2 uses steps)
-        if "num_inference_steps" in kwargs:
+        if "num_inference_steps" in kwargs and kwargs["num_inference_steps"] is not None:
             parameters["steps"] = kwargs["num_inference_steps"]
 
         # Add seed if provided (must be a valid integer, not None)
