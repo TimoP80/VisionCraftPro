@@ -31,10 +31,10 @@ image = modal.Image.debian_slim().pip_install(
     "uvicorn"
 )
 
-# Modal function for image generation
+# Modal function for image generation - A100
 @app.function(
     image=image,
-    gpu="A100-40GB",
+    gpu=modal.gpu.A100(size="40GB"),
     timeout=300,
     volumes={
         "/cache": volume
@@ -46,13 +46,51 @@ image = modal.Image.debian_slim().pip_install(
         modal.Secret.from_name("huggingface-token"),
     ]
 )
-def generate_image_internal(
+def generate_image_internal_a100(
     prompt: str,
     model_name: str = "runwayml/stable-diffusion-v1-5",
     width: int = 512,
     height: int = 512,
     num_inference_steps: int = 20,
     guidance_scale: float = 7.5,
+) -> bytes:
+    """Generate image using Modal A100"""
+    return await _generate_image_internal(prompt, model_name, width, height, num_inference_steps, guidance_scale)
+
+# Modal function for image generation - H100
+@app.function(
+    image=image,
+    gpu=modal.gpu.H100(),
+    timeout=300,
+    volumes={
+        "/cache": volume
+    },
+    env={
+        "HF_HOME": "/cache",
+    },
+    secrets=[
+        modal.Secret.from_name("huggingface-token"),
+    ]
+)
+def generate_image_internal_h100(
+    prompt: str,
+    model_name: str = "runwayml/stable-diffusion-v1-5",
+    width: int = 512,
+    height: int = 512,
+    num_inference_steps: int = 20,
+    guidance_scale: float = 7.5,
+) -> bytes:
+    """Generate image using Modal H100"""
+    return await _generate_image_internal(prompt, model_name, width, height, num_inference_steps, guidance_scale)
+
+# Shared internal generation logic
+async def _generate_image_internal(
+    prompt: str,
+    model_name: str,
+    width: int,
+    height: int,
+    num_inference_steps: int,
+    guidance_scale: float,
 ) -> bytes:
     """
     Generate image using Modal (gpu selectable) (INTERNAL FUNCTION)
@@ -75,7 +113,7 @@ def generate_image_internal(
 
     # Load model on Modal's GPU
     # Avoid AutoPipelineForText2Image here: it eagerly imports many optional pipelines
-    # and can crash if the environment is missing niche transformer tokenizers.
+    # and can crash if environment is missing niche transformer tokenizers.
     from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionXLPipeline
     import os
     import torch
@@ -121,7 +159,7 @@ def generate_image_internal(
                         **({"token": hf_token} if hf_token else {}),
                     )
             elif is_flux:
-                # FLUX models are not Stable Diffusion pipelines (no UNet). Use the correct pipeline class.
+                # FLUX models are not Stable Diffusion pipelines (no UNet). Use correct pipeline class.
                 try:
                     from diffusers import FluxPipeline
 
@@ -155,7 +193,7 @@ def generate_image_internal(
         pipe = pipe.to("cuda")
         _PIPELINE_CACHE[model_name] = pipe
 
-    # SDXL can produce black/blank images if the VAE runs in fp16. Upcast VAE to fp32.
+    # SDXL can produce black/blank images if VAE runs in fp16. Upcast VAE to fp32.
     try:
         if isinstance(pipe, StableDiffusionXLPipeline):
             if hasattr(pipe, "upcast_vae"):
@@ -280,22 +318,25 @@ async def generate_endpoint(
     height: int = 512,
     num_inference_steps: int = 20,
     guidance_scale: float = 7.5,
-    gpu: str = "A100 40gb"
+    gpu: str = "A100 40gb",
 ):
     """Web endpoint for image generation"""
     try:
-        # Use with_options to dynamically select the GPU at call time
-        gpu_config = get_modal_gpu(gpu)
-        print(f"[MODAL-WEB] Requesting GPU: {gpu} (Mapped to: {gpu_config})")
+        # Select the appropriate function based on GPU type
+        gpu_name = (gpu or "").lower().strip()
         
-        image_bytes = await generate_image_internal.with_options(gpu=gpu_config).remote.aio(
-            prompt,
-            model_name,
-            width,
-            height,
-            num_inference_steps,
-            guidance_scale,
-        )
+        if "h100" in gpu_name:
+            print(f"[MODAL-WEB] Using H100 function for GPU: {gpu}")
+            image_bytes = await generate_image_internal_h100.remote.aio(
+                prompt, model_name, width, height, num_inference_steps, guidance_scale
+            )
+        else:
+            # Default to A100 for any other GPU type
+            print(f"[MODAL-WEB] Using A100 function for GPU: {gpu}")
+            image_bytes = await generate_image_internal_a100.remote.aio(
+                prompt, model_name, width, height, num_inference_steps, guidance_scale
+            )
+        
         return Response(content=image_bytes, media_type="image/png")
     except Exception as e:
         print(f"[MODAL-WEB] Generation error: {e}")
