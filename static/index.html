@@ -1008,10 +1008,18 @@
         });
 
         // Download image
-        document.getElementById('download-btn').addEventListener('click', () => {
+        document.getElementById('download-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('[Download] Button clicked');
+            
             const modal = document.getElementById('image-modal');
             const imageId = modal.dataset.imageId;
             const modalImage = document.getElementById('modal-image');
+            
+            console.log('[Download] imageId:', imageId);
+            console.log('[Download] modalImage.src:', modalImage.src ? 'present' : 'missing');
 
             // Validate imageId
             if (!imageId || imageId === 'undefined') {
@@ -1026,14 +1034,32 @@
                 alert('Cannot download: Image not loaded.');
                 return;
             }
+            
+            // Check if src is a data URL
+            if (!modalImage.src.startsWith('data:image')) {
+                console.error('[Download] Image src is not a data URL:', modalImage.src.substring(0, 50));
+                alert('Cannot download: Image format not supported.');
+                return;
+            }
 
+            console.log('[Download] Creating download link...');
+            
             const link = document.createElement('a');
             link.download = `generated_image_${imageId}.png`;
             link.href = modalImage.src;
+            link.style.display = 'none';
             document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            console.log('[Download] Image downloaded:', imageId);
+            
+            console.log('[Download] Triggering download...');
+            
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
+                link.click();
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    console.log('[Download] Image downloaded:', imageId);
+                }, 100);
+            }, 0);
         });
 
         // Delete image
