@@ -1555,7 +1555,7 @@ class ModernGeneratorManager:
                 print(f"[ERROR] Error processing Leonardo.ai callback: {e}")
     
     async def upscale_with_leonardo(self, image: Image.Image, upscale_factor: float = 2.0, **kwargs) -> Image.Image:
-        """Upscale image using Leonardo.ai by first generating with it, then upscaling"""
+        """Upscale image using Leonardo.ai Universal Upscaler"""
         print(f"[UPSCALE] Leonardo.ai upscaling with factor {upscale_factor}...")
         
         # Check API key
@@ -1570,16 +1570,12 @@ class ModernGeneratorManager:
         
         print(f"[UPSCALE] API key found: {'*' * 10}{api_key[-4:]}")
         
-        # Step 1: Upload the image to get an image ID for image-to-image generation
+        # Step 1: Upload the image to get an image ID
         image_id = await self._upload_image_to_leonardo(image, api_key)
         
-        # Step 2: Generate a new image using the uploaded image as input (this creates a Leonardo-generated image)
-        print("[UPSCALE] Generating image from uploaded image...")
-        generated_image_id = await self._generate_from_image(image_id, api_key, **kwargs)
-        
-        # Step 3: Now upscale the Leonardo-generated image
-        print(f"[UPSCALE] Upscaling Leonardo-generated image: {generated_image_id}")
-        return await self._upscale_generated_image(generated_image_id, upscale_factor, api_key, **kwargs)
+        # Step 2: Use Universal Upscaler with the uploaded image ID
+        print(f"[UPSCALE] Using Universal Upscaler with image ID: {image_id}")
+        return await self._upscale_with_image_id(image_id, upscale_factor, api_key, **kwargs)
     
     async def _generate_from_image(self, image_id: str, api_key: str, **kwargs) -> str:
         """Generate an image using uploaded image as input"""
