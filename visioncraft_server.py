@@ -553,6 +553,66 @@ async def leonardo_webhook(callback_id: str, data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/upscale")
+async def upscale_image(request: dict):
+    """Upscale an image using Leonardo.ai Universal Upscaler"""
+    try:
+        # Get image data (base64 or URL)
+        image_data = request.get("image")
+        if not image_data:
+            raise HTTPException(status_code=400, detail="No image data provided")
+        
+        # Get upscaling parameters
+        upscale_factor = request.get("upscale_factor", 2.0)
+        prompt = request.get("prompt", "")
+        negative_prompt = request.get("negative_prompt", "")
+        num_inference_steps = request.get("num_inference_steps", 20)
+        guidance_scale = request.get("guidance_scale", 7.5)
+        seed = request.get("seed", -1)
+        
+        # Convert base64 to PIL Image
+        import base64
+        from io import BytesIO
+        from PIL import Image
+        
+        if image_data.startswith("data:image/"):
+            # Remove data URL prefix
+            image_data = image_data.split(",", 1)[1]
+        
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(BytesIO(image_bytes))
+        
+        print(f"[UPSCALE] Received image: {image.size}, upscaling by {upscale_factor}x")
+        
+        # Upscale using Leonardo.ai
+        upscaled_image = await generator.modern_manager.upscale_with_leonardo(
+            image=image,
+            upscale_factor=upscale_factor,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            num_inference_steps=num_inference_steps,
+            guidance_scale=guidance_scale,
+            seed=seed
+        )
+        
+        # Convert back to base64
+        output_buffer = BytesIO()
+        upscaled_image.save(output_buffer, format="PNG")
+        output_buffer.seek(0)
+        upscaled_b64 = base64.b64encode(output_buffer.getvalue()).decode('utf-8')
+        
+        return {
+            "success": True,
+            "upscaled_image": f"data:image/png;base64,{upscaled_b64}",
+            "original_size": f"{image.width}x{image.height}",
+            "upscaled_size": f"{upscaled_image.width}x{upscaled_image.height}",
+            "upscale_factor": upscale_factor
+        }
+        
+    except Exception as e:
+        print(f"[ERROR] Upscaling failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import logging
     
