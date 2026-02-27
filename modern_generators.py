@@ -1263,8 +1263,8 @@ class ModernGeneratorManager:
         return base_negative
     
     async def generate_with_leonardo(self, prompt: str, **kwargs) -> Image.Image:
-        """Generate image using Leonardo.ai API via official SDK"""
-        print(f"[ART] Leonardo.ai SDK generation with {prompt[:100]}...")
+        """Generate image using Leonardo.ai API via REST endpoint"""
+        print(f"[ART] Leonardo.ai generation with {prompt[:100]}...")
 
         # Check API key
         if 'leonardo-api' not in self.api_keys:
@@ -1280,143 +1280,62 @@ class ModernGeneratorManager:
 
         # Get parameters
         model_key = kwargs.get("model", "phoenix-1-0")
-        aspect_ratio = kwargs.get("aspect_ratio", "1:1")
         width = kwargs.get("width", 1024)
         height = kwargs.get("height", 1024)
 
-        print(f"[SDK] Model: {model_key}, Resolution: {width}x{height}")
+        print(f"[API] Model: {model_key}, Resolution: {width}x{height}")
+
+        # Get model config
+        model_config = self._leonardo_model_config(model_key)
+        api_version = model_config["api_version"]
+        endpoint_path = model_config["endpoint"]
+        full_endpoint = f"https://cloud.leonardo.ai/api/rest/{api_version}/{endpoint_path}"
+
+        print(f"[API] Endpoint: {full_endpoint}")
+
+        # Build payload
+        if api_version == "v2":
+            payload = self._build_leonardo_payload_v2(model_key, model_config, prompt, **kwargs)
+        else:
+            payload = self._build_leonardo_payload_v1(model_key, model_config, prompt, **kwargs)
+
+        print(f"[API] Payload: {json.dumps(payload, indent=2)}")
+
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json"
+        }
 
         try:
-            # Initialize SDK client
-            from leonardo_ai_sdk import LeonardoAiSDK
-
-            async with LeonardoAiSDK(bearer_auth=api_key) as client:
-                # Build generation request using SDK models
-                request = {
-                    "prompt": prompt,
-                    "model_id": self._leonardo_model_config(model_key).get("id", model_key),
-                    "width": width,
-                    "height": height,
-                    "num_images": 1,
-                }
-
-                # Add optional parameters
-                if kwargs.get("negative_prompt"):
-                    request["negative_prompt"] = kwargs["negative_prompt"]
-
-                # Map model to sd_version enum (SDK requirement)
-                # sd_version must be one of: 'v1_5', 'v2', 'v3', 'SDXL_0_8', 'SDXL_0_9', 
-                # 'SDXL_1_0', 'SDXL_LIGHTNING', 'PHOENIX', 'FLUX', 'FLUX_DEV', 'KINO_2_0'
-                model_to_sd_version = {
-                    "phoenix-1-0": "PHOENIX",
-                    "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3": "PHOENIX",
-                    "phoenix-0-9": "PHOENIX",
-                    "6b645e3a-d64f-4341-a6d8-7a3690fbf042": "PHOENIX",
-                    "flux-dev": "FLUX_DEV",
-                    "b2614463-296c-462a-9586-aafdb8f00e36": "FLUX_DEV",
-                    "flux-schnell": "FLUX",
-                    "1dd50843-d653-4516-a8e3-f0238ee453ff": "FLUX",
-                    "flux-1-kontext": "FLUX",
-                    "28aeddf8-bd19-4803-80fc-79602d1a9989": "FLUX",
-                    "leonardo-kino-xl": "SDXL_LIGHTNING",
-                    "aa77f04e-3eec-4034-9c07-d0f619684628": "SDXL_LIGHTNING",
-                    "leonardo-lightning-xl": "SDXL_LIGHTNING",
-                    "b24e16ff-06e3-43eb-8d33-4416c2d75876": "SDXL_LIGHTNING",
-                    "sdxl-1-0": "SDXL_1_0",
-                    "16e7060a-803e-4df3-97ee-edcfa5dc9cc8": "SDXL_1_0",
-                    "lucid-origin": "PHOENIX",  # Lucid Origin uses Phoenix
-                    "7b592283-e8a7-4c5a-9ba6-d18c31f258b9": "PHOENIX",
-                    "lucid-realism": "PHOENIX",
-                    "05ce0082-2d80-4a2d-8653-4d1c85e2418e": "PHOENIX",
-                }
-                sd_version = model_to_sd_version.get(model_key, "PHOENIX")
-                request["sd_version"] = sd_version
-
-                # Add guidance scale if provided
-                if "guidance_scale" in kwargs and kwargs["guidance_scale"] is not None:
-                    request["guidance_scale"] = kwargs["guidance_scale"]
-
-                # Add inference steps if provided
-                if "num_inference_steps" in kwargs and kwargs["num_inference_steps"] is not None:
-                    request["inference_steps"] = kwargs["num_inference_steps"]
-
-                # Add seed if provided (valid integer only)
-                if "seed" in kwargs and kwargs["seed"] is not None and kwargs["seed"] >= 0:
-                    request["seed"] = kwargs["seed"]
-
-                # Add style if provided
-                if "preset_style" in kwargs:
-                    request["preset_style"] = kwargs["preset_style"]
-
-                print(f"[SDK] Request: {json.dumps({k: v for k, v in request.items() if k != 'prompt'}, indent=2)}")
-
-                # Create generation using SDK
-                res = await client.image.create_generation_async(request=request)
-
-                if not res or not res.sd_generation_job:
-                    raise ValueError("No generation job returned from SDK")
-
-                generation_id = res.sd_generation_job.generation_id
-                print(f"[SDK] Generation started: {generation_id}")
-
-                # Poll for completion using SDK
-                return await self._poll_leonardo_generation_sdk(client, generation_id)
-
+            response = requests.post(
+                full_endpoint,
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Extract generation ID
+            if "sdGenerationJob" in data and "generationId" in data["sdGenerationJob"]:
+                generation_id = data["sdGenerationJob"]["generationId"]
+            elif "generations_by_pk" in data and "id" in data["generations_by_pk"]:
+                generation_id = data["generations_by_pk"]["id"]
+            else:
+                raise ValueError("Could not extract generation ID from response")
+            
+            print(f"[API] Generation started: {generation_id}")
+            
+            # Poll for completion
+            return await self._poll_leonardo_generation(generation_id, headers)
+            
         except Exception as e:
-            print(f"[ERROR] Leonardo.ai SDK generation failed: {e}")
-            print(f"[SDK] Error type: {type(e).__name__}")
+            print(f"[ERROR] Leonardo.ai generation failed: {e}")
             import traceback
             traceback.print_exc()
             raise
-
-    async def _poll_leonardo_generation_sdk(self, client, generation_id: str) -> Image.Image:
-        """Poll for generation completion using SDK"""
-        print(f"[SDK] Polling generation: {generation_id}")
-
-        for attempt in range(180):  # Poll for up to 6 minutes
-            try:
-                # Get generation status using SDK
-                res = await client.image.get_generation_by_id_async(id=generation_id)
-
-                if not res or not res.generations_by_pk:
-                    print(f"[SDK] Poll {attempt + 1}/180 - No data yet")
-                    await asyncio.sleep(3)
-                    continue
-
-                generation_data = res.generations_by_pk
-                current_status = generation_data.status
-
-                print(f"[SDK] Poll {attempt + 1}/180 - Status: {current_status}")
-
-                if current_status == "COMPLETE":
-                    print(f"[SDK] Generation complete!")
-
-                    generated_images = generation_data.generated_images or []
-                    if len(generated_images) > 0:
-                        image_url = generated_images[0].url
-
-                        # Download the image
-                        image_response = requests.get(image_url, timeout=30)
-                        image_response.raise_for_status()
-
-                        image = Image.open(io.BytesIO(image_response.content))
-                        print(f"[SDK] Image downloaded successfully")
-                        return image
-                    else:
-                        raise Exception("Generation marked COMPLETE but no images found")
-
-                elif current_status == "FAILED":
-                    error_message = generation_data.error_message or "Unknown error"
-                    raise Exception(f"Leonardo.ai generation failed: {error_message}")
-
-                else:
-                    await asyncio.sleep(3)
-
-            except Exception as e:
-                print(f"[WARNING] SDK polling error: {e}")
-                await asyncio.sleep(3)
-
-        raise TimeoutError("Generation timed out after 6 minutes")
     
     async def _wait_for_leonardo_callback(self, generation_id: str, callback_id: str, headers: dict) -> Image.Image:
         """Wait for Leonardo.ai callback or fall back to polling"""
