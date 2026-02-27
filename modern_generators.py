@@ -250,44 +250,18 @@ class ModernGeneratorManager:
         return {"name": model_key, "id": model_key, "api_version": "v1", "endpoint": "generations"}
 
     def _build_leonardo_payload_v1(self, model_key: str, model_config: dict, prompt: str, **kwargs) -> dict:
-        """Build Leonardo V1 payload (modelId, styleUUID, enhancePrompt, etc.)."""
+        """Build Leonardo V1 payload - minimal approach to avoid 400 errors."""
         width = kwargs.get("width", 1024)
         height = kwargs.get("height", 1024)
         
-        # Map quality string to numeric value
-        quality = kwargs.get("quality", 80)
-        if isinstance(quality, str):
-            quality_map = {"standard": 60, "high": 80, "ultra": 100}
-            quality = quality_map.get(quality.lower(), 80)
-        
+        # Minimal payload - only required fields
         payload = {
             "prompt": prompt,
             "modelId": model_config.get("id", model_key),
             "width": width,
             "height": height,
             "num_images": 1,
-            "enhancePrompt": kwargs.get("enhancePrompt", False),
         }
-        
-        # Only add quality if valid numeric
-        if isinstance(quality, (int, float)) and quality > 0:
-            payload["quality"] = int(quality)
-
-        # Add optional parameters if provided
-        if "preset_style" in kwargs:
-            # Map preset style names to styleUUIDs (use a common Leonardo UUID for now)
-            style_uuid_map = {
-                "LEONARDO": "111dc692-d470-4eec-b791-3475abac4c46",
-                "CREATIVE": "3cbb655a-7ca4-463f-b697-8a03ad67327c",
-                "DYNAMIC": "6fedbf1f-4a17-45ec-84fb-92fe524a29ef",
-                "CINEMATIC": "594c1a08-a522-4e0e-b7ff-e4dac4b6b622",
-                "FANTASY_ART": "09d2b5b5-d7c02-905d-9f84051640f4",
-                "ANIME": "7d7c2bc5-4b12-4ac3-81a9-630057e9e89f",
-                "COMIC_BOOK": "645e4195-f63d-4715-a3f2-3fb1e6eb8c70",
-                "ILLUSTRATION": "556c1ee5-ec38-42e8-955a-1e82dad0ffa1",
-            }
-            style_uuid = style_uuid_map.get(kwargs["preset_style"], "111dc692-d470-4eec-b791-3475abac4c46")
-            payload["styleUUID"] = style_uuid
 
         # Add negative prompt if provided
         if kwargs.get("negative_prompt"):
