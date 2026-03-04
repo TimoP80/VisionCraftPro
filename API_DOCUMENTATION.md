@@ -42,6 +42,16 @@ API key required for Leonardo.ai integration. Set your API key using:
 }
 ```
 
+#### Automatic Dimension Validation
+
+VisionCraft Pro automatically handles dimension constraints for Leonardo.ai models, especially FLUX models that require specific dimension pairs. When using models like FLUX.1 Kontext, the API will automatically select valid dimensions from the allowed list:
+
+- **Valid FLUX.1 Kontext Dimensions**: 672×672, 720×720, 752×752, 832×832, 880×880, 944×944, 1024×1024, 1104×1104, 1184×1184, 1248×1248, 1392×1392, 1456×1456, 1568×1568
+- **Automatic Selection**: The system chooses the closest valid dimension pair to your requested aspect ratio
+- **No Manual Intervention Required**: Just specify your desired aspect ratio, and the API handles the rest
+
+This prevents 400 Bad Request errors that occurred when invalid dimension combinations were sent to Leonardo.ai.
+
 ## Base URL
 
 ```
