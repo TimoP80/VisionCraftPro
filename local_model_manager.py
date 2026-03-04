@@ -149,8 +149,7 @@ class LocalModelManager:
                     local_dir=local_path,
                     token=token,
                     ignore_patterns=["*.msgpack", "*.ckpt", "*.h5"], # Save space
-                    resume_download=True,
-                    progress_hook=progress_hook
+                    resume_download=True
                 )
                 
                 # Mark as completed

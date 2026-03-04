@@ -55,6 +55,7 @@ class ModernGeneratorManager:
         self.available_generators = {}
         self._setup_leonardo_ai()
         self._setup_modal()  # Move this before Leonardo to ensure Modal is added
+        self._setup_cloudflare_workers()  # Add Cloudflare Workers generator
         print(f"Initialized {len(self.available_generators)} generator(s)")
         print(f"[SETUP] Modal setup completed. Available generators: {list(self.available_generators.keys())}")
 
@@ -1083,16 +1084,28 @@ class ModernGeneratorManager:
             if os.path.exists(self.api_keys_file):
                 with open(self.api_keys_file, 'r') as f:
                     loaded_keys = json.load(f)
-                    # Validate API keys to ensure they're not corrupted
-                    for key, value in loaded_keys.items():
-                        if isinstance(value, str) and len(value) > 1000:
-                            print(f"[WARNING] API key for {key} appears corrupted (too long), skipping")
-                            continue
-                        if not isinstance(value, str) or len(value) < 10:
-                            print(f"[WARNING] API key for {key} appears invalid, skipping")
-                            continue
+                    
+                # Keys that should skip length validation (account IDs, etc.)
+                skip_validation = {
+                    'cloudflare-account-id',  # Cloudflare account identifier
+                    'cloudflare-api'  # Third-party test key (intentionally short)
+                }
+                    
+                # Validate API keys to ensure they're not corrupted
+                for key, value in loaded_keys.items():
+                    # Skip validation for certain keys that aren't API keys
+                    if key in skip_validation:
                         self.api_keys[key] = value
-                    print(f"[OK] Loaded {len(self.api_keys)} valid API key(s)")
+                        continue
+                        
+                    if isinstance(value, str) and len(value) > 1000:
+                        print(f"[WARNING] API key for {key} appears corrupted (too long), skipping")
+                        continue
+                    if not isinstance(value, str) or len(value) < 10:
+                        print(f"[WARNING] API key for {key} appears invalid, skipping")
+                        continue
+                    self.api_keys[key] = value
+                print(f"[OK] Loaded {len(self.api_keys)} valid API key(s)")
         except Exception as e:
             print(f"[WARNING] Could not load API keys: {e}")
             self.api_keys = {}
@@ -1268,11 +1281,181 @@ class ModernGeneratorManager:
             raise ValueError(f"Modal web endpoint error: {response.status_code} {response.text}")
 
         except Exception as e:
-            print(f"[ERROR] Modal generation failed: {e}")
+            print(f"[MODAL] Modal generation failed: {e}")
             print(f"[ERROR] Error type: {type(e).__name__}")
             import traceback
             print(f"[ERROR] Traceback: {traceback.format_exc()}")
             raise
+    
+    async def _generate_cloudflare_image(self, prompt: str, **kwargs) -> Optional[Image.Image]:
+        """Generate image using official Cloudflare Workers AI API"""
+        try:
+            # Check for Cloudflare API token (different from the third-party service)
+            api_token = self.api_keys.get("cloudflare-official", "")
+            account_id = self.api_keys.get("cloudflare-account-id", "")
+            
+            if not api_token or not account_id:
+                print("[CLOUDFLARE] Official Cloudflare API requires 'cloudflare-official' API token and 'cloudflare-account-id' in api_keys.json")
+                print("[CLOUDFLARE] Third-party service is currently broken and unreliable")
+                print("[CLOUDFLARE] Please set up official Cloudflare credentials to use Cloudflare Workers AI")
+                print("[CLOUDFLARE] Visit: https://dash.cloudflare.com/profile/api-tokens")
+                return None
+
+            # Get model from kwargs, default to a known working model
+            model = kwargs.get("model", "@cf/stabilityai/stable-diffusion-xl-base-1.0")
+            if "flux" in model.lower():
+                print("[CLOUDFLARE] FLUX models not available in official Cloudflare API, using SDXL instead")
+                model = "@cf/stabilityai/stable-diffusion-xl-base-1.0"
+            
+            endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}"
+
+            headers = {
+                "Authorization": f"Bearer {api_token}",
+                "Content-Type": "application/json"
+            }
+
+            # Official Cloudflare API payload format
+            payload = {
+                "prompt": prompt
+            }
+
+            print(f"[CLOUDFLARE] Using official Cloudflare API with model: {model}")
+            print(f"[CLOUDFLARE] Generating image with prompt: {prompt[:100]}...")
+
+            # Make API request
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=60)
+
+            if response.status_code == 200:
+                # Check if response is binary PNG data or JSON
+                content_str = response.content.decode('utf-8', errors='ignore').strip()
+                
+                # PNG file signature: \x89PNG\r\n\x1a\n
+                png_signature = b'\x89PNG\r\n\x1a\n'
+                
+                if response.content.startswith(png_signature):
+                    # Direct PNG binary data
+                    try:
+                        from PIL import Image
+                        import io
+                        image = Image.open(io.BytesIO(response.content))
+                        print(f"[CLOUDFLARE] Successfully generated image: {image.size}")
+                        return image
+                    except Exception as img_error:
+                        print(f"[CLOUDFLARE] Failed to process PNG response: {img_error}")
+                        return None
+                else:
+                    # JSON response format
+                    try:
+                        result = response.json()
+                        if "result" in result and result["result"]:
+                            # Extract base64 image data
+                            image_data = result["result"]
+                            if isinstance(image_data, str) and image_data.startswith("data:image"):
+                                # Remove data URL prefix if present
+                                image_data = image_data.split(",", 1)[1]
+                            
+                            # Decode base64 to image
+                            import base64
+                            image_bytes = base64.b64decode(image_data)
+                            image = Image.open(io.BytesIO(image_bytes))
+                            print(f"[CLOUDFLARE] Successfully generated image: {image.size}")
+                            return image
+                        else:
+                            print(f"[CLOUDFLARE] API response missing result field: {result}")
+                            return None
+                            
+                    except Exception as json_error:
+                        print(f"[CLOUDFLARE] Failed to process API response: {json_error}")
+                        print(f"[CLOUDFLARE] Response content: {response.text[:500]}")
+                        return None
+            else:
+                error_text = response.text
+                print(f"[CLOUDFLARE] API request failed: {response.status_code} - {error_text}")
+                return None
+
+        except Exception as e:
+            print(f"[CLOUDFLARE] Official Cloudflare API failed: {e}")
+            print("[CLOUDFLARE] Falling back to third-party service...")
+            return await self._generate_cloudflare_third_party(prompt, **kwargs)
+
+    async def _generate_cloudflare_third_party(self, prompt: str, **kwargs) -> Optional[Image.Image]:
+        """Generate image using third-party Cloudflare service (fallback)"""
+        try:
+            api_key = self.api_keys.get("cloudflare-api", "12345678")
+            if not api_key:
+                print("[CLOUDFLARE] No API key configured for third-party Cloudflare service")
+                return None
+
+            endpoint = "https://image-api.tpitkane.workers.dev/"
+
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+
+            # Get model from kwargs
+            model = kwargs.get("model", "@cf/blackforestlabs/ux-1-schnell")
+            print(f"[CLOUDFLARE] Using third-party service with model: {model}")
+
+            payload = {
+                "prompt": prompt,
+                "model": model
+            }
+
+            print(f"[CLOUDFLARE] Third-party API generating image with prompt: {prompt[:100]}...")
+
+            # Make API request
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=60)
+
+            if response.status_code == 200:
+                # Check if response is actually JSON error instead of image data
+                content_str = response.content.decode('utf-8', errors='ignore').strip()
+                
+                # Check if this looks like a JSON error response
+                if (content_str.startswith('{') or 
+                    content_str.startswith('[') or 
+                    '[object Object]' in content_str or
+                    '"error"' in content_str.lower() or
+                    '"message"' in content_str.lower() or
+                    content_str == '[object Object]'):
+                    try:
+                        # Try to parse as JSON to get error details
+                        error_data = response.json()
+                        print(f"[CLOUDFLARE] Third-party API returned JSON error response: {error_data}")
+                        
+                        # Extract error message if available
+                        if isinstance(error_data, dict):
+                            error_msg = error_data.get('error', error_data.get('message', 'Unknown error'))
+                            print(f"[CLOUDFLARE] Error details: {error_msg}")
+                        elif isinstance(error_data, list) and len(error_data) > 0:
+                            print(f"[CLOUDFLARE] Error list: {error_data}")
+                        else:
+                            print(f"[CLOUDFLARE] Unexpected error format: {type(error_data)}")
+                            
+                        return None
+                    except Exception as json_error:
+                        print(f"[CLOUDFLARE] Could not parse JSON error: {json_error}")
+                        print(f"[CLOUDFLARE] Raw response content: {content_str[:1000]}")
+                        return None
+                
+                # Response should be raw image data
+                try:
+                    image = Image.open(io.BytesIO(response.content))
+                    print(f"[CLOUDFLARE] Third-party API successfully generated image: {image.size}")
+                    return image
+                except Exception as img_error:
+                    print(f"[CLOUDFLARE] Failed to process image response: {img_error}")
+                    print(f"[CLOUDFLARE] Response content (first 200 chars): {response.content[:200]}")
+                    print(f"[CLOUDFLARE] Response content type: {response.headers.get('content-type', 'unknown')}")
+                    return None
+            else:
+                error_text = response.text
+                print(f"[CLOUDFLARE] Third-party API request failed: {response.status_code} - {error_text}")
+                return None
+
+        except Exception as e:
+            print(f"[CLOUDFLARE] Third-party Cloudflare service failed: {e}")
+            return None
     
     async def generate_with_dall_e_3(self, prompt: str, **kwargs) -> Image.Image:
         """Generate image using DALL-E 3 API"""
@@ -1422,6 +1605,27 @@ class ModernGeneratorManager:
         width = kwargs.get("width", 1024)
         height = kwargs.get("height", 1024)
 
+        # Special dimension handling for models that require exact dimension pairs
+        model_config = self._leonardo_model_config(model_key)
+        model_id = model_config.get("id", model_key)
+        
+        # FLUX.1 Kontext requires specific dimensions
+        if model_id == "28aeddf8-bd19-4803-80fc-79602d1a9989":
+            # Valid dimension pairs for FLUX.1 Kontext
+            valid_dimensions = [
+                (672, 672), (720, 720), (752, 752), (832, 832), (880, 880), 
+                (944, 944), (1024, 1024), (1104, 1104), (1184, 1184), 
+                (1248, 1248), (1392, 1392), (1456, 1456), (1568, 1568)
+            ]
+            
+            # Find the closest valid dimension pair to the requested dimensions
+            requested_aspect = width / height
+            best_match = min(valid_dimensions, 
+                           key=lambda d: abs((d[0]/d[1]) - requested_aspect) or abs(d[0] - width))
+            width, height = best_match
+            
+            print(f"[ART] FLUX.1 Kontext using valid dimensions: {width}x{height}")
+
         print(f"[API] Model: {model_key}, Resolution: {width}x{height}")
 
         # Get model config
@@ -1485,7 +1689,12 @@ class ModernGeneratorManager:
             print(f"[ERROR] Leonardo.ai generation failed: {e}")
             import traceback
             traceback.print_exc()
-            raise
+            
+            # Check if it's a Leonardo.ai server issue
+            if "500 Server Error" in str(e) or "internal error" in str(e):
+                raise Exception("Leonardo.ai is experiencing server issues. Please try again in a few minutes or switch to a different model.")
+            else:
+                raise
     
     async def _wait_for_leonardo_callback(self, generation_id: str, callback_id: str, headers: dict) -> Image.Image:
         """Wait for Leonardo.ai callback or fall back to polling"""
@@ -1908,7 +2117,7 @@ class ModernGeneratorManager:
         
         # Leonardo.ai Universal Upscaler payload with base64 image
         payload = {
-            "inputImage": image_b64,  # Use base64 image directly
+            "image": image_b64,  # Use 'image' parameter instead of 'inputImage'
             "upscaleMultiplier": upscale_factor,  # API limits: 1-2x only
             "creativityStrength": kwargs.get("creativity_strength", 5),
             "upscalerStyle": kwargs.get("upscaler_style", "CINEMATIC"),  # CINEMATIC, ARTISTIC, etc.
@@ -2243,6 +2452,8 @@ class ModernGeneratorManager:
                 return await self.generate_with_midjourney(prompt, **kwargs)
             elif generator_name == "dall-e-3":
                 return await self.generate_with_dalle3(prompt, **kwargs)
+            elif generator_name == "cloudflare-api":
+                return await self._generate_cloudflare_image(prompt, **kwargs)
             else:
                 raise Exception(f"Unsupported generator: {generator_name}")
         except Exception as e:
@@ -2250,7 +2461,23 @@ class ModernGeneratorManager:
             print(f"[SEARCH] Error type: {type(e).__name__}")
             import traceback
             traceback.print_exc()
-            raise
+            
+            # Provide user-friendly error messages
+            if "500 Server Error" in str(e) or "internal error" in str(e):
+                if "leonardo" in str(e).lower():
+                    raise Exception("Leonardo.ai is experiencing server issues. Please try again in a few minutes or switch to a different model (Modal, local models, etc.).")
+                else:
+                    raise Exception("The AI service is experiencing server issues. Please try again in a few minutes.")
+            elif "401" in str(e) or "unauthorized" in str(e).lower():
+                raise Exception("API key is invalid or missing. Please check your API key configuration.")
+            elif "403" in str(e) or "forbidden" in str(e).lower():
+                raise Exception("API access forbidden. Please check your API key permissions.")
+            elif "429" in str(e) or "rate limit" in str(e).lower():
+                raise Exception("Rate limit exceeded. Please wait a moment and try again.")
+            elif "timeout" in str(e).lower():
+                raise Exception("Request timed out. The service may be slow. Please try again.")
+            else:
+                raise
     
     async def upscale_image(self, generator_name: str = "leonardo-api", **kwargs) -> Image.Image:
         """Upscale image using specified generator"""
@@ -2394,6 +2621,93 @@ class ModernGeneratorManager:
             }
         
         return base_settings
+    
+    def _setup_cloudflare_workers(self):
+        """Setup Cloudflare Workers image generator configuration"""
+        try:
+            # Check if API key is configured
+            api_key = self.api_keys.get("cloudflare-api", "12345678")  # Default to provided key
+            if not api_key:
+                print("[CLOUDFLARE] No API key configured, skipping Cloudflare Workers setup")
+                return
+
+            # Available Cloudflare AI models
+            cloudflare_models = {
+                "@cf/blackforestlabs/ux-1-schnell": {
+                    "id": "@cf/blackforestlabs/ux-1-schnell",
+                    "name": "UX-1 Schnell (Black Forest Labs)",
+                    "description": "Fast and efficient image generation model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["16:9", "9:16", "1:1"],
+                    "note": "Fast generation, good for quick iterations"
+                },
+                "@cf/bytedance/stable-diffusion-xl-lightning": {
+                    "id": "@cf/bytedance/stable-diffusion-xl-lightning",
+                    "name": "SDXL Lightning (ByteDance)",
+                    "description": "High-quality SDXL model optimized for speed",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["16:9", "9:16", "1:1"],
+                    "note": "Fast SDXL variant with excellent quality"
+                },
+                "@cf/lykon/dreamshaper-8-lcm": {
+                    "id": "@cf/lykon/dreamshaper-8-lcm",
+                    "name": "DreamShaper 8 LCM (Lykon)",
+                    "description": "Creative and detailed image generation",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["16:9", "9:16", "1:1"],
+                    "note": "Great for creative and artistic content"
+                },
+                "@cf/runwayml/stable-diffusion-v1-5-img2img": {
+                    "id": "@cf/runwayml/stable-diffusion-v1-5-img2img",
+                    "name": "SD 1.5 Image-to-Image (Runway)",
+                    "description": "Image-to-image generation capabilities",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["16:9", "9:16", "1:1"],
+                    "note": "Supports image-to-image transformations"
+                },
+                "@cf/runwayml/stable-diffusion-v1-5-inpainting": {
+                    "id": "@cf/runwayml/stable-diffusion-v1-5-inpainting",
+                    "name": "SD 1.5 Inpainting (Runway)",
+                    "description": "Advanced inpainting for image editing",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["16:9", "9:16", "1:1"],
+                    "note": "Perfect for image editing and modifications"
+                },
+                "@cf/stabilityai/stable-diffusion-xl-base-1.0": {
+                    "id": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+                    "name": "SDXL Base 1.0 (Stability AI)",
+                    "description": "High-quality base SDXL model",
+                    "max_resolution": (1024, 1024),
+                    "aspect_ratios": ["16:9", "9:16", "1:1"],
+                    "note": "Default SDXL model with excellent quality"
+                }
+            }
+
+            # Setup generator configuration
+            self.available_generators["cloudflare-api"] = {
+                "name": "Cloudflare Workers AI",
+                "type": "api",
+                "description": "Fast and free AI image generation powered by Cloudflare Workers",
+                "api_endpoint": "https://image-api.tpitkane.workers.dev/",
+                "api_key_required": True,
+                "max_resolution": (1024, 1024),
+                "quality": "High",
+                "speed": "Very Fast",
+                "cost": "Free",
+                "features": ["text-to-image", "multiple-models", "aspect-ratio-support"],
+                "models": cloudflare_models,
+                "aspect_ratios": [
+                    {"id": "16:9", "name": "16:9 Widescreen", "ratio": 16/9},
+                    {"id": "9:16", "name": "9:16 Portrait", "ratio": 9/16},
+                    {"id": "1:1", "name": "1:1 Square", "ratio": 1}
+                ]
+            }
+
+            print(f"[CLOUDFLARE] Cloudflare Workers setup completed with {len(cloudflare_models)} models")
+
+        except Exception as e:
+            print(f"[CLOUDFLARE] Error setting up Cloudflare Workers: {e}")
+            return
     
     def get_generator_recommendations(self) -> Dict[str, str]:
         """Get recommendations for different use cases"""

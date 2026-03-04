@@ -29,6 +29,11 @@ import urllib.request
 import json
 import os
 
+class EnhancePromptRequest(BaseModel):
+    prompt: str
+    style: str = "cinematic"
+    detail_level: str = "medium"
+
 class GenerationRequest(BaseModel):
     prompt: str
     negative_prompt: Optional[str] = ""
@@ -278,7 +283,19 @@ class ImageGenerator:
             print(f"[SEARCH] Error type: {type(e).__name__}")
             import traceback
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Modern generation failed: {str(e)}")
+            
+            # Provide user-friendly error messages
+            error_message = str(e)
+            if "server issues" in error_message.lower():
+                raise HTTPException(status_code=503, detail=error_message)
+            elif "api key" in error_message.lower():
+                raise HTTPException(status_code=401, detail=error_message)
+            elif "rate limit" in error_message.lower():
+                raise HTTPException(status_code=429, detail=error_message)
+            elif "timeout" in error_message.lower():
+                raise HTTPException(status_code=408, detail=error_message)
+            else:
+                raise HTTPException(status_code=500, detail=f"Generation failed: {error_message}")
     
     def _generate_with_modern(self, request: GenerationRequest, start_time: float) -> GenerationResponse:
         """Generate image using modern API generator"""
@@ -492,23 +509,36 @@ async def generate_image(request: GenerationRequest):
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 @app.post("/enhance-prompt")
-async def enhance_prompt(request: dict):
+async def enhance_prompt(request: EnhancePromptRequest):
     """Enhance prompt using AI-powered templates"""
     try:
-        prompt = request.get("prompt", "")
-        style = request.get("style", "cinematic")
-        detail_level = request.get("detail_level", "medium")
+        prompt = request.prompt
+        style = request.style
+        detail_level = request.detail_level
         
         if not prompt:
             raise HTTPException(status_code=400, detail="Prompt is required")
         
-        # Use prompt enhancer instance
+        print(f"[ENHANCE] Processing prompt: '{prompt}' with style: {style}")
+        
+        # Use prompt enhancer instance with AI support
         enhancer = PromptEnhancer()
-        result = enhancer.enhance_prompt(prompt, style, detail_level)
+        
+        try:
+            # Try async version first
+            result = await enhancer.enhance_prompt(prompt, style, detail_level)
+            print(f"[ENHANCE] Async success: AI enhanced={result.get('ai_enhanced', False)}, available={result.get('ai_available', False)}")
+        except Exception as async_error:
+            print(f"[ENHANCE] Async failed: {async_error}, using sync fallback")
+            # Fallback to sync version
+            result = enhancer.enhance_prompt_sync(prompt, style, detail_level)
+            print(f"[ENHANCE] Sync fallback success")
         
         return result
     except Exception as e:
         print(f"[ERROR] Prompt enhancement failed: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/models")

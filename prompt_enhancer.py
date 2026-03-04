@@ -4,8 +4,10 @@ AI-powered prompt enhancement and improvement
 """
 
 import re
+import asyncio
 from typing import Dict, List, Optional
 import json
+import os
 
 class PromptEnhancer:
     """Enhance prompts with different styles and detail levels"""
@@ -99,6 +101,141 @@ class PromptEnhancer:
             "professional photography", "dslr", "shot on professional camera",
             "high quality", "ultra detailed", "sharp details", "crisp details"
         ]
+        
+        # Check for AI API keys
+        self.openai_key = os.getenv("OPENAI_API_KEY")
+        self.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        self.gemini_key = os.getenv("GEMINI_API_KEY")
+        
+        self.ai_available = bool(self.openai_key or self.anthropic_key or self.gemini_key)
+    
+    async def enhance_with_ai(self, prompt: str, style: str = "cinematic") -> str:
+        """Try to enhance prompt using real AI LLM"""
+        if not self.ai_available:
+            return None
+            
+        # Try OpenAI first
+        if self.openai_key:
+            try:
+                import openai
+                client = openai.OpenAI(api_key=self.openai_key)
+                
+                system_prompt = f"""You are an expert prompt engineer for AI image generation. 
+                Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+                
+                Focus on {style} style with these characteristics:
+                {self._get_style_description(style)}
+                
+                Rules:
+                - Keep the core concept intact
+                - Add descriptive details and artistic elements
+                - Include lighting, composition, and technical terms
+                - Make it 2-3 times more descriptive
+                - Return ONLY the enhanced prompt, no explanations
+                """
+                
+                response = await asyncio.to_thread(
+                    client.chat.completions.create,
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
+                    ],
+                    max_tokens=200,
+                    temperature=0.7
+                )
+                
+                return response.choices[0].message.content.strip()
+                
+            except Exception as e:
+                print(f"[AI] OpenAI enhancement failed: {e}")
+        
+        # Try Claude
+        if self.anthropic_key:
+            try:
+                import anthropic
+                client = anthropic.Anthropic(api_key=self.anthropic_key)
+                
+                system_prompt = f"""You are an expert prompt engineer for AI image generation. 
+                Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+                
+                Focus on {style} style with these characteristics:
+                {self._get_style_description(style)}
+                
+                Rules:
+                - Keep the core concept intact
+                - Add descriptive details and artistic elements
+                - Include lighting, composition, and technical terms
+                - Make it 2-3 times more descriptive
+                - Return ONLY the enhanced prompt, no explanations
+                """
+                
+                response = await asyncio.to_thread(
+                    client.messages.create,
+                    model="claude-3-haiku-20240307",
+                    max_tokens=200,
+                    system=system_prompt,
+                    messages=[
+                        {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
+                    ]
+                )
+                
+                return response.content[0].text.strip()
+                
+            except Exception as e:
+                print(f"[AI] Claude enhancement failed: {e}")
+        
+        # Try Gemini
+        if self.gemini_key:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=self.gemini_key)
+                model = genai.GenerativeModel('gemini-2.5-flash')  # Use model with available quota
+                
+                prompt_text = f"""You are an expert prompt engineer for AI image generation. 
+                Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+                
+                Focus on {style} style with these characteristics:
+                {self._get_style_description(style)}
+                
+                Rules:
+                - Keep the core concept intact
+                - Add descriptive details and artistic elements
+                - Include lighting, composition, and technical terms
+                - Make it 2-3 times more descriptive
+                - Return ONLY the enhanced prompt, no explanations
+                
+                Enhance this prompt for image generation: {prompt}"""
+                
+                response = await asyncio.to_thread(model.generate_content, prompt_text)
+                return response.text.strip()
+                
+            except Exception as e:
+                error_msg = str(e)
+                if "429" in error_msg or "quota" in error_msg.lower() or "exceeded" in error_msg.lower():
+                    print(f"[AI] Gemini quota exceeded: {error_msg}")
+                    # Don't raise error - let it fall back to template enhancement
+                    return None
+                else:
+                    print(f"[AI] Gemini enhancement failed: {e}")
+                    # Note: New google.genai package has different API, keeping old one for now
+        
+        return None
+        
+        return None
+    
+    def _get_style_description(self, style: str) -> str:
+        """Get description for a specific style"""
+        descriptions = {
+            "cinematic": "dramatic lighting, professional photography, movie-like composition, high detail",
+            "artistic": "creative expression, unique style, artistic interpretation, vibrant colors",
+            "photorealistic": "realistic details, accurate textures, professional photography, lifelike appearance",
+            "realistic": "natural appearance, accurate representation, detailed textures",
+            "fantasy": "magical elements, ethereal atmosphere, enchanting details",
+            "scifi": "futuristic technology, advanced elements, sleek design",
+            "anime": "Japanese animation style, clean lines, vibrant colors, expressive characters"
+        }
+        return descriptions.get(style, "detailed and high quality")
     
     def clean_prompt(self, prompt: str) -> str:
         """Clean and normalize the prompt"""
@@ -154,12 +291,56 @@ class PromptEnhancer:
         
         return enhanced
     
-    def enhance_prompt(self, prompt: str, style: str = "cinematic", detail_level: str = "medium") -> Dict:
-        """Main enhancement function"""
+    async def enhance_prompt(self, prompt: str, style: str = "cinematic", detail_level: str = "medium") -> Dict:
+        """Main enhancement function with AI support"""
         # Clean the original prompt
         cleaned_prompt = self.clean_prompt(prompt)
         
+        # Try AI enhancement first if available
+        ai_enhanced = None
+        if self.ai_available:
+            try:
+                ai_enhanced = await self.enhance_with_ai(cleaned_prompt, style)
+                if ai_enhanced:
+                    print(f"[AI] Successfully enhanced prompt using AI LLM")
+            except Exception as e:
+                print(f"[AI] AI enhancement failed: {e}")
+        
         # Generate enhancements for all styles
+        all_enhancements = {}
+        
+        for style_name in self.style_templates.keys():
+            if style_name == style and ai_enhanced:
+                # Use AI-enhanced version for the primary style
+                all_enhancements[style_name] = ai_enhanced
+            else:
+                # Use template-based enhancement for other styles
+                style_enhanced = self.add_style_enhancement(cleaned_prompt, style_name)
+                detail_enhanced = self.add_detail_enhancement(style_enhanced, detail_level)
+                all_enhancements[style_name] = detail_enhanced
+        
+        # Return the requested style as primary, plus all options
+        primary_enhancement = all_enhancements.get(style, all_enhancements["cinematic"])
+        
+        result = {
+            "original_prompt": cleaned_prompt,
+            "prompt": primary_enhancement,
+            "style": style,
+            "detail_level": detail_level,
+            "all_enhancements": all_enhancements,
+            "ai_enhanced": ai_enhanced is not None,
+            "ai_available": self.ai_available
+        }
+        
+        print(f"[ENHANCE] Returning result with {len(all_enhancements)} enhancements")
+        return result
+    
+    def enhance_prompt_sync(self, prompt: str, style: str = "cinematic", detail_level: str = "medium") -> Dict:
+        """Synchronous version of enhance_prompt for compatibility"""
+        # Clean the original prompt
+        cleaned_prompt = self.clean_prompt(prompt)
+        
+        # Generate template-based enhancements (no AI in sync version)
         all_enhancements = {}
         
         for style_name in self.style_templates.keys():
@@ -175,7 +356,9 @@ class PromptEnhancer:
             "prompt": primary_enhancement,
             "style": style,
             "detail_level": detail_level,
-            "all_enhancements": all_enhancements
+            "all_enhancements": all_enhancements,
+            "ai_enhanced": False,
+            "ai_available": self.ai_available
         }
     
     def get_available_styles(self) -> List[str]:
@@ -209,14 +392,20 @@ if __name__ == "__main__":
     
     # Test enhancement
     test_prompt = "a beautiful sunset over mountains"
-    result = enhancer.enhance_prompt(test_prompt, "cinematic", "high")
     
-    print("Original:", test_prompt)
-    print("Enhanced:", result["prompt"])
-    print("\nAll enhancements:")
-    for style, enhanced in result["all_enhancements"].items():
-        print(f"{style}: {enhanced}")
+    async def test():
+        result = await enhancer.enhance_prompt(test_prompt, "cinematic", "high")
+        
+        print("Original:", test_prompt)
+        print("Enhanced:", result["prompt"])
+        print("AI Enhanced:", result.get("ai_enhanced", False))
+        print("AI Available:", result.get("ai_available", False))
+        print("\nAll enhancements:")
+        for style, enhanced in result["all_enhancements"].items():
+            print(f"{style}: {enhanced}")
+        
+        # Test analysis
+        analysis = enhancer.analyze_prompt(test_prompt)
+        print(f"\nAnalysis: {analysis}")
     
-    # Test analysis
-    analysis = enhancer.analyze_prompt(test_prompt)
-    print(f"\nAnalysis: {analysis}")
+    asyncio.run(test())

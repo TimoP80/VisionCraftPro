@@ -34,6 +34,16 @@ from image_gallery import ImageGallery
 from prompt_enhancer import PromptEnhancer
 from cuda_checker import CudaChecker
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[ENV] Loaded environment variables from .env file")
+except ImportError:
+    print("[ENV] python-dotenv not available, skipping .env file loading")
+except Exception as e:
+    print(f"[ENV] Error loading .env file: {e}")
+
 class GenerationRequest(BaseModel):
     prompt: str
     negative_prompt: Optional[str] = ""
@@ -557,7 +567,7 @@ async def enhance_prompt(request: dict):
         
         # Use prompt enhancer instance
         enhancer = PromptEnhancer()
-        result = enhancer.enhance_prompt(prompt, style, detail_level)
+        result = await enhancer.enhance_prompt(prompt, style, detail_level)
         
         return result
     except Exception as e:
@@ -675,7 +685,23 @@ async def upscale_image(request: dict):
         import traceback
         print(f"[ERROR] Upscaling failed: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        
+        # Provide user-friendly error messages
+        error_message = str(e)
+        if "500 Server Error" in str(e) or "internal error" in str(e):
+            raise HTTPException(status_code=503, detail="Leonardo.ai is experiencing server issues. Please try again in a few minutes or switch to a different upscaling method.")
+        elif "401" in str(e) or "unauthorized" in str(e).lower():
+            raise HTTPException(status_code=401, detail="Leonardo.ai API key is invalid or missing. Please check your API key configuration.")
+        elif "403" in str(e) or "forbidden" in str(e).lower():
+            raise HTTPException(status_code=403, detail="Leonardo.ai API access forbidden. Please check your API key permissions.")
+        elif "429" in str(e) or "rate limit" in str(e).lower():
+            raise HTTPException(status_code=429, detail="Leonardo.ai rate limit exceeded. Please wait a moment and try again.")
+        elif "timeout" in str(e).lower():
+            raise HTTPException(status_code=408, detail="Leonardo.ai request timed out. The service may be slow. Please try again.")
+        elif "API key" in error_message.lower():
+            raise HTTPException(status_code=401, detail=error_message)
+        else:
+            raise HTTPException(status_code=500, detail=f"Upscaling failed: {error_message}")
 
 
 # Import TodoManager for todo endpoints
@@ -853,4 +879,11 @@ if __name__ == "__main__":
     print("[IMAGE] Gallery persistence enabled - images are saved!")
     print("[SPARKLE] Enhanced UI with gradients and animations")
     
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    try:
+        print("[DEBUG] Starting uvicorn server...")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    except Exception as e:
+        print(f"[ERROR] Failed to start server: {e}")
+        import traceback
+        traceback.print_exc()
+        print("[ERROR] Server startup failed - check dependencies and configuration")

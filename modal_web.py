@@ -34,7 +34,7 @@ image = modal.Image.debian_slim().pip_install(
 # Modal function for image generation - A100
 @app.function(
     image=image,
-    gpu=modal.gpu.A100(size="40GB"),
+    gpu="A100-40GB",
     timeout=300,
     volumes={
         "/cache": volume
@@ -60,7 +60,7 @@ def generate_image_internal_a100(
 # Modal function for image generation - H100
 @app.function(
     image=image,
-    gpu=modal.gpu.H100(),
+    gpu="H100",
     timeout=300,
     volumes={
         "/cache": volume
@@ -110,6 +110,14 @@ def _generate_image_internal(
     # Basic validation: most diffusion models expect dimensions divisible by 8
     if width % 8 != 0 or height % 8 != 0:
         raise ValueError("width and height must be divisible by 8")
+
+    # Truncate prompt if too long (CLIP token limit is 77 tokens)
+    # Rough estimate: ~4-5 characters per token
+    max_prompt_length = 350  # Conservative limit to stay under 77 tokens
+    if len(prompt) > max_prompt_length:
+        original_length = len(prompt)
+        prompt = prompt[:max_prompt_length].rsplit(' ', 1)[0] + '...'  # Truncate at word boundary
+        print(f"[MODAL-REMOTE] Prompt truncated from {original_length} to {len(prompt)} characters to avoid CLIP token limit")
 
     # Load model on Modal's GPU
     # Avoid AutoPipelineForText2Image here: it eagerly imports many optional pipelines
