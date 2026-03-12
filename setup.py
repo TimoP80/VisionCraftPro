@@ -23,7 +23,7 @@ def read_requirements():
 
 setup(
     name="visioncraft-gui",
-    version="1.0.0",
+    version="1.3.0",
     description="VisionCraft Pro GUI Manager - Manage Modal and Backend servers",
     long_description=read_readme(),
     long_description_content_type="text/markdown",

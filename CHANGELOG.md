@@ -7,6 +7,19 @@ All notable changes to VisionCraft Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-12
+
+### ✨ Added
+- **AI-powered Prompt Enhancer** - Integrated OpenAI, Claude, and Gemini APIs to enhance and refine user prompts for better image generation results.
+
+### 🚀 Improved
+- **Leonardo.ai Generation Pipeline** - Refactored to use the official Leonardo.ai SDK for more reliable and maintainable integration.
+- **Universal Upscaler** - Enhanced upscaling to use the Universal Upscaler, which supports Phoenix images and provides better quality results.
+- **Leonardo API Payload Handling** - Various refinements to generation payloads based on official documentation, removing unsupported parameters and adding required ones.
+
+### 🐛 Fixed
+- **FLUX Model Dimension Validation** - Fixed dimension validation errors for FLUX models by automatically selecting valid dimension pairs from the model's allowed list.
+
 ## [1.2.2] - 2026-03-04
 
 ### 🐛 Fixed
