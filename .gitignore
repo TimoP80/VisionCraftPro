@@ -175,3 +175,7 @@ api_keys.json
 # Test outputs
 test_*.png
 hf_test_*.png
+
+# Binary executables
+*.exe
+*.dll

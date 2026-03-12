@@ -10,20 +10,19 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 import uvicorn
 import psutil
 import threading
 import time
 import asyncio
-import io
-import base64
-from local_model_manager import LocalModelManager
+
 from modern_generators import ModernGeneratorManager
 from image_gallery import ImageGallery
 from prompt_enhancer import PromptEnhancer
 from cuda_checker import CudaChecker
+from local_model_manager import LocalModelManager
 import urllib.parse
 import urllib.request
 import json
@@ -33,14 +32,15 @@ class EnhancePromptRequest(BaseModel):
     prompt: str
     style: str = "cinematic"
     detail_level: str = "medium"
+    model: str = "auto"  # New: AI model to use for enhancement
 
 class GenerationRequest(BaseModel):
     prompt: str
     negative_prompt: Optional[str] = ""
-    num_inference_steps: Optional[int] = 20
-    guidance_scale: Optional[float] = 7.5
-    width: Optional[int] = 512
-    height: Optional[int] = 512
+    num_inference_steps: Optional[int] = Field(default=20, ge=1, le=100)
+    guidance_scale: Optional[float] = Field(default=7.5, ge=0.0, le=20.0)
+    width: Optional[int] = Field(default=512, ge=256, le=2048)
+    height: Optional[int] = Field(default=512, ge=256, le=2048)
     seed: Optional[int] = -1
     model: Optional[str] = "stable-diffusion-1.5"  # New field for model selection
     
@@ -53,6 +53,24 @@ class GenerationRequest(BaseModel):
     # Modal specific parameters
     modal_model: Optional[str] = "runwayml/stable-diffusion-v1-5"  # Modal model selection
     modal_gpu: Optional[str] = None                                # Modal GPU selection
+    
+    @field_validator('width', 'height')
+    @classmethod
+    def validate_dimensions(cls, v, info):
+        if v is not None:
+            # Ensure dimensions are multiples of 8 (required by most models)
+            if v % 8 != 0:
+                raise ValueError(f"{info.field_name} must be a multiple of 8 (got {v})")
+        return v
+    
+    @field_validator('prompt')
+    @classmethod
+    def validate_prompt(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Prompt cannot be empty')
+        if len(v) > 2000:
+            raise ValueError('Prompt cannot exceed 2000 characters')
+        return v.strip()
 
 class GenerationResponse(BaseModel):
     image: str
@@ -301,6 +319,8 @@ class ImageGenerator:
         """Generate image using modern API generator"""
         try:
             # Generate with modern API
+            # Use asyncio.run() to run the async generator in a new event loop
+            # This is the correct way to call async code from sync context
             image = asyncio.run(self.modern_manager.generate_image(
                 self.current_model,
                 request.prompt,
@@ -316,24 +336,23 @@ class ImageGenerator:
             generation_time = time.time() - start_time
             vram_used = 0.0  # API generators don't use local VRAM
             
-            # Save to gallery
-            image_id = self.gallery.add_image(
-                image=image,
-                prompt=request.prompt,
-                negative_prompt=request.negative_prompt,
-                model=self.current_model,
-                steps=request.num_inference_steps,
-                guidance=request.guidance_scale,
-                width=request.width,
-                height=request.height,
-                generation_time=generation_time,
-                vram_used=vram_used
-            )
-            
-            # Convert to base64
+            # Convert to base64 FIRST (before gallery save)
             buffered = io.BytesIO()
             image.save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            # Save to gallery - use correct parameter names
+            image_id = self.gallery.add_image(
+                image_data=img_str,
+                prompt=request.prompt,
+                negative_prompt=request.negative_prompt,
+                model=self.current_model,
+                generation_time=generation_time,
+                vram_used=vram_used,
+                steps=request.num_inference_steps,
+                guidance=request.guidance_scale,
+                resolution=(request.width, request.height)
+            )
             
             return GenerationResponse(
                 image=img_str,
@@ -473,15 +492,14 @@ async def generate_image(request: GenerationRequest):
     start_time = time.time()
     
     try:
-        # Validate input
-        if not request.prompt or request.prompt.strip() == "":
-            raise HTTPException(status_code=400, detail="Prompt cannot be empty")
-        
+        # Validate input - Pydantic validation is now done automatically
+        # Additional check for model selection
         if not request.model:
             raise HTTPException(status_code=400, detail="Model must be specified")
         
         print(f"[GENERATE] Starting generation with model: {request.model}")
         print(f"[GENERATE] Prompt: {request.prompt[:100]}...")
+        print(f"[GENERATE] Parameters: steps={request.num_inference_steps}, guidance={request.guidance_scale}, size={request.width}x{request.height}")
         
         # Load the requested model if not already loaded
         if not generator.model_loaded or generator.current_model != request.model:
@@ -515,19 +533,20 @@ async def enhance_prompt(request: EnhancePromptRequest):
         prompt = request.prompt
         style = request.style
         detail_level = request.detail_level
+        model = request.model  # Get model parameter
         
         if not prompt:
             raise HTTPException(status_code=400, detail="Prompt is required")
         
-        print(f"[ENHANCE] Processing prompt: '{prompt}' with style: {style}")
+        print(f"[ENHANCE] Processing prompt: '{prompt}' with style: {style}, model: {model}")
         
         # Use prompt enhancer instance with AI support
         enhancer = PromptEnhancer()
         
         try:
             # Try async version first
-            result = await enhancer.enhance_prompt(prompt, style, detail_level)
-            print(f"[ENHANCE] Async success: AI enhanced={result.get('ai_enhanced', False)}, available={result.get('ai_available', False)}")
+            result = await enhancer.enhance_prompt(prompt, style, detail_level, model)
+            print(f"[ENHANCE] Async success: AI enhanced={result.get('ai_enhanced', False)}, available={result.get('ai_available', False)}, model_used={result.get('model_used', 'N/A')}")
         except Exception as async_error:
             print(f"[ENHANCE] Async failed: {async_error}, using sync fallback")
             # Fallback to sync version

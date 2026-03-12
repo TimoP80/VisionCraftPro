@@ -164,7 +164,7 @@ class TestTodoManager(unittest.TestCase):
         self.assertEqual(stats["completed"], 1)
         self.assertEqual(stats["pending"], 2)
         self.assertEqual(stats["priority_distribution"]["high"], 1)
-        self.assertEqual(stats["completion_rate"], 33.33)
+        self.assertAlmostEqual(stats["completion_rate"], 33.33, places=2)
     
     def test_search_todos(self):
         """Test searching todos"""

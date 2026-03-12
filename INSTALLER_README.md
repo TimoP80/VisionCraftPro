@@ -6,8 +6,8 @@ This document provides comprehensive information about the VisionCraft Pro Windo
 
 ## Files Created
 - `installer.nsi` - NSIS installer script
-- `build_installer.bat` - Build script to compile the installer
 - `installer_config.json` - Configuration file for installer settings
+- `build_installer.bat` - Build script to compile the installer
 - `vcp_setup.py` - Unified cross-platform setup script
 - `setup.bat` / `setup.sh` - Platform-specific setup launchers
 - `run.bat` / `run.sh` - Platform-specific application launchers
@@ -32,7 +32,7 @@ This document provides comprehensive information about the VisionCraft Pro Windo
    - Create LICENSE.txt if missing
    - Create placeholder icon if missing
    - Compile the installer script
-   - Generate `VisionCraftPro_Setup_1.0.0.exe`
+   - Generate `VisionCraftPro_Setup_1.3.0.exe`
 
 ## Installer Features
 - **Modern UI** with welcome page and license agreement
@@ -50,7 +50,7 @@ This document provides comprehensive information about the VisionCraft Pro Windo
 - 10GB free disk space
 
 ## Installation Process
-1. Run `VisionCraftPro_Setup_1.0.0.exe`
+1. Run `VisionCraftPro_Setup_1.3.0.exe`
 2. Accept license agreement
 3. Select components to install
 4. Choose installation directory (default: `C:\Program Files\VisionCraftPro`)

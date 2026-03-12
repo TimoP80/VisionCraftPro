@@ -495,7 +495,8 @@ def get_test_html():
             { name: "⚡ FLUX.1 Dev", model: "black-forest-labs/FLUX.1-dev", status: "pending", cost: "FREE" },
             { name: "🌟 FLUX.1 Pro", model: "black-forest-labs/FLUX.1-pro", status: "pending", cost: "FREE" },
             { name: "💎 GPT Image 1.5", model: "gpt-image-1.5", status: "pending", cost: "FREE" },
-            { name: "🧠 Gemini 2.5 Flash", model: "gemini-2.5-flash-image-preview", status: "pending", cost: "FREE" }
+            { name: "🧠 Gemini 2.5 Flash", model: "gemini-2.5-flash-image-preview", status: "pending", cost: "FREE" },
+            { name: "⚡ Gemini 3.0 Flash", model: "gemini-3.0-flash-image-preview", status: "pending", cost: "FREE" }
         ];
 
         const diagnosticModels = [
@@ -508,6 +509,8 @@ def get_test_html():
             { name: "💎 GPT Image (short)", model: "gpt-image" },
             { name: "💎 GPT Image Medium", model: "gpt-image-1.5", options: { quality: "medium" } },
             { name: "💎 GPT Image High", model: "gpt-image-1.5", options: { quality: "high" } },
+            { name: "🧠 Gemini 3.0 Flash", model: "gemini-3.0-flash-image-preview" },
+            { name: "🧠 Gemini 2.5 Flash", model: "gemini-2.5-flash-image-preview" },
             { name: "🧠 Gemini Flash (short)", model: "gemini-flash" },
             { name: "🧠 Gemini Flash (no version)", model: "gemini-flash-image-preview" },
             { name: "🌟 SDXL (short)", model: "sdxl" },

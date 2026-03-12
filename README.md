@@ -1,8 +1,8 @@
-# VisionCraft Pro - Professional AI Image Generator
+# VisionCraft Pro - Professional AI Image & Video Generator
 
 **Author:** Timo Pitkänen (tpitkane@gmail.com)
 
-A powerful desktop application for AI-powered image generation featuring multiple cloud providers and local generation capabilities. Optimized for GPUs with 8GB VRAM and designed for professional use with access to cutting-edge AI models.
+A powerful desktop application for AI-powered image and video generation featuring multiple cloud providers and local generation capabilities. Optimized for GPUs with 8GB VRAM and designed for professional use with access to cutting-edge AI models.
 
 ## 🎨 Features
 
@@ -12,6 +12,14 @@ A powerful desktop application for AI-powered image generation featuring multipl
 - **Leonardo.ai Integration**: Professional cloud-based models
 - **Local Generation**: Stable Diffusion for offline privacy
 - **Seamless Switching**: Easy transition between all providers
+
+### **Video Generation**
+- **Multi-Provider Video Support**: Runway, Pika Labs, Kling AI, Luma Dream Machine, Minimax
+- **Text-to-Video**: Generate videos from text prompts
+- **Image-to-Video**: Animate images into videos
+- **Multiple Durations**: 3-10 seconds generation options
+- **Aspect Ratios**: 16:9, 9:16, 1:1, 4:3, 21:9
+- **Video Models Directory**: Browse available video models and providers
 
 ### **Professional Desktop Application**
 - **Native Desktop Window**: Not a browser tab - real desktop software
@@ -82,7 +90,7 @@ A powerful desktop application for AI-powered image generation featuring multipl
 ### **Method 2: Command Line (Manual)**
 ```bash
 # Activate virtual environment
-venv_gtx1070\Scripts\activate.bat
+.venv\Scripts\activate.bat
 
 # Launch desktop app
 python simple_desktop.py
@@ -91,7 +99,7 @@ python simple_desktop.py
 ### **Method 3: Web Server (Traditional)**
 ```bash
 # Activate virtual environment
-venv_gtx1070\Scripts\activate.bat
+.venv\Scripts\activate.bat
 
 # Start web server
 python app.py
@@ -117,8 +125,8 @@ git clone <repository-url>
 cd windsurf-project
 
 # Create virtual environment
-python -m venv venv_gtx1070
-venv_gtx1070\Scripts\activate.bat
+python -m venv .venv
+.venv\Scripts\activate.bat
 
 # Install dependencies
 pip install -r requirements.txt
@@ -241,13 +249,58 @@ Generate an image from text prompt.
 #### **POST `/load_model`**
 Pre-load a model into memory.
 
+#### **GET `/video-models`**
+Returns all available video generation models.
+
+#### **GET `/video-providers`**
+Returns configured video providers and their status.
+
+#### **POST `/generate-video`**
+Generate a video from text prompt or image.
+
+**Request Body:**
+```json
+{
+    "prompt": "A beautiful sunset over the ocean",
+    "model_id": "runway-gen3-alpha",
+    "negative_prompt": "blurry, low quality",
+    "duration": "5 seconds",
+    "aspect_ratio": "16:9",
+    "image_url": null
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "video_url": "https://example.com/video.mp4",
+    "thumbnail_url": "https://example.com/thumb.jpg",
+    "generation_time": 45.67,
+    "model_used": "Runway Gen-3 Alpha",
+    "model_id": "runway-gen3-alpha",
+    "provider": "runway"
+}
+```
+
+#### **POST `/set-video-api-key`**
+Set API key for a video provider.
+
+**Request Body:**
+```json
+{
+    "provider": "runway",
+    "api_key": "your-api-key"
+}
+```
+
 ## 🛠️ Troubleshooting
 
 ### **Common Issues**
 
 #### **"Backend failed to start"**
 - **Check Python version**: Ensure Python 3.8+
-- **Verify virtual environment**: Activate venv_gtx1070
+- **Verify virtual environment**: Activate .venv
 - **Install dependencies**: Run `pip install -r requirements.txt`
 - **Check CUDA**: Ensure CUDA 11.8+ is installed
 
@@ -271,6 +324,13 @@ Pre-load a model into memory.
 - **Check antivirus**: Ensure the app isn't blocked
 - **Install PyWebView**: Run `pip install pywebview`
 - **Use command line**: Try `python simple_desktop.py`
+
+#### **"Video generation failed"**
+- **Check API keys**: Verify your video provider API keys are configured
+- **Check provider status**: Visit `/video-providers` endpoint
+- **Try development mode**: Set `VIDEO_DEV_MODE=true` for testing
+- **Check rate limits**: Video generation has rate limits (10 requests/minute by default)
+- **Verify model**: Make sure the selected model is available
 
 ### **Performance Optimization**
 
@@ -297,6 +357,128 @@ This application uses several advanced techniques to minimize VRAM usage:
 5. **Sequential CPU Offload**: Gradually moves components between GPU and CPU
 6. **Automatic Cleanup**: Garbage collection and memory management
 7. **Model Unloading**: Releases memory when switching models
+
+## 🎬 Video Generation Guide
+
+### Supported Video Providers
+
+VisionCraft Pro supports multiple video generation providers:
+
+| Provider | API Endpoint | Models | Website |
+|----------|-------------|--------|---------|
+| **Runway** | api.runwayml.com | runway-gen3-alpha, runway-gen3-alpha-turbo | https://runwayml.com |
+| **Pika Labs** | api.pika.art | pika-labs | https://pika.art |
+| **Kling AI** | api.kling.ai | kling-ai, kling-1-5 | https://kling.ai |
+| **Luma Dream Machine** | api.lumalabs.ai | luma-dream-machine | https://lumalabs.ai |
+| **Minimax** | api.minimax.chat | minimax-video | https://minimax.ai |
+
+### Video Generation Options
+
+- **Text-to-Video**: Enter a descriptive prompt to generate a video
+- **Image-to-Video**: Provide an image URL to animate it into a video
+- **Duration**: 3, 5, 6, 8, or 10 seconds
+- **Aspect Ratios**: 16:9 (widescreen), 9:16 (vertical/tiktok), 1:1 (square), 4:3 (standard), 21:9 (ultrawide)
+
+### Video API Key Configuration
+
+#### Method 1: Using the API Endpoint
+
+```bash
+# Set API key for a video provider
+curl -X POST http://localhost:8000/set-video-api-key \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "runway", "api_key": "your-runway-api-key"}'
+
+# Set API key for Pika Labs
+curl -X POST http://localhost:8000/set-video-api-key \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "pika", "api_key": "your-pika-api-key"}'
+
+# Set API key for Kling AI
+curl -X POST http://localhost:8000/set-video-api-key \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "kling", "api_key": "your-kling-api-key"}'
+
+# Set API key for Luma Dream Machine
+curl -X POST http://localhost:8000/set-video-api-key \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "luma", "api_key": "your-luma-api-key"}'
+```
+
+#### Method 2: Environment Variables
+
+```cmd
+# For development (allows unauthenticated requests)
+set VIDEO_DEV_MODE=true
+
+# For production (requires API key from clients)
+set VIDEO_API_KEY=your-admin-key
+
+# Or set a dedicated admin key
+set VIDEO_API_ADMIN_KEY=your-admin-key
+```
+
+#### Method 3: Via the Web UI
+
+The video generation form has an optional "API Key" field. If the server has `VIDEO_API_KEY` configured, users must enter their provider API key there.
+
+### Checking Configured Providers
+
+Visit `http://localhost:8000/video-providers` to see which providers have API keys configured.
+
+## 🔑 API Key Management
+
+### Image Generation API Keys
+
+VisionCraft Pro supports multiple image generation providers. API keys can be set through:
+
+#### Replicate API Key
+- Get your key from: https://replicate.com/account/api-tokens
+- Set via the GUI or environment variable: `REPLICATE_API_KEY`
+
+#### Azure AI Key
+- Get your key from: Azure Portal
+- Set via the GUI or environment variable: `AZURE_API_KEY`
+
+#### Leonardo.ai Key
+- Get your key from: https://leonardo.ai/account/api
+- Set via the GUI or environment variable: `LEONARDO_API_KEY`
+
+#### Cloudflare API Key
+- Get your key from: https://cloudflare.com
+- Set via the GUI or environment variable: `CLOUDFLARE_API_KEY`
+
+#### Modal API Key
+- Get your key from: https://modal.com
+- Set via environment variable: `MODAL_TOKEN`
+
+### Video Generation API Keys
+
+Video API keys are stored encrypted in `data/video_api_keys.json`. See the Video Generation Guide above for configuration options.
+
+### Setting API Keys via Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Image Generation Keys
+REPLICATE_API_KEY=your-replicate-key
+AZURE_API_KEY=your-azure-key
+LEONARDO_API_KEY=your-leonardo-key
+CLOUDFLARE_API_KEY=your-cloudflare-key
+MODAL_TOKEN=your-modal-token
+
+# Video Generation Keys (for admin)
+VIDEO_API_KEY=your-admin-key
+VIDEO_DEV_MODE=true
+```
+
+### Security Notes
+
+- API keys are encrypted before storage
+- Never commit API keys to version control
+- Use environment variables for production deployments
+- The `.env` file is automatically loaded by the server
 
 ## 🎯 Supported Models
 
@@ -368,7 +550,7 @@ windsurf-project/
 │   ├── index.html             # Web interface
 │   ├── logo.png               # Application logo
 │   └── output.css             # Tailwind CSS
-├── venv_gtx1070/              # Virtual environment
+├── .venv/              # Virtual environment
 ├── api_keys.json              # API key storage
 ├── gallery/                   # Generated images storage
 └── requirements.txt           # Python dependencies

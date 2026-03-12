@@ -5,17 +5,23 @@ Main FastAPI server with all endpoints
 
 import torch
 import gc
+import hmac
+import time
+import hashlib
+import threading
+import logging
+from collections import defaultdict
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
 from transformers import CLIPTextModel, CLIPTokenizer
 from PIL import Image
 import numpy as np
 import io
 import base64
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 import os
 import json
@@ -23,16 +29,13 @@ import urllib.parse
 import urllib.request
 import uvicorn
 import psutil
-import threading
-import time
-import asyncio
-import io
-import base64
-from local_model_manager import LocalModelManager
+
 from modern_generators import ModernGeneratorManager
+from video_generator_manager import VideoGeneratorManager
 from image_gallery import ImageGallery
 from prompt_enhancer import PromptEnhancer
 from cuda_checker import CudaChecker
+from local_model_manager import LocalModelManager
 
 # Load environment variables from .env file
 try:
@@ -68,6 +71,183 @@ class GenerationResponse(BaseModel):
     image: str
     generation_time: float
     vram_used: float
+
+class VideoGenerationRequest(BaseModel):
+    """Request model for video generation"""
+    prompt: str = Field(..., min_length=1, max_length=2000, description="Text prompt for video generation")
+    model_id: str = Field(..., min_length=1, description="Video model ID to use")
+    negative_prompt: str = Field(default="", max_length=1000, description="Negative prompt")
+    duration: str = Field(default="5 seconds", description="Video duration")
+    aspect_ratio: str = Field(default="16:9", description="Video aspect ratio")
+    image_url: Optional[str] = Field(default=None, description="Image URL for image-to-video")
+    
+    @validator('prompt')
+    def prompt_not_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('prompt cannot be empty or whitespace-only')
+        return v.strip()
+    
+    @validator('duration')
+    def validate_duration(cls, v):
+        # Allow common durations
+        allowed = ['3 seconds', '5 seconds', '6 seconds', '8 seconds', '10 seconds', 
+                  '15 seconds', '20 seconds', '30 seconds', '1 minute', '2 minutes', '3 minutes']
+        if v not in allowed:
+            # Don't fail, just warn and use default
+            return "5 seconds"
+        return v
+    
+    @validator('aspect_ratio')
+    def validate_aspect_ratio(cls, v):
+        allowed = ['16:9', '9:16', '4:3', '1:1', '21:9']
+        if v not in allowed:
+            return "16:9"
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "prompt": "A beautiful sunset over the ocean",
+                "model_id": "runway-gen3-alpha",
+                "negative_prompt": "blurry, low quality",
+                "duration": "5 seconds",
+                "aspect_ratio": "16:9"
+            }
+        }
+
+class VideoGenerationResponse(BaseModel):
+    """Response model for video generation"""
+    success: bool
+    video_url: str
+    thumbnail_url: str
+    generation_time: float
+    model_used: str
+    model_id: str
+    provider: str
+    message: Optional[str] = None
+
+# Simple in-memory rate limiter for video endpoints
+class SimpleRateLimiter:
+    """Thread-safe rate limiter using sliding window algorithm"""
+    def __init__(self):
+        self.requests = defaultdict(list)  # client_id -> list of timestamps
+        self._lock = threading.Lock()  # Thread safety for concurrent requests
+        self._last_cleanup = time.time()
+        self._cleanup_interval = 300  # Cleanup every 5 minutes
+        self._request_count = 0  # Track requests since last cleanup
+        self._cleanup_threshold = 100  # Cleanup every 100 requests
+        
+    def _cleanup_needed(self) -> bool:
+        """Check if cleanup is needed based on time or request count"""
+        now = time.time()
+        return (now - self._last_cleanup >= self._cleanup_interval or 
+                self._request_count >= self._cleanup_threshold)
+    
+    def _cleanup_stale_entries(self, force: bool = False):
+        """Remove stale client entries to prevent memory leak
+        
+        Args:
+            force: If True, run cleanup regardless of time interval (e.g., when triggered by request count)
+        """
+        now = time.time()
+        # Only run cleanup periodically, not on every request
+        # Unless force=True (triggered by request count threshold)
+        if not force and now - self._last_cleanup < self._cleanup_interval:
+            return
+        
+        # Remove clients with no requests in the last hour
+        stale_clients = [
+            client_id for client_id, timestamps in self.requests.items()
+            if not timestamps or (now - max(timestamps)) > 3600
+        ]
+        for client_id in stale_clients:
+            del self.requests[client_id]
+        
+        self._last_cleanup = now
+        if stale_clients:
+            print(f"[RATE_LIMITER] Cleaned up {len(stale_clients)} stale entries")
+    
+    def is_allowed(self, client_id: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
+        """Check if request is allowed under rate limit (thread-safe)"""
+        with self._lock:
+            # Check if cleanup is needed
+            cleanup_needed = self._cleanup_needed()
+            now = time.time()
+            time_cleanup_due = now - self._last_cleanup >= self._cleanup_interval
+            
+            # Run cleanup: force=True if triggered by request count, otherwise use time-based decision
+            if cleanup_needed:
+                force_cleanup = not time_cleanup_due  # Force if triggered by request count threshold
+                self._cleanup_stale_entries(force=force_cleanup)
+                self._request_count = 0
+            else:
+                self._request_count += 1
+            
+            # Remove requests outside the window
+            self.requests[client_id] = [
+                ts for ts in self.requests[client_id] 
+                if now - ts < window_seconds
+            ]
+            if len(self.requests[client_id]) >= max_requests:
+                return False
+            self.requests[client_id].append(now)
+            return True
+    
+    def get_remaining(self, client_id: str, max_requests: int = 10, window_seconds: int = 60) -> int:
+        """Get remaining requests in current window (thread-safe)"""
+        with self._lock:
+            now = time.time()
+            # Only filter timestamps - don't modify _request_count (read-only operation)
+            self.requests[client_id] = [
+                ts for ts in self.requests[client_id] 
+                if now - ts < window_seconds
+            ]
+            return max(0, max_requests - len(self.requests[client_id]))
+
+# Global rate limiter instance
+video_rate_limiter = SimpleRateLimiter()
+
+# Track IP warnings - only warn once at startup
+_ip_warning_printed = False
+
+def get_client_id(request) -> str:
+    """Extract client identifier from request for rate limiting.
+    
+    NOTE: This uses IP-based identification as fallback when no API key is provided.
+    This can cause shared rate limits in NAT environments, corporate proxies, or CDN.
+    For better isolation, clients should include their API key in the X-API-Key header.
+    
+    Security recommendation: Always require API keys for rate-limited endpoints in production."""
+    global _ip_warning_printed
+    
+    # Warn once at startup about IP-based rate limiting
+    if not _ip_warning_printed:
+        logging.getLogger(__name__).warning(
+            "[RATE_LIMITER] Using IP-based client ID as fallback. "
+            "This may cause shared rate limits in NAT environments. "
+            "Recommend using X-API-Key header for better isolation."
+        )
+        _ip_warning_printed = True
+    
+    # Try to get API key as client ID, fall back to IP address
+    if hasattr(request, 'headers'):
+        # FastAPI Request
+        api_key = request.headers.get("X-API-Key")
+        if api_key:
+            # Use full hashed API key for better collision resistance
+            return hashlib.sha256(api_key.encode()).hexdigest()
+        
+        # Try to get client IP from X-Forwarded-For header (for reverse proxy setups)
+        # Format: "X-Forwarded-For: client, proxy1, proxy2" - use first (leftmost) IP
+        x_forwarded_for = request.headers.get("X-Forwarded-For")
+        if x_forwarded_for:
+            # Get the first (leftmost) IP which is the original client
+            client_ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            # Fall back to direct client IP
+            client_ip = request.client.host if request.client else "unknown"
+        return client_ip
+    return "unknown"
 
 def get_public_ip():
     """Get the public IP address of the server"""
@@ -106,6 +286,7 @@ class ImageGenerator:
         
         self.model_manager = LocalModelManager()
         self.modern_manager = ModernGeneratorManager()
+        self.video_manager = VideoGeneratorManager()
         self.gallery = ImageGallery()
         self.model_loaded = False
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -561,13 +742,18 @@ async def enhance_prompt(request: dict):
         prompt = request.get("prompt", "")
         style = request.get("style", "cinematic")
         detail_level = request.get("detail_level", "medium")
+        model = request.get("model", "auto")  # Get model parameter
         
         if not prompt:
             raise HTTPException(status_code=400, detail="Prompt is required")
         
+        print(f"[ENHANCE] Processing prompt: '{prompt}' with style: {style}, model: {model}")
+        
         # Use prompt enhancer instance
         enhancer = PromptEnhancer()
-        result = await enhancer.enhance_prompt(prompt, style, detail_level)
+        result = await enhancer.enhance_prompt(prompt, style, detail_level, model)
+        
+        print(f"[ENHANCE] Success: AI enhanced={result.get('ai_enhanced', False)}, model_used={result.get('model_used', 'N/A')}")
         
         return result
     except Exception as e:
@@ -597,6 +783,241 @@ async def set_api_key(request: dict):
         return {"message": f"API key set for {generator_name}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Video generation endpoints
+@app.get("/video-models")
+async def get_video_models(http_request: Request = None):
+    """Get all available video generation models"""
+    # Require authentication for this endpoint
+    check_video_api_auth(http_request)
+    return {
+        "video_models": generator.video_manager.get_available_models(),
+        "categories": generator.video_manager.get_categories(),
+        "badges": generator.video_manager.get_badges()
+    }
+
+def check_video_api_auth(request = None):
+    """Check API key authentication for video endpoints.
+    
+    Security model:
+    - If VIDEO_API_KEY is set on the server, clients MUST provide matching X-API-Key header
+    - If VIDEO_API_KEY is NOT set, requests are DENIED by default for security
+    - For development only: set VIDEO_DEV_MODE=true to allow unauthenticated requests (NOT for production!)
+    
+    To enable authentication:
+    - Set VIDEO_API_KEY environment variable on the server (required for production)
+    - Clients must include 'X-API-Key' header in their requests
+    
+    Example (server-side):
+        # Linux/macOS:
+        export VIDEO_API_KEY=your-secret-key
+        
+        # Windows (CMD):
+        set VIDEO_API_KEY=your-secret-key
+        
+        # Windows (PowerShell):
+        $env:VIDEO_API_KEY="your-secret-key"
+        
+        # For development only (NOT for production):
+        set VIDEO_DEV_MODE=true
+    """
+    server_api_key = os.environ.get("VIDEO_API_KEY")
+    
+    # Check if we're in development mode (bypass auth) - NOT for production!
+    dev_mode = os.environ.get("VIDEO_DEV_MODE", "false").lower() in ("true", "1", "yes")
+    
+    # Detect production mode - deny bypass in production
+    is_production = (
+        os.environ.get("NODE_ENV") == "production" or
+        os.environ.get("FLASK_ENV") == "production" or
+        os.environ.get("FASTAPI_ENV") == "production" or
+        os.environ.get("PRODUCTION") == "true" or
+        os.environ.get("PROD") == "true"
+    )
+    
+    if is_production and not server_api_key:
+        # Production without API key - deny all requests
+        print("[SECURITY] Production mode detected without VIDEO_API_KEY. Denying all requests for security.")
+        raise HTTPException(
+            status_code=401, 
+            detail="Production mode requires VIDEO_API_KEY to be set. Video API is disabled."
+        )
+    
+    if dev_mode and is_production:
+        # Cannot enable dev mode in production - deny for security
+        print("[SECURITY] ERROR: VIDEO_DEV_MODE cannot be enabled in production. Denying request.")
+        raise HTTPException(
+            status_code=401, 
+            detail="Development mode is not allowed in production. Please configure VIDEO_API_KEY."
+        )
+    
+    if dev_mode:
+        # Development bypass enabled - log warning
+        print("[SECURITY] WARNING: VIDEO_DEV_MODE is enabled. Authentication is disabled. NOT FOR PRODUCTION!")
+        return True
+    
+    if not server_api_key:
+        # No API key configured - DENY by default for security
+        # This prevents accidental exposure in production
+        print("[SECURITY] VIDEO_API_KEY not configured. Denying unauthenticated requests.")
+        raise HTTPException(
+            status_code=401, 
+            detail="Video API authentication not configured. Set VIDEO_API_KEY environment variable for production, or VIDEO_DEV_MODE=true for development only."
+        )
+    
+    # Handle both dict and FastAPI Request objects
+    auth_header = None
+    if hasattr(request, 'headers'):
+        # FastAPI Request object
+        auth_header = request.headers.get("X-API-Key")
+    elif isinstance(request, dict):
+        # Plain dictionary
+        auth_header = request.get("api_key") or request.get("X-API-Key")
+    
+    # Use constant-time comparison to prevent timing attacks
+    if not auth_header or not hmac.compare_digest(str(auth_header), str(server_api_key)):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    return True
+
+@app.get("/video-models/{model_id}")
+async def get_video_model(model_id: str, http_request: Request = None):
+    """Get a specific video model by ID"""
+    check_video_api_auth(http_request)
+    model = generator.video_manager.get_model(model_id)
+    if not model:
+        raise HTTPException(status_code=404, detail=f"Video model not found: {model_id}")
+    return model
+
+@app.get("/video-categories")
+async def get_video_categories(http_request: Request = None):
+    """Get all video categories"""
+    check_video_api_auth(http_request)
+    return {
+        "categories": generator.video_manager.get_categories()
+    }
+
+@app.get("/video-models/category/{category_id}")
+async def get_video_models_by_category(category_id: str, http_request: Request = None):
+    """Get video models by category"""
+    check_video_api_auth(http_request)
+    models = generator.video_manager.get_models_by_category(category_id)
+    return {
+        "category_id": category_id,
+        "models": models
+    }
+
+@app.get("/video-providers")
+async def get_video_providers(http_request: Request = None):
+    """Get video provider status"""
+    check_video_api_auth(http_request)
+    return {
+        "providers": generator.video_manager.get_provider_status(),
+        "api_keys_set": generator.video_manager.get_configured_providers()
+    }
+
+@app.post("/set-video-api-key")
+async def set_video_api_key(request: dict, http_request: Request = None):
+    """Set API key for video provider"""
+    try:
+        # Check admin authentication - require server's VIDEO_API_KEY to be set
+        server_admin_key = os.environ.get("VIDEO_API_KEY")
+        if not server_admin_key:
+            # Also check for dedicated admin key env var
+            server_admin_key = os.environ.get("VIDEO_API_ADMIN_KEY")
+        
+        if server_admin_key:
+            # Verify the request includes valid admin credentials
+            auth_header = http_request.headers.get("X-API-Key") if http_request else None
+            if not auth_header or not hmac.compare_digest(str(auth_header), str(server_admin_key)):
+                raise HTTPException(status_code=403, detail="Admin authentication required to set API keys")
+        else:
+            # No admin key configured - log security warning but allow for development
+            # In production, always set VIDEO_API_KEY or VIDEO_API_ADMIN_KEY
+            print("[WARNING] /set-video-api-key called without server admin key configured. "
+                  "Set VIDEO_API_KEY or VIDEO_API_ADMIN_KEY environment variable for production.")
+        
+        provider = request.get("provider")
+        api_key = request.get("api_key")
+        
+        if not provider or not api_key:
+            raise HTTPException(status_code=400, detail="provider and api_key required")
+        
+        generator.video_manager.set_api_key(provider, api_key)
+        
+        return {"message": f"API key set for {provider}"}
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-video")
+async def generate_video(request: VideoGenerationRequest, http_request: Request = None):
+    """Generate video using specified model"""
+    try:
+        # Check optional API key authentication
+        # Pass the FastAPI Request object directly for header-based auth
+        check_video_api_auth(http_request)
+        
+        # Apply rate limiting - 10 requests per minute per client
+        client_id = get_client_id(http_request) if http_request else "unknown"
+        
+        # Validate rate limit config from environment variables
+        try:
+            rate_limit_max = int(os.environ.get("VIDEO_RATE_LIMIT", "10"))
+            if rate_limit_max < 1:
+                rate_limit_max = 10
+        except ValueError:
+            rate_limit_max = 10
+        
+        try:
+            rate_limit_window = int(os.environ.get("VIDEO_RATE_LIMIT_WINDOW", "60"))
+            if rate_limit_window < 1:
+                rate_limit_window = 60
+        except ValueError:
+            rate_limit_window = 60
+        
+        if not video_rate_limiter.is_allowed(client_id, rate_limit_max, rate_limit_window):
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded. Max {rate_limit_max} requests per {rate_limit_window} seconds."
+            )
+        
+        remaining = video_rate_limiter.get_remaining(client_id, rate_limit_max, rate_limit_window)
+        
+        result = await generator.video_manager.generate_video(
+            model_id=request.model_id,
+            prompt=request.prompt,
+            negative_prompt=request.negative_prompt,
+            duration=request.duration,
+            aspect_ratio=request.aspect_ratio,
+            image_url=request.image_url
+        )
+        
+        # Add rate limit info to response
+        result_with_limits = {
+            **result,
+            "rate_limit_remaining": remaining,
+            "rate_limit_max": rate_limit_max,
+            "rate_limit_window": rate_limit_window
+        }
+        
+        return result_with_limits
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Video generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/video-models/search")
+async def search_video_models(q: str = "", http_request: Request = None):
+    """Search video models"""
+    check_video_api_auth(http_request)
+    if not q:
+        return {"models": []}
+    results = generator.video_manager.search_models(q)
+    return {"models": results, "query": q}
 
 # Leonardo.ai webhook endpoints
 @app.post("/webhook/leonardo/{callback_id}")

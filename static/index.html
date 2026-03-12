@@ -646,6 +646,19 @@
                             </div>
                         </div>
 
+                        <!-- AI Model Selection -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-purple-300 mb-2">🤖 AI Model</label>
+                            <select id="enhancement-model" class="w-full px-3 py-2 bg-purple-500/20 border border-purple-400/30 rounded-lg text-white text-sm focus:outline-none focus:border-purple-400">
+                                <option value="auto" class="bg-purple-900">🔄 Auto (Best Available)</option>
+                                <option value="openai" class="bg-purple-900">🟢 OpenAI GPT</option>
+                                <option value="anthropic" class="bg-purple-900">🔵 Anthropic Claude</option>
+                                <option value="gemini" class="bg-purple-900">🟣 Google Gemini</option>
+                                <option value="local" class="bg-purple-900">📝 Template-Based</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Select which AI model to use for prompt enhancement</p>
+                        </div>
+
                         <!-- Enhanced Results -->
                         <div id="enhanced-results" class="space-y-3">
                             <!-- Results will be populated here -->
@@ -741,6 +754,141 @@
                         <span>💾 Download Image</span>
                     </button>
                     <button id="new-generation-btn"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200">
+                        🔄 Generate Another
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Generation Section -->
+        <div class="glass rounded-xl p-6 mb-8 card-hover">
+            <h2 class="text-2xl font-bold mb-6 cyber-title neon-text" style="color: var(--secondary-neon);">
+                [ VIDEO GENERATION ]
+            </h2>
+
+            <!-- Video Info -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-400/30">
+                <p class="text-sm neon-text" style="color: var(--text-secondary);">
+                    <strong class="neon-text" style="color: var(--warning-neon);">🎬 VIDEO GENERATION:</strong> Generate videos from text prompts or images. Select a model and enter your prompt.
+                </p>
+            </div>
+
+            <form id="video-generation-form">
+                <!-- Video Model Selection -->
+                <div class="mb-6">
+                    <label for="video-model" class="block text-sm font-medium mb-2 neon-text" style="color: var(--primary-neon);">[ VIDEO MODEL ]</label>
+                    <select id="video-model" name="model_id"
+                        class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                        <option value="runway-gen3-alpha">Runway Gen-3 Alpha (Recommended)</option>
+                        <option value="pika-labs">Pika Labs</option>
+                        <option value="kling-ai">Kling AI</option>
+                        <option value="luma-dream-machine">Luma Dream Machine</option>
+                        <option value="minimax-video">Minimax Video</option>
+                        <option value="seedance">Seedance (ByteDance)</option>
+                        <option value="openai-sora">OpenAI Sora</option>
+                    </select>
+                </div>
+
+                <!-- Video Prompt -->
+                <div class="mb-6">
+                    <label for="video-prompt" class="block text-sm font-medium mb-2 neon-text" style="color: var(--primary-neon);">[ PROMPT ]</label>
+                    <textarea id="video-prompt" name="prompt" rows="3"
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="Describe the video you want to generate... (e.g., 'A beautiful sunset over the ocean with waves gently rolling in')"></textarea>
+                </div>
+
+                <!-- Negative Prompt -->
+                <div class="mb-6">
+                    <label for="video-negative-prompt" class="block text-sm font-medium mb-2 text-purple-300">🚫 Negative Prompt (Optional)</label>
+                    <textarea id="video-negative-prompt" name="negative_prompt" rows="2"
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="What to avoid in the video... (e.g., 'blurry, low quality, distorted')"></textarea>
+                </div>
+
+                <!-- Duration and Aspect Ratio -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="video-duration" class="block text-sm font-medium mb-2 text-purple-300">⏱️ Duration</label>
+                        <select id="video-duration" name="duration"
+                            class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                            <option value="3 seconds">3 seconds</option>
+                            <option value="5 seconds" selected>5 seconds</option>
+                            <option value="6 seconds">6 seconds</option>
+                            <option value="8 seconds">8 seconds</option>
+                            <option value="10 seconds">10 seconds</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="video-aspect" class="block text-sm font-medium mb-2 text-purple-300">📐 Aspect Ratio</label>
+                        <select id="video-aspect" name="aspect_ratio"
+                            class="w-full px-4 py-3 enhanced-input enhanced-select rounded-lg text-white focus:outline-none">
+                            <option value="16:9" selected>16:9 (Widescreen)</option>
+                            <option value="9:16">9:16 (Vertical/TikTok)</option>
+                            <option value="1:1">1:1 (Square)</option>
+                            <option value="4:3">4:3 (Standard)</option>
+                            <option value="21:9">21:9 (Ultrawide)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Image URL for Image-to-Video -->
+                <div class="mb-6">
+                    <label for="video-image-url" class="block text-sm font-medium mb-2 text-purple-300">🖼️ Image URL (Optional - for Image-to-Video)</label>
+                    <input type="text" id="video-image-url" name="image_url"
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="Enter an image URL to animate...">
+                </div>
+
+                <!-- API Key (Optional) -->
+                <div class="mb-6">
+                    <label for="video-api-key" class="block text-sm font-medium mb-2 text-purple-300">🔑 API Key (Optional)</label>
+                    <input type="password" id="video-api-key" name="api_key"
+                        class="w-full px-4 py-3 enhanced-input rounded-lg text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="Enter your video API key if required...">
+                    <p class="text-xs text-gray-400 mt-1">Required if the server has VIDEO_API_KEY configured</p>
+                </div>
+
+                <button type="submit" id="generate-video-btn"
+                    class="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-lg text-lg transition duration-200 flex items-center justify-center gap-2">
+                    <span>🎬 GENERATE VIDEO</span>
+                </button>
+            </form>
+
+            <!-- Video Loading State -->
+            <div id="video-loading" class="hidden mt-6">
+                <div class="flex items-center justify-center gap-4">
+                    <div class="loading-spinner"></div>
+                    <span id="video-loading-status" class="text-lg">Preparing video generation...</span>
+                </div>
+                <div class="mt-4">
+                    <div class="bg-gray-700 rounded-full h-2">
+                        <div id="video-progress-bar"
+                            class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Result -->
+            <div id="video-result" class="hidden mt-6">
+                <div class="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg p-4 border border-green-400/30">
+                    <h3 class="text-lg font-semibold mb-2 text-green-300">✅ Video Generation Complete!</h3>
+                    <p class="text-sm text-gray-300 mb-4">
+                        Time: <span id="video-generation-time">0</span>s | 
+                        Model: <span id="video-model-used">-</span>
+                    </p>
+                    <video id="generated-video" class="w-full rounded-lg shadow-lg" controls>
+                        <source src="" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <button id="download-video-btn"
+                        class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg transition duration-200 flex items-center gap-2">
+                        <span>💾 Download Video</span>
+                    </button>
+                    <button id="new-video-btn"
                         class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200">
                         🔄 Generate Another
                     </button>
@@ -1476,6 +1624,7 @@
         // Advanced Prompt Enhancement functionality
         let currentEnhancementStyle = "photorealistic";
         let currentDetailLevel = "medium";
+        let currentEnhancementModel = "auto";  // Default to auto
         let allEnhancements = {};
 
         // Local prompt enhancement fallback
@@ -2435,6 +2584,140 @@
             }
         });
 
+        // =======================
+        // VIDEO GENERATION HANDLER
+        // =======================
+        document.getElementById('video-generation-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const selectedModel = formData.get('model_id');
+            const prompt = formData.get('prompt');
+
+            // Validate model selection
+            if (!selectedModel || selectedModel === 'None' || selectedModel === '') {
+                alert('Please select a video model before generating.');
+                return;
+            }
+
+            // Validate prompt
+            if (!prompt || prompt.trim() === '') {
+                alert('Please enter a prompt for the video.');
+                return;
+            }
+
+            // Prepare video generation data
+            const data = {
+                model_id: selectedModel,
+                prompt: prompt,
+                negative_prompt: formData.get('negative_prompt') || '',
+                duration: formData.get('duration') || '5 seconds',
+                aspect_ratio: formData.get('aspect_ratio') || '16:9',
+                image_url: formData.get('image_url') || null
+            };
+
+            console.log('🎬 Starting video generation with:', data);
+
+            // Get API key if provided
+            const apiKey = formData.get('api_key');
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (apiKey) {
+                headers['X-API-Key'] = apiKey;
+            }
+
+            // Show loading state
+            document.getElementById('video-loading').classList.remove('hidden');
+            document.getElementById('video-result').classList.add('hidden');
+            document.getElementById('generate-video-btn').disabled = true;
+            
+            const statusEl = document.getElementById('video-loading-status');
+            const progressBar = document.getElementById('video-progress-bar');
+            
+            statusEl.textContent = 'Initializing video generation...';
+            progressBar.style.width = '10%';
+
+            // Simulate progress for now (video generation takes time)
+            let progress = 10;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 5;
+                    progressBar.style.width = progress + '%';
+                    if (progress === 30) statusEl.textContent = 'Generating video frames...';
+                    if (progress === 60) statusEl.textContent = 'Processing video...';
+                    if (progress === 80) statusEl.textContent = 'Finalizing video...';
+                }
+            }, 1000);
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(`${API_BASE}/generate-video`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                });
+
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || `Server error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('✅ Video generation result:', result);
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Video generation failed');
+                }
+
+                // Display result
+                const videoElement = document.getElementById('generated-video');
+                videoElement.src = result.video_url;
+                
+                document.getElementById('video-generation-time').textContent = result.generation_time.toFixed(2) + 's';
+                document.getElementById('video-model-used').textContent = result.model_used || result.model_id;
+
+                // Hide loading, show result
+                document.getElementById('video-loading').classList.add('hidden');
+                document.getElementById('video-result').classList.remove('hidden');
+
+                // Store video URL for download
+                window.currentVideoUrl = result.video_url;
+
+            } catch (error) {
+                clearInterval(progressInterval);
+                console.error('❌ Video generation error:', error);
+                alert('Video generation failed: ' + error.message);
+                
+                document.getElementById('video-loading').classList.add('hidden');
+                document.getElementById('generate-video-btn').disabled = false;
+            }
+        });
+
+        // Download video
+        document.getElementById('download-video-btn').addEventListener('click', () => {
+            if (window.currentVideoUrl) {
+                const link = document.createElement('a');
+                link.download = `generated-video-${Date.now()}.mp4`;
+                link.href = window.currentVideoUrl;
+                link.target = '_blank';
+                link.click();
+            } else {
+                alert('No video available to download');
+            }
+        });
+
+        // Generate another video
+        document.getElementById('new-video-btn').addEventListener('click', () => {
+            document.getElementById('video-result').classList.add('hidden');
+            document.getElementById('video-generation-form').reset();
+            document.getElementById('generate-video-btn').disabled = false;
+        });
+
         // Download image
         document.getElementById('download-btn').addEventListener('click', () => {
             const img = document.getElementById('generated-image');
@@ -3109,7 +3392,8 @@
                     body: JSON.stringify({
                         prompt: prompt,
                         style: currentEnhancementStyle,
-                        detail_level: currentDetailLevel
+                        detail_level: currentDetailLevel,
+                        model: currentEnhancementModel
                     })
                 });
 
@@ -3197,6 +3481,21 @@
                     }
                 });
             });
+
+            // Enhancement model selector
+            const modelSelect = document.getElementById('enhancement-model');
+            if (modelSelect) {
+                modelSelect.addEventListener('change', async (e) => {
+                    currentEnhancementModel = e.target.value;
+                    console.log('Model changed to:', currentEnhancementModel);
+                    
+                    // Re-enhance with new model if prompt exists
+                    const originalPrompt = document.getElementById('prompt').value.trim();
+                    if (originalPrompt) {
+                        await performEnhancement(originalPrompt);
+                    }
+                });
+            }
 
             // Close enhancement panel
             document.getElementById('close-enhancement-panel').addEventListener('click', (e) => {

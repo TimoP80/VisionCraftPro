@@ -1,0 +1,200 @@
+{
+  "video_models": [
+    {
+      "id": "openai-sora",
+      "name": "OpenAI Sora",
+      "provider": "OpenAI",
+      "description": "Advanced text-to-video model capable of generating highly realistic videos from text prompts. Supports complex scenes, multiple characters, and specific motions.",
+      "features": ["Text-to-Video", "Image-to-Video", "Video Extension", "Complex Scene Understanding"],
+      "max_duration": "20 seconds",
+      "resolution": "Up to 1920x1080",
+      "strengths": ["Photorealistic quality", "Physics simulation", "Creative storytelling"],
+      "website": "https://openai.com/sora",
+      "pricing": "Credits-based",
+      "release_date": "2024",
+      "badge": "top-pick"
+    },
+    {
+      "id": "runway-gen3-alpha",
+      "name": "Runway Gen-3 Alpha",
+      "provider": "Runway",
+      "description": "Next-generation AI video generation model with exceptional visual quality and temporal consistency. Part of comprehensive video editing suite.",
+      "features": ["Text-to-Video", "Image-to-Video", "Video-to-Video", "Motion Brush"],
+      "max_duration": "10 seconds",
+      "resolution": "1280x720",
+      "strengths": ["Cinematic quality", "Consistent characters", "Advanced controls"],
+      "website": "https://runwayml.com",
+      "pricing": "Subscription",
+      "release_date": "2024",
+      "badge": "editor-choice"
+    },
+    {
+      "id": "pika-labs",
+      "name": "Pika Labs",
+      "provider": "Pika",
+      "description": "Fast and intuitive AI video generation platform known for quick generation times and user-friendly interface.",
+      "features": ["Text-to-Video", "Image-to-Video", "Video Editing", "Lip Sync"],
+      "max_duration": "10 seconds",
+      "resolution": "16:9 aspect ratio",
+      "strengths": ["Fast generation", "Easy to use", "Community features"],
+      "website": "https://pika.art",
+      "pricing": "Freemium",
+      "release_date": "2023",
+      "badge": "fastest"
+    },
+    {
+      "id": "kling-ai",
+      "name": "Kling AI",
+      "provider": "Kuaishou",
+      "description": "Powerful text-to-video model from Kuaishou with impressive motion quality and realistic physics simulation.",
+      "features": ["Text-to-Video", "Image-to-Video", "Video Extension", "Style Transfer"],
+      "max_duration": "2 minutes",
+      "resolution": "1920x1080",
+      "strengths": ["Long videos", "Realistic motion", "High quality"],
+      "website": "https://kling.ai",
+      "pricing": "Credits-based",
+      "release_date": "2024",
+      "badge": "best-value"
+    },
+    {
+      "id": "luma-dream-machine",
+      "name": "Luma Dream Machine",
+      "provider": "Luma AI",
+      "description": "Advanced video generation model focused on high-quality, realistic video output with excellent consistency.",
+      "features": ["Text-to-Video", "Image-to-Video", "Camera Controls", "Prompt Adherence"],
+      "max_duration": "5 seconds",
+      "resolution": "1280x720",
+      "strengths": ["Photorealistic", "Natural motion", "Reliable output"],
+      "website": "https://lumalabs.ai/dream-machine",
+      "pricing": "Subscription",
+      "release_date": "2024",
+      "badge": "new"
+    },
+    {
+      "id": "minimax-video",
+      "name": "Minimax Video",
+      "provider": "Minimax",
+      "description": "Chinese AI video generation model offering strong performance in both text-to-video and image-to-video tasks.",
+      "features": ["Text-to-Video", "Image-to-Video", "Multi-subject", "Style Options"],
+      "max_duration": "10 seconds",
+      "resolution": "16:9",
+      "strengths": ["Multi-language support", "Consistent quality", "Fast processing"],
+      "website": "https://minimax.ai",
+      "pricing": "Credits-based",
+      "release_date": "2024",
+      "badge": null
+    },
+    {
+      "id": "seedance",
+      "name": "Seedance",
+      "provider": "ByteDance",
+      "description": "AI video generation from ByteDance (TikTok's parent company) with strong creative capabilities.",
+      "features": ["Text-to-Video", "Image-to-Video", "Creative Effects", "Short-form Focus"],
+      "max_duration": "10 seconds",
+      "resolution": "9:16 (vertical)",
+      "strengths": ["Social media optimized", "Creative styles", "Fast generation"],
+      "website": "https://seedance.com",
+      "pricing": "Beta",
+      "release_date": "2024",
+      "badge": "social-ready"
+    },
+    {
+      "id": "haiper",
+      "name": "Haiper",
+      "provider": "Haiper",
+      "description": "User-friendly AI video generator with strong focus on creative expression and artistic styles.",
+      "features": ["Text-to-Video", "Image-to-Video", "Art Styles", "Keypoint Animation"],
+      "max_duration": "8 seconds",
+      "resolution": "1280x720",
+      "strengths": ["Artistic quality", "Easy interface", "Diverse styles"],
+      "website": "https://haiper.ai",
+      "pricing": "Freemium",
+      "release_date": "2024",
+      "badge": null
+    },
+    {
+      "id": "moonvalley",
+      "name": "Moonvalley",
+      "provider": "Moonvalley",
+      "description": "AI video generation platform focusing on cinematic quality and artistic control.",
+      "features": ["Text-to-Video", "Style Controls", "Camera Movement", "Consistency"],
+      "max_duration": "6 seconds",
+      "resolution": "16:9",
+      "strengths": ["Cinematic look", "Artistic control", "Quality over quantity"],
+      "website": "https://moonvalley.ai",
+      "pricing": "Credits-based",
+      "release_date": "2024",
+      "badge": "artistic"
+    },
+    {
+      "id": "stepo",
+      "name": "Stepo",
+      "provider": "Stepo",
+      "description": "Emerging AI video generation platform with innovative features and growing capabilities.",
+      "features": ["Text-to-Video", "Image Animation", "Motion Controls"],
+      "max_duration": "5 seconds",
+      "resolution": "16:9",
+      "strengths": ["Innovation", "Clean interface", "Regular updates"],
+      "website": "https://stepo.io",
+      "pricing": "Freemium",
+      "release_date": "2025",
+      "badge": null
+    },
+    {
+      "id": "kling-1-5",
+      "name": "Kling 1.5",
+      "provider": "Kuaishou",
+      "description": "Enhanced version of Kling with improved physics, better prompt adherence, and longer generation capabilities.",
+      "features": ["Text-to-Video", "Image-to-Video", "Advanced Physics", "4K Support"],
+      "max_duration": "3 minutes",
+      "resolution": "3840x2160",
+      "strengths": ["4K quality", "Longest duration", "Best physics"],
+      "website": "https://kling.ai",
+      "pricing": "Credits-based",
+      "release_date": "2025",
+      "badge": "premium"
+    },
+    {
+      "id": "runway-gen3-alpha-turbo",
+      "name": "Runway Gen-3 Alpha Turbo",
+      "provider": "Runway",
+      "description": "Faster version of Gen-3 with slightly reduced quality but significantly improved generation speed.",
+      "features": ["Text-to-Video", "Image-to-Video", "Quick Mode"],
+      "max_duration": "10 seconds",
+      "resolution": "1280x720",
+      "strengths": ["4x faster", "Same controls", "Lower cost"],
+      "website": "https://runwayml.com",
+      "pricing": "Subscription",
+      "release_date": "2025",
+      "badge": "speed"
+    }
+  ],
+  "categories": [
+    {
+      "id": "text-to-video",
+      "name": "Text-to-Video",
+      "description": "Generate videos from text descriptions"
+    },
+    {
+      "id": "image-to-video",
+      "name": "Image-to-Video",
+      "description": "Animate static images into video"
+    },
+    {
+      "id": "video-editing",
+      "name": "Video Editing",
+      "description": "Edit and enhance existing videos"
+    }
+  ],
+  "badges": {
+    "top-pick": {"label": "Top Pick", "color": "cyan"},
+    "editor-choice": {"label": "Editor's Choice", "color": "purple"},
+    "fastest": {"label": "Fastest", "color": "yellow"},
+    "best-value": {"label": "Best Value", "color": "green"},
+    "new": {"label": "New", "color": "blue"},
+    "premium": {"label": "Premium", "color": "gold"},
+    "social-ready": {"label": "Social Ready", "color": "pink"},
+    "artistic": {"label": "Artistic", "color": "orange"},
+    "speed": {"label": "Speed", "color": "lime"}
+  }
+}

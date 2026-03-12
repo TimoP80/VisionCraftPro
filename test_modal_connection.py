@@ -5,9 +5,10 @@ Test Modal connection from VisionCraft
 import asyncio
 import sys
 import os
+from pathlib import Path
 
 # Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
 async def test_modal_connection():
     """Test if Modal function can be called"""

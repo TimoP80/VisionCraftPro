@@ -54,7 +54,8 @@ class PuterGenerator {
             'flux-1-dev': { name: 'FLUX.1 Dev', speed: 'balanced' },
             'stable-diffusion-xl': { name: 'Stable Diffusion XL' },
             'gpt-image-1.5': { name: 'GPT Image 1.5', quality: ['low', 'medium', 'high'] },
-            'gemini-2.5-flash': { name: 'Gemini 2.5 Flash' }
+            'gemini-3.0-flash-image-preview': { name: 'Gemini 3.0 Flash' },
+            'gemini-2.5-flash-image-preview': { name: 'Gemini 2.5 Flash' }
         };
     }
     
@@ -81,7 +82,8 @@ const puterModels = {
     'puter-flux-1-dev': 'FLUX.1 Dev (Free)',
     'puter-stable-diffusion-xl': 'Stable Diffusion XL (Free)',
     'puter-gpt-image-1.5': 'GPT Image 1.5 (Free)',
-    'puter-gemini-2.5-flash': 'Gemini 2.5 Flash (Free)'
+    'puter-gemini-3.0-flash-image-preview': 'Gemini 3.0 Flash (Free)',
+    'puter-gemini-2.5-flash-image-preview': 'Gemini 2.5 Flash (Free)'
 };
 ```
 
@@ -104,6 +106,7 @@ const puterModels = {
                 <option value="black-forest-labs/FLUX.1-dev">FLUX.1 Dev (Balanced)</option>
                 <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL</option>
                 <option value="gpt-image-1.5">GPT Image 1.5</option>
+                <option value="gemini-3.0-flash-image-preview">Gemini 3.0 Flash</option>
                 <option value="gemini-2.5-flash-image-preview">Gemini 2.5 Flash</option>
             </select>
         </div>

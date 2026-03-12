@@ -1,0 +1,68 @@
+{
+  "app_name": "VisionCraft Pro",
+  "version": "1.3.0",
+  "publisher": "Timo Pitkänen",
+  "author_email": "tpitkane@gmail.com",
+  "python_min": "3.9",
+  "python_download_url": "https://www.python.org/downloads/",
+  "install_dir": "C:\\Program Files\\VisionCraftPro",
+  "exe_name": "run.bat",
+  "launcher": "run.bat",
+  "setup_script": "vcp_setup.py",
+  "license_file": "LICENSE.txt",
+  "output_exe": "VisionCraftPro_Setup_1.3.0.exe",
+  "dependencies": [
+    "requirements.txt"
+  ],
+  "features": {
+    "start_menu_shortcut": true,
+    "desktop_shortcut": true,
+    "quick_launch": false,
+    "file_association": false,
+    "registry_entry": true,
+    "run_setup_on_install": true,
+    "python_check": true
+  },
+  "files": {
+    "include": [
+      "*.py",
+      "*.bat",
+      "*.sh",
+      "*.json",
+      "*.txt",
+      "*.md",
+      "static/**/*",
+      "data/**/*"
+    ],
+    "exclude": [
+      ".git/**",
+      ".venv/**",
+      "__pycache__/**",
+      "*.pyc",
+      "generated_images/**",
+      "VisionCraftPro*.exe",
+      "*.tar.gz"
+    ]
+  },
+  "shortcuts": {
+    "start_menu_name": "VisionCraft Pro",
+    "start_menu_folder": "VisionCraft Pro",
+    "desktop_name": "VisionCraft Pro",
+    "uninstaller_name": "Uninstall VisionCraft Pro"
+  },
+  "registry": {
+    "app_id": "VisionCraftPro",
+    "display_name": "VisionCraft Pro",
+    "display_version": "1.3.0",
+    "publisher": "Timo Pitkänen",
+    "url_info_about": "https://github.com",
+    "install_location": "InstallDir"
+  },
+  "requirements": {
+    "python_version": "3.9",
+    "gpu_recommended": true,
+    "gpu_vram_min": "8GB",
+    "ram_min": "8GB",
+    "disk_space_min": "10GB"
+  }
+}

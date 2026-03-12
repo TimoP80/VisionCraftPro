@@ -8,6 +8,7 @@ import asyncio
 from typing import Dict, List, Optional
 import json
 import os
+import random
 
 class PromptEnhancer:
     """Enhance prompts with different styles and detail levels"""
@@ -109,88 +110,237 @@ class PromptEnhancer:
         
         self.ai_available = bool(self.openai_key or self.anthropic_key or self.gemini_key)
     
-    async def enhance_with_ai(self, prompt: str, style: str = "cinematic") -> str:
-        """Try to enhance prompt using real AI LLM"""
-        if not self.ai_available:
+    def get_available_models(self) -> Dict[str, bool]:
+        """Get available AI models based on configured API keys"""
+        return {
+            "auto": True,  # Always available - tries all available models
+            "openai": bool(self.openai_key),
+            "anthropic": bool(self.anthropic_key),
+            "gemini": bool(self.gemini_key),
+            "local": True,  # Template-based is always available
+            "template": True  # Alias for local
+        }
+    
+    async def enhance_with_ai(self, prompt: str, style: str = "cinematic", model: str = "auto") -> Dict:
+        """Try to enhance prompt using real AI LLM
+        
+        Args:
+            prompt: The original prompt to enhance
+            style: The enhancement style (cinematic, artistic, etc.)
+            model: The AI model to use ("auto", "openai", "anthropic", "gemini", "local", "template")
+        
+        Returns:
+            Dict with keys:
+                - "enhanced_prompt": The enhanced prompt string
+                - "fallback_occurred": Boolean indicating if fallback to template occurred
+                - "fallback_reason": Reason for fallback (None if no fallback)
+                - "model_used": The model that was actually used
+        """
+        # Normalize model name
+        model = model.lower() if model else "auto"
+        
+        if model in ("local", "template"):
+            # Template-based is always available
+            print(f"[AI] Using template-based enhancement (model={model})")
+            return {
+                "enhanced_prompt": self.add_style_enhancement(prompt, style),
+                "fallback_occurred": True,
+                "fallback_reason": "template_mode",
+                "model_used": model
+            }
+        
+        if not self.ai_available and model != "auto":
+            # No AI available, but specific model requested
+            # Fall back to template-based
+            print(f"[AI] No AI API keys available, using template-based enhancement")
+            return {
+                "enhanced_prompt": self.add_style_enhancement(prompt, style),
+                "fallback_occurred": True,
+                "fallback_reason": "no_api_keys",
+                "model_used": "template"
+            }
+        
+        # Determine which model(s) to try based on the request
+        models_to_try = []
+        
+        if model == "auto":
+            # Try all available AI models in priority order
+            if self.openai_key:
+                models_to_try.append("openai")
+            if self.anthropic_key:
+                models_to_try.append("anthropic")
+            if self.gemini_key:
+                models_to_try.append("gemini")
+        else:
+            # Try specific requested model
+            if model == "openai" and self.openai_key:
+                models_to_try.append("openai")
+            elif model == "anthropic" and self.anthropic_key:
+                models_to_try.append("anthropic")
+            elif model == "gemini" and self.gemini_key:
+                models_to_try.append("gemini")
+            else:
+                # Requested model not available
+                print(f"[AI] Requested model '{model}' is not available (no API key)")
+                # Fall back to template-based
+                return {
+                    "enhanced_prompt": self.add_style_enhancement(prompt, style),
+                    "fallback_occurred": True,
+                    "fallback_reason": f"model_unavailable:{model}",
+                    "model_used": "template"
+                }
+        
+        if not models_to_try:
+            print(f"[AI] No AI models available, using template-based enhancement")
+            return {
+                "enhanced_prompt": self.add_style_enhancement(prompt, style),
+                "fallback_occurred": True,
+                "fallback_reason": "no_ai_models_available",
+                "model_used": "template"
+            }
+        
+        print(f"[AI] Trying AI models in order: {models_to_try}")
+        
+        # Try each model in order until one succeeds
+        for model_name in models_to_try:
+            try:
+                if model_name == "openai":
+                    result = await self._enhance_with_openai(prompt, style)
+                    if result:
+                        print(f"[AI] OpenAI enhancement succeeded")
+                        return {
+                            "enhanced_prompt": result,
+                            "fallback_occurred": False,
+                            "fallback_reason": None,
+                            "model_used": "openai"
+                        }
+                elif model_name == "anthropic":
+                    result = await self._enhance_with_anthropic(prompt, style)
+                    if result:
+                        print(f"[AI] Anthropic enhancement succeeded")
+                        return {
+                            "enhanced_prompt": result,
+                            "fallback_occurred": False,
+                            "fallback_reason": None,
+                            "model_used": "anthropic"
+                        }
+                elif model_name == "gemini":
+                    result = await self._enhance_with_gemini(prompt, style)
+                    if result:
+                        print(f"[AI] Gemini enhancement succeeded")
+                        return {
+                            "enhanced_prompt": result,
+                            "fallback_occurred": False,
+                            "fallback_reason": None,
+                            "model_used": "gemini"
+                        }
+            except Exception as e:
+                print(f"[AI] {model_name} enhancement failed: {e}, trying next model...")
+        
+        # All AI models failed, fall back to template-based
+        print(f"[AI] All AI models failed, using template-based enhancement")
+        return {
+            "enhanced_prompt": self.add_style_enhancement(prompt, style),
+            "fallback_occurred": True,
+            "fallback_reason": "all_ai_models_failed",
+            "model_used": "template"
+        }
+    
+    async def _enhance_with_openai(self, prompt: str, style: str) -> str:
+        """Enhance prompt using OpenAI"""
+        if not self.openai_key:
             return None
             
-        # Try OpenAI first
-        if self.openai_key:
-            try:
-                import openai
-                client = openai.OpenAI(api_key=self.openai_key)
-                
-                system_prompt = f"""You are an expert prompt engineer for AI image generation. 
-                Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
-                
-                Focus on {style} style with these characteristics:
-                {self._get_style_description(style)}
-                
-                Rules:
-                - Keep the core concept intact
-                - Add descriptive details and artistic elements
-                - Include lighting, composition, and technical terms
-                - Make it 2-3 times more descriptive
-                - Return ONLY the enhanced prompt, no explanations
-                """
-                
-                response = await asyncio.to_thread(
-                    client.chat.completions.create,
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
-                    ],
-                    max_tokens=200,
-                    temperature=0.7
-                )
-                
-                return response.choices[0].message.content.strip()
-                
-            except Exception as e:
-                print(f"[AI] OpenAI enhancement failed: {e}")
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self.openai_key)
+            
+            system_prompt = f"""You are an expert prompt engineer for AI image generation. 
+            Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+            
+            Focus on {style} style with these characteristics:
+            {self._get_style_description(style)}
+            
+            Rules:
+            - Keep the core concept intact
+            - Add descriptive details and artistic elements
+            - Include lighting, composition, and technical terms
+            - Make it 2-3 times more descriptive
+            - Return ONLY the enhanced prompt, no explanations
+            """
+            
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"[AI] OpenAI enhancement failed: {e}")
+            return None
+    
+    async def _enhance_with_anthropic(self, prompt: str, style: str) -> str:
+        """Enhance prompt using Anthropic Claude"""
+        if not self.anthropic_key:
+            return None
+            
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=self.anthropic_key)
+            
+            system_prompt = f"""You are an expert prompt engineer for AI image generation. 
+            Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+            
+            Focus on {style} style with these characteristics:
+            {self._get_style_description(style)}
+            
+            Rules:
+            - Keep the core concept intact
+            - Add descriptive details and artistic elements
+            - Include lighting, composition, and technical terms
+            - Make it 2-3 times more descriptive
+            - Return ONLY the enhanced prompt, no explanations
+            """
+            
+            response = await asyncio.to_thread(
+                client.messages.create,
+                model="claude-3-haiku-20240307",
+                max_tokens=200,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
+                ]
+            )
+            
+            return response.content[0].text.strip()
+            
+        except Exception as e:
+            print(f"[AI] Claude enhancement failed: {e}")
+            return None
+    
+    async def _enhance_with_gemini(self, prompt: str, style: str) -> str:
+        """Enhance prompt using Google Gemini"""
+        if not self.gemini_key:
+            return None
+            
+        # Consistent default model for both API versions
+        default_model = "gemini-2.5-flash"
+        model_name = os.getenv("GEMINI_MODEL", default_model)
+        # Timeout for Gemini API calls (in seconds)
+        timeout_seconds = 30
         
-        # Try Claude
-        if self.anthropic_key:
+        try:
+            # Try new google.genai first, fallback to old google.generativeai
             try:
-                import anthropic
-                client = anthropic.Anthropic(api_key=self.anthropic_key)
-                
-                system_prompt = f"""You are an expert prompt engineer for AI image generation. 
-                Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
-                
-                Focus on {style} style with these characteristics:
-                {self._get_style_description(style)}
-                
-                Rules:
-                - Keep the core concept intact
-                - Add descriptive details and artistic elements
-                - Include lighting, composition, and technical terms
-                - Make it 2-3 times more descriptive
-                - Return ONLY the enhanced prompt, no explanations
-                """
-                
-                response = await asyncio.to_thread(
-                    client.messages.create,
-                    model="claude-3-haiku-20240307",
-                    max_tokens=200,
-                    system=system_prompt,
-                    messages=[
-                        {"role": "user", "content": f"Enhance this prompt for image generation: {prompt}"}
-                    ]
-                )
-                
-                return response.content[0].text.strip()
-                
-            except Exception as e:
-                print(f"[AI] Claude enhancement failed: {e}")
-        
-        # Try Gemini
-        if self.gemini_key:
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=self.gemini_key)
-                model = genai.GenerativeModel('gemini-2.5-flash')  # Use model with available quota
+                from google import genai
+                client = genai.Client(api_key=self.gemini_key)
                 
                 prompt_text = f"""You are an expert prompt engineer for AI image generation. 
                 Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
@@ -207,22 +357,99 @@ class PromptEnhancer:
                 
                 Enhance this prompt for image generation: {prompt}"""
                 
-                response = await asyncio.to_thread(model.generate_content, prompt_text)
-                return response.text.strip()
-                
-            except Exception as e:
-                error_msg = str(e)
-                if "429" in error_msg or "quota" in error_msg.lower() or "exceeded" in error_msg.lower():
-                    print(f"[AI] Gemini quota exceeded: {error_msg}")
-                    # Don't raise error - let it fall back to template enhancement
+                # Use asyncio timeout for the Gemini API call
+                try:
+                    async def call_gemini_genai():
+                        return await asyncio.wait_for(
+                            asyncio.to_thread(
+                                client.models.generate_content,
+                                model=model_name,
+                                contents=prompt_text
+                            ),
+                            timeout=timeout_seconds
+                        )
+                    
+                    response = await call_gemini_genai()
+                    return response.text.strip()
+                    
+                except asyncio.TimeoutError:
+                    print(f"[AI] Gemini (genai) request timed out after {timeout_seconds} seconds")
                     return None
-                else:
-                    print(f"[AI] Gemini enhancement failed: {e}")
-                    # Note: New google.genai package has different API, keeping old one for now
+                except ImportError:
+                    raise  # Re-raise ImportError to try old package
+                except Exception as e:
+                    # Specific error handling for genai client errors
+                    error_msg = str(e).lower()
+                    if "api" in error_msg or "key" in error_msg or "permission" in error_msg:
+                        print(f"[AI] Gemini (genai) API error: {e}")
+                        return None
+                    elif "timeout" in error_msg or "deadline" in error_msg:
+                        print(f"[AI] Gemini (genai) timeout error: {e}")
+                        return None
+                    else:
+                        print(f"[AI] Gemini (genai) error: {e}")
+                        return None
+                    
+            except ImportError as ie:
+                # Fallback to old package
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=self.gemini_key)
+                    model = genai.GenerativeModel(model_name)
+                    
+                    prompt_text = f"""You are an expert prompt engineer for AI image generation. 
+                    Your task is to expand simple user prompts into detailed, descriptive prompts that will generate better images.
+                    
+                    Focus on {style} style with these characteristics:
+                    {self._get_style_description(style)}
+                    
+                    Rules:
+                    - Keep the core concept intact
+                    - Add descriptive details and artistic elements
+                    - Include lighting, composition, and technical terms
+                    - Make it 2-3 times more descriptive
+                    - Return ONLY the enhanced prompt, no explanations
+                    
+                    Enhance this prompt for image generation: {prompt}"""
+                    
+                    # Use asyncio timeout for the Gemini API call
+                    try:
+                        async def call_gemini_old():
+                            return await asyncio.wait_for(
+                                asyncio.to_thread(model.generate_content, prompt_text),
+                                timeout=timeout_seconds
+                            )
+                        
+                        response = await call_gemini_old()
+                        return response.text.strip()
+                        
+                    except asyncio.TimeoutError:
+                        print(f"[AI] Gemini (old API) request timed out after {timeout_seconds} seconds")
+                        return None
+                    except Exception as e:
+                        # Specific error handling for old API errors
+                        error_msg = str(e).lower()
+                        if "api" in error_msg or "key" in error_msg or "permission" in error_msg:
+                            print(f"[AI] Gemini (old API) API error: {e}")
+                            return None
+                        elif "timeout" in error_msg or "deadline" in error_msg:
+                            print(f"[AI] Gemini (old API) timeout error: {e}")
+                            return None
+                        elif "429" in error_msg or "quota" in error_msg or "exceeded" in error_msg:
+                            print(f"[AI] Gemini (old API) quota exceeded: {error_msg}")
+                            return None
+                        else:
+                            print(f"[AI] Gemini (old API) error: {e}")
+                            return None
+                            
+                except ImportError as ie2:
+                    print(f"[AI] Gemini import failed: {ie2}")
+                    return None
         
-        return None
-        
-        return None
+        except Exception as e:
+            # Catch-all for any other errors
+            print(f"[AI] Gemini enhancement failed: {e}")
+            return None
     
     def _get_style_description(self, style: str) -> str:
         """Get description for a specific style"""
@@ -269,40 +496,76 @@ class PromptEnhancer:
         
         # Add enhancement words based on multiplier
         num_enhancements = max(1, int(len(self.enhancement_words) * (level_config['multiplier'] - 1)))
-        selected_words = self.enhancement_words[:num_enhancements]
+        # Select random words instead of always taking the first ones
+        selected_words = random.sample(self.enhancement_words, min(num_enhancements, len(self.enhancement_words)))
         
         if selected_words:
             enhanced += f", {', '.join(selected_words)}"
         
-        # Add lighting terms
+        # Add lighting terms - select randomly
         if level_config['add_lighting']:
-            lighting = self.lighting_terms[0]  # Use first lighting term
+            lighting = random.choice(self.lighting_terms)
             enhanced += f", {lighting}"
         
-        # Add composition terms
+        # Add composition terms - select randomly
         if level_config['add_composition']:
-            composition = self.composition_terms[0]  # Use first composition term
+            composition = random.choice(self.composition_terms)
             enhanced += f", {composition}"
         
-        # Add technical terms
+        # Add technical terms - select randomly
         if level_config['add_technical']:
-            technical = self.technical_terms[0]  # Use first technical term
+            technical = random.choice(self.technical_terms)
             enhanced += f", {technical}"
         
         return enhanced
     
-    async def enhance_prompt(self, prompt: str, style: str = "cinematic", detail_level: str = "medium") -> Dict:
-        """Main enhancement function with AI support"""
+    async def enhance_prompt(self, prompt: str, style: str = "cinematic", detail_level: str = "medium", model: str = "auto") -> Dict:
+        """Main enhancement function with AI support
+        
+        Args:
+            prompt: The prompt to enhance
+            style: The enhancement style
+            detail_level: The detail level (low, medium, high)
+            model: The AI model to use ("auto", "openai", "anthropic", "gemini", "local", "template")
+        """
         # Clean the original prompt
         cleaned_prompt = self.clean_prompt(prompt)
         
         # Try AI enhancement first if available
         ai_enhanced = None
-        if self.ai_available:
+        model_used = None
+        fallback_occurred = False
+        fallback_reason = None
+        
+        # Determine if AI should be tried based on model parameter
+        try_ai = True
+        if model in ("local", "template"):
+            try_ai = False
+        
+        if try_ai and (self.ai_available or model != "auto"):
             try:
-                ai_enhanced = await self.enhance_with_ai(cleaned_prompt, style)
-                if ai_enhanced:
-                    print(f"[AI] Successfully enhanced prompt using AI LLM")
+                ai_result = await self.enhance_with_ai(cleaned_prompt, style, model)
+                if ai_result and isinstance(ai_result, dict):
+                    # Extract enhanced prompt and fallback info from dict response
+                    ai_enhanced = ai_result.get("enhanced_prompt")
+                    fallback_occurred = ai_result.get("fallback_occurred", False)
+                    fallback_reason = ai_result.get("fallback_reason")
+                    model_used = ai_result.get("model_used")
+                    
+                    # Determine which model was used for logging
+                    if model == "auto":
+                        model_used = "auto (best available)"
+                    elif fallback_occurred:
+                        model_used = f"{model} (fell back to {model_used})"
+                    else:
+                        model_used = model
+                        
+                    if fallback_occurred:
+                        print(f"[AI] Warning: Fell back to template-based enhancement (reason: {fallback_reason})")
+                    print(f"[AI] Successfully enhanced prompt using AI LLM (model: {model_used})")
+                elif ai_result:
+                    # Legacy string return for backward compatibility
+                    ai_enhanced = ai_result
             except Exception as e:
                 print(f"[AI] AI enhancement failed: {e}")
         
@@ -327,9 +590,14 @@ class PromptEnhancer:
             "prompt": primary_enhancement,
             "style": style,
             "detail_level": detail_level,
+            "model": model,
+            "model_used": model_used,
+            "fallback_occurred": fallback_occurred,
+            "fallback_reason": fallback_reason,
             "all_enhancements": all_enhancements,
             "ai_enhanced": ai_enhanced is not None,
-            "ai_available": self.ai_available
+            "ai_available": self.ai_available,
+            "available_models": self.get_available_models()
         }
         
         print(f"[ENHANCE] Returning result with {len(all_enhancements)} enhancements")

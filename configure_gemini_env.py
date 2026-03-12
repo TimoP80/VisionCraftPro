@@ -13,8 +13,18 @@ def configure_gemini_env():
     print("=" * 55)
     print()
 
-    # Gemini API key from previous context
-    gemini_key = "AIzaSyCsGf1WwZu20G9pHcf1mWFaCP1SCnAgjec"
+    # Gemini API key - must be set via GEMINI_API_KEY environment variable
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    
+    if not gemini_key:
+        print("❌ Error: GEMINI_API_KEY environment variable is not set")
+        print()
+        print("Please set your Gemini API key before running this script:")
+        print("  - Windows: set GEMINI_API_KEY=your_api_key_here")
+        print("  - Linux/Mac: export GEMINI_API_KEY=your_api_key_here")
+        print()
+        print("You can get an API key from: https://aistudio.google.com/app/apikey")
+        sys.exit(1)
 
     print(f"🔑 Using Gemini API key: {gemini_key[:20]}...")
     print()
